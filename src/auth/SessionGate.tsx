@@ -8,8 +8,8 @@ export function SessionGate() {
   const supabase = useSupabase();
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
+  // The first event is INITIAL_SESSION, carrying whatever session the client has stored.
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
     return () => data.subscription.unsubscribe();
   }, [supabase]);
