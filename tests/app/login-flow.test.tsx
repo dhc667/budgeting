@@ -143,6 +143,17 @@ describe("signing out", () => {
     const { error } = await otherDevice.auth.refreshSession();
     expect(error).toBeNull();
   });
+
+  it("leaves nothing behind for the next person who signs in on the device", async () => {
+    await openSignedIn("Kim");
+    await user.click(defined(screen.getAllByRole("link", { name: "Profile" })[0]));
+    await user.click(await screen.findByRole("button", { name: "Sign out" }));
+    const { email } = await existingUser("Lola");
+
+    await signIn(email, password);
+
+    expect(await screen.findByRole("heading", { name: /, Lola$/ })).toBeTruthy();
+  });
 });
 
 describe("an invite opened on a device that is already signed in", () => {
