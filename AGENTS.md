@@ -11,3 +11,7 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Commits
+
+End every commit message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and no other attribution lines.
