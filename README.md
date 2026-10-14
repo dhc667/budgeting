@@ -6,27 +6,48 @@ vocabulary and `docs/adr/` for why it's built this way.
 
 ## Setting up your family's instance
 
-You need a free [Supabase](https://supabase.com) project and this repository checked out, with
-Node (see `.node-version`) and pnpm.
+You need a free [Supabase](https://supabase.com) account and this repository cloned, with Node (see
+`.node-version`) and pnpm. Run every command from the repository's folder.
 
-1. Create a Supabase project.
-2. In **Authentication > Sign In / Providers > Email**, turn off **Confirm email**. Invite codes are
-   the gate, and no email is ever sent.
-3. Copy `.env.owner.example` to `.env.owner` and fill it in from the project's settings. Keep
-   `.env.owner` private: its secret key and database URL give full access to your family's data.
+1. Install the dependencies and sign the Supabase CLI in to your account:
+
+   ```bash
+   pnpm install
+   pnpm exec supabase login
+   ```
+
+2. Create a Supabase project in the region closest to your family, from the dashboard or with
+   `pnpm exec supabase projects create`. Keep its database password; step 3 needs it.
+3. Copy `.env.owner.example` to `.env.owner` and fill it in. Keep `.env.owner` private: its secret
+   key and database URL give full access to your family's data.
+   - `pnpm exec supabase projects api-keys --project-ref <ref> --reveal` prints the keys. Without
+     `--reveal`, the secret key comes back masked and the owner commands fail with "Invalid API key".
+   - For `DATABASE_URL`, copy the **Session pooler** string from the dashboard's **Connect** dialog,
+     put the database password in it, and add `?sslmode=require` so the connection is encrypted.
+
 4. Create the tables:
 
    ```bash
-   pnpm --dir /home/dhc/Work/Personal/budgeting run owner migrate
+   pnpm run owner migrate
    ```
 
-5. In **Authentication > Hooks**, add a **Before User Created** hook of type **Postgres** that calls
-   `public.check_invite_code`. This turns a bad invite into a readable message; signups without a
-   valid code are refused either way.
+5. Apply the auth settings: email confirmation off (invite codes are the gate, and no email is ever
+   sent), the invite check that turns a bad code into a readable message, and an 8-character
+   password minimum.
+
+   ```bash
+   pnpm exec supabase link --project-ref <ref>
+   pnpm exec supabase config push
+   ```
+
+   Answer **y** to the auth prompt and **n** to the others: the rest of `supabase/config.toml`
+   describes local development. This step has to come after `migrate`, because the invite check is
+   a function the migrations create.
+
 6. Invite someone, yourself included:
 
    ```bash
-   pnpm --dir /home/dhc/Work/Personal/budgeting run owner invite
+   pnpm run owner invite
    ```
 
    Scan the QR code with a phone camera. The code works once and expires after 24 hours
@@ -50,6 +71,10 @@ pnpm dev
 pnpm run owner invite --env .env.owner.local   # open the printed link to sign up
 ```
 
+The `--env` file decides which instance an owner command acts on: `.env.owner.local` is the local
+stack, and without `--env` it is your family's real instance in `.env.owner`. Changes to
+`supabase/config.toml` reach the local stack after `pnpm db:stop && pnpm db:start`.
+
 Schema changes go in `db/schema.ts`; then run `pnpm db:generate` to write the migration and
 `pnpm db:types` to refresh `src/supabase/database.types.ts`. Triggers and functions go in custom
 migrations (`pnpm db:generate --custom --name <name>`), and so do the grants that let the app reach a
@@ -68,5 +93,6 @@ pnpm test:integration   # needs pnpm db:start
 staged (kept as a worktree in `.git/staged-snapshot`), so a passing hook means the commit passes,
 whatever else is in your working tree. It never edits files; run `pnpm fix` yourself.
 
-Pull requests run `pnpm check` and the integration tests against a fresh local Supabase. Every push
-to `main` runs the same checks and, if they pass, deploys to GitHub Pages.
+Changes reach `main` through pull requests, which must pass `pnpm check`, the build and the
+integration tests against a fresh local Supabase. Every push to `main` runs the same checks and, if
+they pass, deploys to GitHub Pages.
