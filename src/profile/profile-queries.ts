@@ -7,7 +7,7 @@ export function useProfile() {
   const supabase = useSupabase();
   const user = useSignedInUser();
   return useQuery({
-    queryKey: ["profile", user.id],
+    queryKey: ["profile"],
     async queryFn() {
       const { data, error } = await supabase
         .from("profiles")
@@ -29,7 +29,7 @@ export function useUpdateProfile() {
       const { error } = await supabase.from("profiles").update(changes).eq("id", user.id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profile"] }),
   });
 }
 
