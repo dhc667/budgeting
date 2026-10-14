@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "ignoreIssues": {
+    "src/supabase/database.types.ts": ["exports", "types"]
+  }
+}

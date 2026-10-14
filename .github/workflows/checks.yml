@@ -1,0 +1,54 @@
+name: Checks
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm build
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start Supabase and apply migrations
+        run: |
+          pnpm exec supabase start -x studio
+          scripts/write-local-env.sh
+          pnpm run owner migrate --env .env.owner.local
+      - name: Migrations match the Drizzle schema
+        run: |
+          pnpm db:generate
+          drift=$(git status --porcelain -- db/migrations)
+          if [ -n "$drift" ]; then echo "db/schema.ts has changes with no migration:"; echo "$drift"; exit 1; fi
+      - name: Generated database types are up to date
+        run: |
+          pnpm db:types
+          git diff --exit-code -- src/supabase/database.types.ts
+      - run: pnpm test:integration
