@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useState } from "react";
-import { createSupabase } from "../supabase/client";
+import { releaseSupabase, supabaseFor } from "../supabase/client";
 import { type Instance, parseInstance } from "./connect-link";
 import { InstanceContext, type InstanceContextValue } from "./instance-context";
 
@@ -7,7 +7,7 @@ const storageKey = "budgeting.instance";
 
 export function InstanceProvider({ children }: { children: ReactNode }) {
   const [instance, setInstance] = useState(loadInstance);
-  const supabase = useMemo(() => (instance ? createSupabase(instance) : null), [instance]);
+  const supabase = useMemo(() => (instance ? supabaseFor(instance) : null), [instance]);
 
   const value = useMemo<InstanceContextValue>(
     () => ({
@@ -15,10 +15,12 @@ export function InstanceProvider({ children }: { children: ReactNode }) {
       supabase,
       connect(next) {
         if (instance && sameInstance(instance, next)) return;
+        if (instance) releaseSupabase(instance);
         localStorage.setItem(storageKey, JSON.stringify(next));
         setInstance(next);
       },
       disconnect() {
+        if (instance) releaseSupabase(instance);
         localStorage.removeItem(storageKey);
         setInstance(null);
       },

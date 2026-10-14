@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../../src/App";
 import { buildConnectLink } from "../../src/instance/connect-link";
@@ -224,7 +225,11 @@ type MigrationRow = { id: number; hash: string; created_at: string };
 
 function openApp(url: string) {
   window.location.hash = new URL(url).hash;
-  render(<App />);
+  render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
 }
 
 async function openSignedIn(name: string) {
