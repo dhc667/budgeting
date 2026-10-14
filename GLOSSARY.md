@@ -30,26 +30,33 @@ A group of users who share accounts, categories and budgets. Every member of a s
 _Avoid_: household, group, workspace
 
 **Private space**:
-The space every user gets at signup. Its owner is its only member, forever: it can't be shared or deleted.
+The space every user gets at signup, always named Private. Its owner is its only member, forever: it can't be shared, renamed or deleted.
+
+**Shared space**:
+A space any user can create and add other users of the instance to; they're members at once. Its last member can't leave, and it can be deleted only while it holds no transactions.
 
 **Member**:
 A user who belongs to a space.
 
+**Space picker**:
+The spaces whose data the app shows: all of a user's spaces unless they narrow it. It changes what the user sees, never what they can record into.
+_Avoid_: space switcher, current space
+
 ### Money
 
 **Account**:
-A place where money is held, in a single currency, belonging to one space.
+A place where money is held, in a single currency, belonging to one space for good.
 _Avoid_: wallet
 
 **Archived account**:
-An account hidden from lists and pickers but kept with its full history. Accounts that have transactions are archived, never deleted.
+An account hidden from lists and pickers but kept with its full history, and still counted in net worth. Accounts that have transactions are archived, never deleted.
 
 **Shared account**:
 An account in a space with more than one member; a joint pot that every member can see and use. It is not a record of who owes whom.
 _Avoid_: split, shared expense
 
 **Category**:
-A classification of income or expense, belonging to one space. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used.
+A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. Every new space starts with a set of categories its members can change.
 
 **Opening balance**:
 The transaction that records the money an account already held when it was added to the app. It is not income.
@@ -59,7 +66,10 @@ A single financial event: an expense, an income, or a transfer.
 _Avoid_: entry, record
 
 **Expense**:
-A transaction that moves money out of an account into a category.
+A transaction that moves money out of an account into an expense category.
+
+**Refund**:
+An expense in reverse: money coming back from an expense category into an account. It lowers that category's spending instead of counting as income.
 
 **Income**:
 A transaction that moves money from a category into an account.
@@ -77,7 +87,7 @@ The sum of the balances of every account in the spaces a user belongs to, in the
 ### Planning
 
 **Budget**:
-A spending limit for one space, in one currency, over a fixed date range or a repeating period that starts on a day the budget chooses, covering chosen expense categories and accounts.
+A spending limit for one space, in one currency, over a fixed date range or a repeating period that starts on a day the budget chooses, covering chosen expense categories and accounts. It tracks net spending: what went into its categories minus refunds.
 
 **Carry-over**:
 Adjusting a budget's next-period limit by how the previous period ended. Each budget enables it separately for unspent money (raising the next limit) and for overspending (lowering it).
@@ -94,5 +104,5 @@ _Avoid_: pending, scheduled
 ### Oversight
 
 **Activity**:
-A space's record of every change made to its data: who made it, when, and what it was before.
+A space's record of every change made to its data: who made it, when, and what it was before. A deleted transaction can be restored from it.
 _Avoid_: audit log, history
