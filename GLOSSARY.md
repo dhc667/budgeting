@@ -15,8 +15,11 @@ The person who set up the instance and holds its credentials; the only one who c
 _Avoid_: admin
 
 **User**:
-A person who can sign in to an instance.
+A person who can sign in to an instance. A user who has changed anything in a space can't be deleted.
 _Avoid_: account, member (when meaning a login)
+
+**Profile**:
+A user's name and display currency, visible to everyone in the instance.
 
 **Invite code**:
 A one-time, expiring code, issued by the instance owner and delivered as a QR code, that lets one person sign up as a user.

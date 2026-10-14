@@ -2,7 +2,7 @@
 
 The Drizzle schema is the single source of truth for tables and Row Level Security policies, and drizzle-kit generates and applies migrations. The browser can't use Drizzle at runtime, because a static app can't hold a Postgres connection, so the app reads and writes through supabase-js, typed with `supabase gen types` run against the migrated database.
 
-Drizzle has no schema API for triggers or Postgres functions, so those (the posting-balance check, the audit trail, category reassignment, invite redemption) live in hand-written `drizzle-kit generate --custom` migrations, applied by the same `drizzle-kit migrate`.
+Drizzle has no schema API for triggers or Postgres functions, so those (the posting-balance check, the audit trail, category reassignment, invite redemption) live in hand-written `drizzle-kit generate --custom` migrations, applied by the same Drizzle migrator.
 
 ## Considered options
 
