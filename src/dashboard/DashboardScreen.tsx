@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format/use-format";
+import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
 import { Card, EmptyState } from "../ui/Card";
 
@@ -9,7 +10,9 @@ export function DashboardScreen() {
   const { t } = useTranslation();
   const format = useFormat();
   const { data: profile } = useProfile();
+  const { data: currencies } = useCurrencies();
   if (!profile) return null;
+  const displayCurrency = currencies?.find(({ code }) => code === profile.display_currency);
 
   return (
     <div className="flex flex-col gap-6">
@@ -18,7 +21,7 @@ export function DashboardScreen() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title={t("dashboard.netWorth")}>
           <p className="text-3xl font-semibold tabular-nums">
-            {format.money(0, profile.display_currency)}
+            {displayCurrency && format.money(0, displayCurrency)}
           </p>
           <EmptyState>{t("dashboard.netWorthPlaceholder")}</EmptyState>
         </Card>
