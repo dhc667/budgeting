@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { localToday } from "../format/days";
@@ -5,7 +6,6 @@ import { useProfile } from "../profile/profile-queries";
 import { spaceName } from "../spaces/space";
 import { type Space, useSpaces } from "../spaces/space-queries";
 import { Card } from "../ui/Card";
-import { textField } from "../ui/forms";
 import { SelectField } from "../ui/SelectField";
 import { useCreateAccount } from "./account-queries";
 import { AccountForm } from "./AccountForm";
@@ -15,8 +15,10 @@ export function NewAccountScreen() {
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const { data: spaces } = useSpaces();
+  const [chosenSpaceId, setChosenSpaceId] = useState<string>();
   const createAccount = useCreateAccount();
-  if (!profile || !spaces) return null;
+  const spaceId = chosenSpaceId ?? spaces?.[0]?.id;
+  if (!profile || !spaces || !spaceId) return null;
 
   return (
     <div className="flex max-w-xl flex-col gap-6">
@@ -31,12 +33,12 @@ export function NewAccountScreen() {
             openingDate: localToday(),
           }}
           currencyFixed={false}
-          extraFields={<SpaceSelect spaces={spaces} />}
+          extraFields={<SpaceSelect spaces={spaces} value={spaceId} onChange={setChosenSpaceId} />}
           submitLabel={t("accounts.new.submit")}
           mutation={createAccount}
-          onSave={(details, form) =>
+          onSave={(details) =>
             createAccount.mutate(
-              { ...details, spaceId: textField(form, "space") },
+              { ...details, spaceId },
               { onSuccess: (accountId) => void navigate(`/accounts/${accountId}`) },
             )
           }
@@ -46,11 +48,21 @@ export function NewAccountScreen() {
   );
 }
 
+type SpaceSelectProps = {
+  spaces: Space[];
+  value: string;
+  onChange: (spaceId: string) => void;
+};
+
 // Every space is offered, whatever the space picker shows.
-function SpaceSelect({ spaces }: { spaces: Space[] }) {
+function SpaceSelect({ spaces, value, onChange }: SpaceSelectProps) {
   const { t } = useTranslation();
   return (
-    <SelectField label={t("accounts.form.space")} name="space" defaultValue={spaces[0]?.id}>
+    <SelectField
+      label={t("accounts.form.space")}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    >
       {spaces.map((space) => (
         <option key={space.id} value={space.id}>
           {spaceName(space, t)}

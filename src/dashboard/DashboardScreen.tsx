@@ -6,7 +6,7 @@ import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
 import { Card, EmptyState } from "../ui/Card";
 
-// Layout draft: the cards other than accounts are placeholders for features that don't exist yet.
+// Layout draft: a card showing placeholder text stands in for a feature that doesn't exist yet.
 export function DashboardScreen() {
   const { t } = useTranslation();
   const format = useFormat();

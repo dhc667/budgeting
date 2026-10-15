@@ -4,7 +4,7 @@ import { type RefObject, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { spaceName } from "./space";
-import { useHiddenSpaces } from "./space-picker";
+import { useHiddenSpaces, useShownSpaces } from "./space-picker";
 import { type Space, useSpaces } from "./space-queries";
 
 export function SpacePicker() {
@@ -14,7 +14,7 @@ export function SpacePicker() {
   const picker = useRef<HTMLDivElement>(null);
   const { data: spaces = [] } = useSpaces();
   const [hidden, setHidden] = useHiddenSpaces();
-  const shown = spaces.filter(({ id }) => !hidden.includes(id));
+  const shown = useShownSpaces() ?? [];
   useDismiss(open, picker, () => setOpen(false));
 
   const toggle = (spaceId: string, show: boolean) =>

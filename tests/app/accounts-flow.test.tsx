@@ -86,6 +86,21 @@ describe("accounts", () => {
     expect(accounts.getByRole("link", { name: /Old card/ })).toBeTruthy();
   });
 
+  it("archives an account holding nothing straight away, and unarchives it", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Spare", openingBalance: "" });
+
+    const archive = within(screen.getByRole("region", { name: "Archive" }));
+    await user.click(archive.getByRole("button", { name: "Archive account" }));
+    await user.click(await archive.findByRole("button", { name: "Unarchive" }));
+    await archive.findByRole("button", { name: "Archive account" });
+
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect(await accounts.findByRole("link", { name: /Spare/ })).toBeTruthy();
+    expect(accounts.queryByRole("button", { name: /Archived/ })).toBeNull();
+  });
+
   it("deletes an account once confirmed", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Mistake", openingBalance: "10" });
@@ -135,6 +150,15 @@ describe("the space picker", () => {
     const reopened = within(await screen.findByRole("region", { name: "Accounts" }));
     expect(await reopened.findByRole("link", { name: /Wallet/ })).toBeTruthy();
     expect(reopened.queryByRole("link", { name: /Joint/ })).toBeNull();
+  });
+
+  it("links to managing spaces", async () => {
+    await openSignedIn(uniqueName("Ana"));
+
+    await user.click(defined((await screen.findAllByRole("button", { name: "All spaces" }))[0]));
+    await user.click(screen.getByRole("link", { name: "Manage spaces" }));
+
+    expect(await screen.findByRole("heading", { name: "Spaces", level: 1 })).toBeTruthy();
   });
 
   it("never narrows what forms offer", async () => {

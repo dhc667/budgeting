@@ -21,10 +21,15 @@ begin
     return null;
   end if;
 
-  if tg_argv[1] = 'shared_only'
-    and exists (select 1 from public.spaces where id = space and private_owner is not null) then
-    return null;
-  end if;
+  -- No else: a misspelt mode raises case_not_found rather than logging private spaces.
+  case tg_argv[1]
+    when 'shared_only' then
+      if exists (select 1 from public.spaces where id = space and private_owner is not null) then
+        return null;
+      end if;
+    when 'every_space' then
+      null;
+  end case;
 
   insert into public.activity (space_id, table_name, row_id, action, changed_by, old, new)
   values (
@@ -73,7 +78,6 @@ create or replace function public.is_opening_balance(transaction uuid)
 returns boolean
 language sql
 stable
-security definer
 set search_path = ''
 as $$
   select exists (
