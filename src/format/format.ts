@@ -32,7 +32,6 @@ export function formatAmount(
 }
 
 // Reads an amount the way formatAmount writes it, so typing follows the user's number format.
-// Anything but digits and the decimal separator is taken for grouping and left out.
 export function parseAmount(
   text: string,
   decimals: number,
@@ -43,7 +42,7 @@ export function parseAmount(
   const negative = /^[-\u2212]/.test(trimmed);
   const parts = (negative ? trimmed.slice(1) : trimmed).split(decimal);
   if (parts.length > 2) return null;
-  const whole = (parts[0] ?? "").replace(/[\s'’.,]/g, "");
+  const whole = (parts[0] ?? "").replace(anyGroupingMark, "");
   const fraction = parts[1] ?? "";
   if (!/^\d+$/.test(whole + fraction) || !/^\d*$/.test(whole) || !/^\d*$/.test(fraction))
     return null;
@@ -134,6 +133,8 @@ const conventions: Record<NumberFormat, Convention> = {
   space_comma: { group: "\u202F", decimal: ",", placement: "after" },
   apostrophe_period: { group: "'", decimal: ".", placement: "before, spaced" },
 };
+
+const anyGroupingMark = /[\s'’.,]/g;
 
 type Convention = {
   group: string;

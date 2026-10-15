@@ -20,7 +20,7 @@ type AccountFormProps = {
   extraFields?: ReactNode;
   submitLabel: string;
   mutation: { isPending: boolean; isSuccess: boolean; error: Error | null };
-  onSave: (details: AccountDetails, form: FormData) => void;
+  onSave: (details: AccountDetails) => void;
 };
 
 // Amounts are typed in the user's number format, so the form waits for the profile that says which.
@@ -52,16 +52,13 @@ function LoadedAccountForm({
     const openingAmount = amountText.trim() === "" ? 0 : format.parseAmount(amountText, decimals);
     setAmountInvalid(openingAmount === null);
     if (openingAmount === null) return;
-    onSave(
-      {
-        name: textField(form, "name").trim(),
-        currency,
-        color: choiceField(form, "color", colors) ?? initial.color,
-        openingAmount,
-        openingDate: textField(form, "openingDate"),
-      },
-      form,
-    );
+    onSave({
+      name: textField(form, "name").trim(),
+      currency,
+      color: choiceField(form, "color", colors) ?? initial.color,
+      openingAmount,
+      openingDate: textField(form, "openingDate"),
+    });
   };
 
   return (

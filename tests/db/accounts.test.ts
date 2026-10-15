@@ -39,24 +39,27 @@ describe("adding an account", () => {
       opening_date: today(),
       has_transactions: false,
     });
-    const categories = await sql`
-      select ledger_accounts.kind, postings.amount::int
-      from postings
-      join postings mine on mine.transaction_id = postings.transaction_id
-      join ledger_accounts on ledger_accounts.id = postings.ledger_account_id
-      where mine.ledger_account_id = ${accountId} and postings.ledger_account_id <> ${accountId}`;
-    expect(categories).toEqual([{ kind: "opening_balance", amount: -150_000 }]);
+    const { data: counterparts } = await ben.client
+      .from("postings")
+      .select("amount, ledger_accounts(kind)")
+      .neq("ledger_account_id", accountId);
+    expect(counterparts).toEqual([
+      { amount: -150_000, ledger_accounts: { kind: "opening_balance" } },
+    ]);
   });
 
   it("gives every space one opening-balance category, which isn't listed as an account", async () => {
     const privateSpace = await privateSpaceOf(ana);
 
-    const categories = await sql`
-      select space_id from ledger_accounts
-      where kind = 'opening_balance' and space_id in (${familyId}, ${privateSpace.id})`;
+    const { data: categories } = await ana.client
+      .from("ledger_accounts")
+      .select("space_id")
+      .eq("kind", "opening_balance");
     const { data: accounts } = await ana.client.from("accounts").select("id");
 
-    expect(categories).toHaveLength(2);
+    expect(categories?.map(({ space_id }) => space_id).sort()).toEqual(
+      [familyId, privateSpace.id].sort(),
+    );
     expect(accounts).toEqual([]);
   });
 
@@ -178,6 +181,19 @@ describe("editing an account", () => {
 
     expect(archived).toMatchObject({ archived: true, balance: 100 });
     expect(await accountOf(ana, accountId)).toMatchObject({ archived: false });
+  });
+
+  it("can't move it to another space", async () => {
+    const accountId = await addAccount(ana, familyId);
+    const privateSpace = await privateSpaceOf(ana);
+
+    const moves = await Promise.all([
+      ana.client.from("accounts").update({ space_id: privateSpace.id }).eq("id", accountId),
+      ana.client.from("ledger_accounts").update({ space_id: privateSpace.id }).eq("id", accountId),
+    ]);
+
+    expect(moves.map(({ error }) => error)).not.toContain(null);
+    expect(await accountOf(ana, accountId)).toMatchObject({ space_id: familyId });
   });
 
   it("reorders a space's accounts for all its members", async () => {
@@ -377,26 +393,22 @@ async function addAccount(
 }
 
 function newAccount(spaceId: string) {
-  return {
-    space: spaceId,
-    account_name: "Checking",
-    account_currency: "USD",
-    account_color: "blue" as const,
-    opening_amount: 0,
-    opening_date: today(),
-  };
+  return { space: spaceId, ...checking(0) };
 }
 
 type NewAccount = ReturnType<typeof newAccount>;
 
 // What addAccount creates with an opening balance of 100, to change one thing at a time.
 function accountChanges(accountId: string) {
+  return { account_id: accountId, ...checking(100) };
+}
+
+function checking(openingAmount: number) {
   return {
-    account_id: accountId,
     account_name: "Checking",
     account_currency: "USD",
     account_color: "blue" as const,
-    opening_amount: 100,
+    opening_amount: openingAmount,
     opening_date: today(),
   };
 }
@@ -433,7 +445,7 @@ async function activityOf(user: User, spaceId: string) {
   return data;
 }
 
-// Slice 2 records transactions; until then only the database's owner can.
+// Members can record no transaction but an opening balance, so this writes as the database's owner.
 async function transfer(from: string, to: string, amount: number) {
   await sql.begin(async (tx) => {
     const [transaction] = await tx<{ id: string }[]>`

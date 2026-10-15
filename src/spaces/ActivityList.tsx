@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
 import { displayNameOf, type User, useUsers } from "../profile/profile-queries";
-import type { Json } from "../supabase/database.types";
+import { Constants, type Enums, type Json } from "../supabase/database.types";
 import { EmptyState } from "../ui/Card";
 import type { Activity } from "./space-queries";
 
@@ -13,9 +13,9 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
   const money = useMoney();
   const { data: users = [] } = useUsers();
   if (!activity) return null;
-  const context: Context = { users, t, money, day: format.day };
+  const phrasing: Phrasing = { users, t, money, day: format.day };
   const entries = activity.flatMap((entry) => {
-    const lines = describe(entry, context);
+    const lines = describe(entry, phrasing);
     return lines.length === 0 ? [] : [{ id: entry.id, lines, at: new Date(entry.changed_at) }];
   });
   if (entries.length === 0) return <EmptyState>{t("activity.empty")}</EmptyState>;
@@ -36,36 +36,29 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
   );
 }
 
-type Context = {
-  users: User[];
-  t: TFunction;
-  money: (minorUnits: number, currency: string) => string;
-  day: (day: string) => string;
-};
-
-function describe(entry: Activity, context: Context): string[] {
-  const actor = displayNameOf(context.users, entry.changed_by) ?? context.t("activity.someone");
+function describe(entry: Activity, phrasing: Phrasing): string[] {
+  const actor = displayNameOf(phrasing.users, entry.changed_by) ?? phrasing.t("activity.someone");
   switch (entry.table_name) {
     case "spaces":
-      return describeSpaceChange(entry, actor, context);
+      return describeSpaceChange(entry, actor, phrasing);
     case "space_members":
-      return describeMembershipChange(entry, actor, context);
+      return describeMembershipChange(entry, actor, phrasing);
     case "ledger_accounts":
-      return describeAccountChange(entry, actor, context);
+      return describeAccountChange(entry, actor, phrasing);
     case "transactions":
-      return describeTransactionChange(entry, actor, context);
+      return describeTransactionChange(entry, actor, phrasing);
     default:
       return [];
   }
 }
 
-function describeSpaceChange(entry: Activity, actor: string, { t }: Context): string[] {
+function describeSpaceChange(entry: Activity, actor: string, { t }: Phrasing): string[] {
   switch (entry.action) {
     case "insert":
       return [t("activity.space.created", { actor })];
     case "update": {
-      const from = text(entry.old, "name");
-      const to = text(entry.new, "name");
+      const from = stringAt(entry.old, "name");
+      const to = stringAt(entry.new, "name");
       return from === to ? [] : [t("activity.space.renamed", { actor, from, to })];
     }
     case "delete":
@@ -73,8 +66,12 @@ function describeSpaceChange(entry: Activity, actor: string, { t }: Context): st
   }
 }
 
-function describeMembershipChange(entry: Activity, actor: string, { users, t }: Context): string[] {
-  const memberId = text(entry.old ?? entry.new, "user_id");
+function describeMembershipChange(
+  entry: Activity,
+  actor: string,
+  { users, t }: Phrasing,
+): string[] {
+  const memberId = stringAt(entry.old ?? entry.new, "user_id");
   // Activity outlives the users it names: deleting a user without history of their own removes
   // them from their spaces.
   const member = displayNameOf(users, memberId);
@@ -95,8 +92,8 @@ function describeMembershipChange(entry: Activity, actor: string, { users, t }: 
   }
 }
 
-function describeAccountChange(entry: Activity, actor: string, { t }: Context): string[] {
-  const name = text(entry.new ?? entry.old, "name");
+function describeAccountChange(entry: Activity, actor: string, { t }: Phrasing): string[] {
+  const name = stringAt(entry.new ?? entry.old, "name");
   switch (entry.action) {
     case "insert":
       return [t("activity.account.added", { actor, name })];
@@ -104,21 +101,21 @@ function describeAccountChange(entry: Activity, actor: string, { t }: Context): 
       return [t("activity.account.deleted", { actor, name })];
     case "update": {
       const changed = (key: string) =>
-        JSON.stringify(field(entry.old, key)) !== JSON.stringify(field(entry.new, key));
+        JSON.stringify(valueAt(entry.old, key)) !== JSON.stringify(valueAt(entry.new, key));
       const lines: string[] = [];
       if (changed("name"))
         lines.push(
-          t("activity.account.renamed", { actor, from: text(entry.old, "name"), to: name }),
+          t("activity.account.renamed", { actor, from: stringAt(entry.old, "name"), to: name }),
         );
       if (changed("currency")) {
-        const from = text(entry.old, "currency");
-        const to = text(entry.new, "currency");
+        const from = stringAt(entry.old, "currency");
+        const to = stringAt(entry.new, "currency");
         lines.push(t("activity.account.currencyChanged", { actor, name, from, to }));
       }
       if (changed("color")) lines.push(t("activity.account.recolored", { actor, name }));
       if (changed("archived"))
         lines.push(
-          field(entry.new, "archived") === true
+          valueAt(entry.new, "archived") === true
             ? t("activity.account.archived", { actor, name })
             : t("activity.account.unarchived", { actor, name }),
         );
@@ -127,9 +124,8 @@ function describeAccountChange(entry: Activity, actor: string, { t }: Context): 
   }
 }
 
-// Slice 1 records no transactions but opening balances.
-function describeTransactionChange(entry: Activity, actor: string, context: Context): string[] {
-  const { t, money, day } = context;
+function describeTransactionChange(entry: Activity, actor: string, phrasing: Phrasing): string[] {
+  const { t, money, day } = phrasing;
   const postings = postingsOf(entry.new ?? entry.old);
   const account = postings.find(({ account_kind }) => account_kind === "account");
   const isOpeningBalance = postings.some(({ account_kind }) => account_kind === "opening_balance");
@@ -138,7 +134,7 @@ function describeTransactionChange(entry: Activity, actor: string, context: Cont
     actor,
     account: account.account_name,
     amount: money(account.amount, account.currency),
-    date: day(text(entry.new ?? entry.old, "date") ?? ""),
+    date: day(stringAt(entry.new ?? entry.old, "date") ?? ""),
   };
   switch (entry.action) {
     case "insert":
@@ -150,27 +146,43 @@ function describeTransactionChange(entry: Activity, actor: string, context: Cont
   }
 }
 
-type Posting = { account_kind: string; account_name: string; currency: string; amount: number };
-
 function postingsOf(snapshot: Json): Posting[] {
-  const postings = field(snapshot, "postings");
+  const postings = valueAt(snapshot, "postings");
   if (!Array.isArray(postings)) return [];
   return postings.flatMap((posting) => {
-    const account_kind = text(posting, "account_kind");
-    const account_name = text(posting, "account_name") ?? "";
-    const currency = text(posting, "currency");
-    const amount = field(posting, "amount");
-    if (account_kind === null || currency === null || typeof amount !== "number") return [];
+    const account_kind = ledgerAccountKinds.find(
+      (kind) => kind === valueAt(posting, "account_kind"),
+    );
+    const account_name = stringAt(posting, "account_name") ?? "";
+    const currency = stringAt(posting, "currency");
+    const amount = valueAt(posting, "amount");
+    if (account_kind === undefined || currency === null || typeof amount !== "number") return [];
     return [{ account_kind, account_name, currency, amount }];
   });
 }
 
-function text(row: Json, key: string): string | null {
-  const value = field(row, key);
+function stringAt(row: Json, key: string): string | null {
+  const value = valueAt(row, key);
   return typeof value === "string" ? value : null;
 }
 
-function field(row: Json, key: string): Json | undefined {
+function valueAt(row: Json, key: string): Json | undefined {
   if (typeof row !== "object" || row === null || Array.isArray(row)) return undefined;
   return row[key];
 }
+
+const ledgerAccountKinds = Constants.public.Enums.ledger_account_kind;
+
+type Phrasing = {
+  users: User[];
+  t: TFunction;
+  money: (minorUnits: number, currency: string) => string;
+  day: (day: string) => string;
+};
+
+type Posting = {
+  account_kind: Enums<"ledger_account_kind">;
+  account_name: string;
+  currency: string;
+  amount: number;
+};
