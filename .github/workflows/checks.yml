@@ -37,6 +37,12 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The runner's client is older than Supabase's PostgreSQL, and pg_dump refuses newer servers.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-17
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
       - name: Start Supabase and apply migrations
         run: |
           pnpm exec supabase start -x studio

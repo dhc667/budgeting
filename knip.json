@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": ["i18next.config.ts"],
+  "ignoreBinaries": ["pg_dump", "psql"],
   "ignoreIssues": {
     "src/supabase/database.types.ts": ["exports", "types"]
   }
