@@ -11,7 +11,7 @@ import { buildConnectLink, type ConnectRequest } from "../src/instance/connect-l
 import type { Database } from "../src/supabase/database.types.ts";
 import { createInviteCode } from "./invites.ts";
 
-const usage = `Usage: pnpm owner <command> [--env <file>]
+const usage = `Usage: pnpm instance <command> [--env <file>]
 
 Commands:
   migrate                     Apply pending database migrations
@@ -92,7 +92,7 @@ function link({ env }: Options) {
 }
 
 async function resetPassword({ args: [email], env }: Options) {
-  if (!email) fail("Usage: pnpm owner reset-password <email>");
+  if (!email) fail("Usage: pnpm instance reset-password <email>");
 
   const admin = adminClient(env);
   const user = await findUserByEmail(admin, email);

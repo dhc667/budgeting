@@ -28,7 +28,7 @@ You need a free [Supabase](https://supabase.com) account and this repository clo
 4. Create the tables:
 
    ```bash
-   pnpm run owner migrate
+   pnpm run instance migrate
    ```
 
 5. Apply the auth settings: email confirmation off (invite codes are the gate, and no email is ever
@@ -47,14 +47,14 @@ You need a free [Supabase](https://supabase.com) account and this repository clo
 6. Invite someone, yourself included:
 
    ```bash
-   pnpm run owner invite
+   pnpm run instance invite
    ```
 
    Scan the QR code with a phone camera. The code works once and expires after 24 hours
    (`--expires <hours>` to change that).
 
 Other owner commands: `link` prints a QR that connects another device to sign in, without an
-invite; `reset-password <email>` gives a user a temporary password. Run `pnpm run owner --help` for
+invite; `reset-password <email>` gives a user a temporary password. Run `pnpm run instance --help` for
 details. Users created from the Supabase dashboard are refused, since they have no invite code.
 
 After pulling a new version, run `migrate` again: the app refuses to open on a database older than
@@ -68,7 +68,7 @@ Local development runs a Supabase stack in Docker.
 pnpm install
 pnpm db:start   # starts Supabase, writes .env.owner.local, applies migrations
 pnpm dev
-pnpm run owner invite --env .env.owner.local   # open the printed link to sign up
+pnpm run instance invite --env .env.owner.local   # open the printed link to sign up
 ```
 
 The `--env` file decides which instance an owner command acts on: `.env.owner.local` is the local
