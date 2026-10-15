@@ -89,6 +89,10 @@
     "title": "Perfil",
     "save": "Guardar",
     "saved": "Guardado.",
+    "errors": {
+      "nameBlank": "Tu nombre no puede quedar vacío.",
+      "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
+    },
     "about": {
       "title": "Sobre ti",
       "name": "Nombre",

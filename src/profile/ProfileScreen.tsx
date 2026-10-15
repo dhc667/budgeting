@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { authErrorMessage } from "../auth/auth-errors";
 import { useSignedInUser } from "../auth/session";
@@ -6,12 +7,12 @@ import {
   dateFormats,
   currencyName,
   formatDate,
-  formatNumber,
+  formatAmount,
   numberFormats,
 } from "../format/format";
 import { deviceLanguage, languageNames, languages } from "../i18n/languages";
 import { useInstance, useSupabase } from "../instance/instance-context";
-import { useCurrencyCodes } from "../money/currency-queries";
+import { useCurrencies } from "../money/currency-queries";
 import { signOutHere } from "../supabase/client";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -57,7 +58,7 @@ function AboutForm({ profile }: { profile: Profile }) {
           required
         />
         <CurrencySelect defaultValue={profile.display_currency} />
-        <SaveButton mutation={updateProfile} />
+        <SaveControls mutation={updateProfile} />
       </form>
     </Card>
   );
@@ -65,7 +66,8 @@ function AboutForm({ profile }: { profile: Profile }) {
 
 function CurrencySelect({ defaultValue }: { defaultValue: string }) {
   const { t, i18n } = useTranslation();
-  const { data: codes = [defaultValue] } = useCurrencyCodes();
+  const { data: currencies = [] } = useCurrencies();
+  const codes = currencies.length > 0 ? currencies.map(({ code }) => code) : [defaultValue];
   return (
     <SelectField
       label={t("profile.about.displayCurrency")}
@@ -92,7 +94,7 @@ function FormatsForm({ profile }: { profile: Profile }) {
       date_format: choiceField(form, "dateFormat", dateFormats),
     });
   const automatic = (example: string) => t("profile.formats.automatic", { example });
-  const sampleNumber = 1234.56;
+  const sample = { minorUnits: 123456, decimals: 2 };
   const today = new Date();
 
   return (
@@ -116,10 +118,12 @@ function FormatsForm({ profile }: { profile: Profile }) {
           name="numberFormat"
           defaultValue={profile.number_format ?? ""}
         >
-          <option value="">{automatic(formatNumber(sampleNumber, null))}</option>
+          <option value="">
+            {automatic(formatAmount(sample.minorUnits, sample.decimals, null))}
+          </option>
           {numberFormats.map((format) => (
             <option key={format} value={format}>
-              {formatNumber(sampleNumber, format)}
+              {formatAmount(sample.minorUnits, sample.decimals, format)}
             </option>
           ))}
         </SelectField>
@@ -135,23 +139,28 @@ function FormatsForm({ profile }: { profile: Profile }) {
             </option>
           ))}
         </SelectField>
-        <SaveButton mutation={updateProfile} />
+        <SaveControls mutation={updateProfile} />
       </form>
     </Card>
   );
 }
 
-function SaveButton({ mutation }: { mutation: ReturnType<typeof useUpdateProfile> }) {
+function SaveControls({ mutation }: { mutation: ReturnType<typeof useUpdateProfile> }) {
   const { t } = useTranslation();
   return (
     <>
-      {mutation.error && <ErrorText>{mutation.error.message}</ErrorText>}
+      {mutation.error && <ErrorText>{saveErrorMessage(mutation.error, t)}</ErrorText>}
       {mutation.isSuccess && <p className="text-sm text-emerald-600">{t("profile.saved")}</p>}
       <Button type="submit" disabled={mutation.isPending} className="self-start">
         {t("profile.save")}
       </Button>
     </>
   );
+}
+
+function saveErrorMessage(error: Error, t: TFunction): string {
+  if ("code" in error && error.code === "23514") return t("profile.errors.nameBlank");
+  return t("profile.errors.saveFailed");
 }
 
 function PasswordForm() {

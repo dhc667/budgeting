@@ -7,7 +7,6 @@ export function signUpErrorMessage(error: Error, t: TFunction): string {
   return authErrorMessage(error, t);
 }
 
-// Errors this app can explain are translated; anything else shows Supabase's own English message.
 export function authErrorMessage(error: Error, t: TFunction): string {
   if (isAuthRetryableFetchError(error)) return t("auth.errors.unreachable");
   if (!isAuthApiError(error)) return error.message;

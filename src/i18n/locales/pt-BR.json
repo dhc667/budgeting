@@ -89,6 +89,10 @@
     "title": "Perfil",
     "save": "Salvar",
     "saved": "Salvo.",
+    "errors": {
+      "nameBlank": "Seu nome não pode ficar em branco.",
+      "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente novamente."
+    },
     "about": {
       "title": "Sobre você",
       "name": "Nome",

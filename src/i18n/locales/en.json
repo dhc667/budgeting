@@ -89,6 +89,10 @@
     "title": "Profile",
     "save": "Save",
     "saved": "Saved.",
+    "errors": {
+      "nameBlank": "Your name can't be blank.",
+      "saveFailed": "Couldn't save. Check your connection and try again."
+    },
     "about": {
       "title": "About you",
       "name": "Name",

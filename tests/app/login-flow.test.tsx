@@ -132,21 +132,30 @@ describe("profile", () => {
 });
 
 describe("language and formats", () => {
-  it("shows the app in the chosen language, with numbers in the chosen format", async () => {
+  it("shows the app in the chosen language", async () => {
     await openSignedIn("Dani");
     await openProfile();
 
-    await chooseFormats({ language: "es-419", numbers: "period_comma" });
+    await chooseFormats({ language: "Español" });
     await user.click(defined(screen.getAllByRole("link", { name: "Inicio" })[0]));
 
     expect(await screen.findByRole("heading", { name: /^Buen[oa]s .+, Dani$/ })).toBeTruthy();
-    expect(screen.getByText(/^US\$\s0,00$/)).toBeTruthy();
+  });
+
+  it("shows amounts in the chosen number format, whatever the language", async () => {
+    await openSignedIn("Dani");
+    await openProfile();
+
+    await chooseFormats({ numbers: "1.234,56" });
+    await user.click(defined(screen.getAllByRole("link", { name: "Home" })[0]));
+
+    expect(await screen.findByText(/^\$\s0,00$/)).toBeTruthy();
   });
 
   it("follows the user to another device", async () => {
     const { email } = await openSignedIn("Dani");
     await openProfile();
-    await chooseFormats({ language: "pt-BR" });
+    await chooseFormats({ language: "Português (Brasil)" });
     cleanup();
     localStorage.clear();
 
@@ -161,7 +170,7 @@ describe("language and formats", () => {
   it("goes back to the device's language for the next person after signing out", async () => {
     await openSignedIn("Dani");
     await openProfile();
-    await chooseFormats({ language: "es-419" });
+    await chooseFormats({ language: "Español" });
 
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
