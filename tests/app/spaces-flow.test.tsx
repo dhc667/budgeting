@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import { openApp, openSignedIn, signIn, user } from "../support/app";
-import { admin, defined, existingUser, password, signInLink, sql } from "../support/local-instance";
+import {
+  createSharedSpace,
+  openApp,
+  openSignedIn,
+  openSpaces,
+  signIn,
+  uniqueName,
+  user,
+} from "../support/app";
+import { admin, existingUser, password, signInLink, sql } from "../support/local-instance";
 
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
@@ -25,7 +33,7 @@ describe("spaces", () => {
     const ben = await existingUser(benName);
     await openSignedIn(ana);
 
-    await createSpace("Family", [benName]);
+    await createSharedSpace("Family", [benName]);
     cleanup();
     localStorage.clear();
     openApp(signInLink());
@@ -56,7 +64,7 @@ describe("spaces", () => {
     const benName = uniqueName("Ben");
     const ben = await existingUser(benName);
     await openSignedIn(ana);
-    await createSpace("Family", [benName]);
+    await createSharedSpace("Family", [benName]);
 
     await admin.auth.admin.deleteUser(ben.userId);
     cleanup();
@@ -71,7 +79,7 @@ describe("spaces", () => {
   it("renames a space and records it in the activity", async () => {
     const ana = uniqueName("Ana");
     await openSignedIn(ana);
-    await createSpace("Family", []);
+    await createSharedSpace("Family", []);
 
     const nameCard = within(screen.getByRole("region", { name: "Name" }));
     await user.clear(nameCard.getByLabelText("Name"));
@@ -89,7 +97,7 @@ describe("spaces", () => {
     const benName = uniqueName("Ben");
     await existingUser(benName);
     await openSignedIn(uniqueName("Ana"));
-    await createSpace("Family", [benName]);
+    await createSharedSpace("Family", [benName]);
 
     await user.click(screen.getByRole("button", { name: "Leave" }));
 
@@ -100,7 +108,7 @@ describe("spaces", () => {
   it("doesn't offer leaving to the last member", async () => {
     await openSignedIn(uniqueName("Ana"));
 
-    await createSpace("Family", []);
+    await createSharedSpace("Family", []);
 
     expect(screen.queryByRole("button", { name: "Leave" })).toBeNull();
     expect(screen.getByText(/You're the last member/)).toBeTruthy();
@@ -108,7 +116,7 @@ describe("spaces", () => {
 
   it("deletes a space after confirming", async () => {
     await openSignedIn(uniqueName("Ana"));
-    await createSpace("Family", []);
+    await createSharedSpace("Family", []);
 
     await user.click(screen.getByRole("button", { name: "Delete space" }));
     await user.click(screen.getByRole("button", { name: "Delete Family" }));
@@ -117,22 +125,3 @@ describe("spaces", () => {
     expect(screen.queryByRole("link", { name: /^Family/ })).toBeNull();
   });
 });
-
-async function openSpaces() {
-  await user.click(defined((await screen.findAllByRole("link", { name: "Profile" }))[0]));
-  await user.click(await screen.findByRole("link", { name: "Manage spaces" }));
-}
-
-async function createSpace(name: string, memberNames: string[]) {
-  await openSpaces();
-  const form = within(await screen.findByRole("region", { name: "New shared space" }));
-  await user.type(form.getByLabelText("Name"), name);
-  for (const member of memberNames) await user.click(await form.findByLabelText(member));
-  await user.click(form.getByRole("button", { name: "Create space" }));
-  await screen.findByRole("heading", { name, level: 1 });
-}
-
-// Users pile up across test runs, and the member checklist finds them by name.
-function uniqueName(name: string): string {
-  return `${name} ${crypto.randomUUID().slice(0, 8)}`;
-}

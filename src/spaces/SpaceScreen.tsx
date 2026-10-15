@@ -18,6 +18,7 @@ import {
   useDeleteSpace,
   useRemoveMember,
   useRenameSpace,
+  useSpaceActivity,
   useSpaces,
 } from "./space-queries";
 
@@ -159,9 +160,10 @@ function AddMemberForm({ space }: { space: Space }) {
 
 function ActivityCard({ space }: { space: Space }) {
   const { t } = useTranslation();
+  const { data: activity } = useSpaceActivity(space.id);
   return (
     <Card title={t("activity.title")}>
-      <ActivityList spaceId={space.id} />
+      <ActivityList activity={activity} />
     </Card>
   );
 }

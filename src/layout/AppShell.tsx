@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet } from "react-router";
 import { useProfile } from "../profile/profile-queries";
+import { SpacePicker } from "../spaces/SpacePicker";
 import { Avatar } from "../ui/Avatar";
 import { navItems } from "./navigation";
 
@@ -26,6 +27,7 @@ function Sidebar() {
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-6 border-r border-zinc-200 bg-white p-4 md:flex dark:border-zinc-800 dark:bg-zinc-900">
       <Brand />
       <AddTransactionButton />
+      <SpacePicker />
       <nav className="flex flex-col gap-1">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end className={sidebarLinkClass}>
@@ -47,7 +49,10 @@ function MobileTopBar() {
       <div className="flex h-14 items-center">
         <Brand />
       </div>
-      <ProfileLink />
+      <div className="flex items-center gap-1">
+        <SpacePicker />
+        <ProfileLink />
+      </div>
     </header>
   );
 }

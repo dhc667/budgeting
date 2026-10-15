@@ -4,16 +4,10 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { authErrorMessage } from "../auth/auth-errors";
 import { useSignedInUser } from "../auth/session";
-import {
-  dateFormats,
-  currencyName,
-  formatDate,
-  formatAmount,
-  numberFormats,
-} from "../format/format";
+import { dateFormats, formatDate, formatAmount, numberFormats } from "../format/format";
 import { deviceLanguage, languageNames, languages } from "../i18n/languages";
 import { useInstance, useSupabase } from "../instance/instance-context";
-import { useCurrencies } from "../money/currency-queries";
+import { CurrencySelect } from "../money/CurrencySelect";
 import { signOutHere } from "../supabase/client";
 import { isCheckViolation } from "../supabase/errors";
 import { Button } from "../ui/Button";
@@ -60,30 +54,15 @@ function AboutForm({ profile }: { profile: Profile }) {
           defaultValue={profile.display_name}
           required
         />
-        <CurrencySelect defaultValue={profile.display_currency} />
+        <CurrencySelect
+          label={t("profile.about.displayCurrency")}
+          hint={t("profile.about.displayCurrencyHint")}
+          name="displayCurrency"
+          defaultValue={profile.display_currency}
+        />
         <SaveControls mutation={updateProfile} />
       </form>
     </Card>
-  );
-}
-
-function CurrencySelect({ defaultValue }: { defaultValue: string }) {
-  const { t, i18n } = useTranslation();
-  const { data: currencies = [] } = useCurrencies();
-  const codes = currencies.length > 0 ? currencies.map(({ code }) => code) : [defaultValue];
-  return (
-    <SelectField
-      label={t("profile.about.displayCurrency")}
-      hint={t("profile.about.displayCurrencyHint")}
-      name="displayCurrency"
-      defaultValue={defaultValue}
-    >
-      {codes.map((code) => (
-        <option key={code} value={code}>
-          {code} · {currencyName(code, i18n.language)}
-        </option>
-      ))}
-    </SelectField>
   );
 }
 

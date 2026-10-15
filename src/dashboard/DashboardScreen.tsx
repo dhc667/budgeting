@@ -1,11 +1,12 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import { AccountsCard } from "../accounts/AccountsCard";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
 import { Card, EmptyState } from "../ui/Card";
 
-// Layout draft: every card is a placeholder for a feature that doesn't exist yet.
+// Layout draft: a card showing placeholder text stands in for a feature that doesn't exist yet.
 export function DashboardScreen() {
   const { t } = useTranslation();
   const format = useFormat();
@@ -26,9 +27,7 @@ export function DashboardScreen() {
           <EmptyState>{t("dashboard.netWorthPlaceholder")}</EmptyState>
         </Card>
 
-        <Card title={t("dashboard.accounts")} className="lg:col-span-2">
-          <EmptyState>{t("dashboard.accountsPlaceholder")}</EmptyState>
-        </Card>
+        <AccountsCard className="lg:col-span-2" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

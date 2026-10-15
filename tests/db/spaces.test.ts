@@ -1,7 +1,12 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { admin, signedInUser, sql } from "../support/local-instance.ts";
-
-type User = Awaited<ReturnType<typeof signedInUser>>;
+import {
+  admin,
+  createSpace,
+  privateSpaceOf,
+  signedInUser,
+  sql,
+  type SignedInUser as User,
+} from "../support/local-instance.ts";
 
 afterAll(() => sql.end());
 
@@ -269,25 +274,6 @@ describe("deleting a user", () => {
     expect(data).toEqual([{ id: ana.userId }]);
   });
 });
-
-async function privateSpaceOf(user: User) {
-  const { data, error } = await user.client
-    .from("spaces")
-    .select("id, name")
-    .eq("private_owner", user.userId)
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-async function createSpace(creator: User, name: string, members: User[]): Promise<string> {
-  const { data, error } = await creator.client.rpc("create_space", {
-    space_name: name,
-    member_ids: members.map(({ userId }) => userId),
-  });
-  if (error) throw error;
-  return data;
-}
 
 async function membersOf(viewer: User, spaceId: string): Promise<string[]> {
   const { data, error } = await viewer.client

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatDate, formatMoney } from "./format";
+import { formatAmount, formatDate, formatMoney, parseAmount } from "./format";
 
 const brl = { code: "BRL", decimals: 2 };
 const usd = { code: "USD", decimals: 2 };
@@ -67,5 +67,44 @@ describe("date formats", () => {
     ["year_month_day", "2026-10-04"],
   ] as const)("writes %s as %s", (format, expected) => {
     expect(formatDate(fourthOfOctober, format)).toBe(expected);
+  });
+});
+
+describe("reading amounts", () => {
+  it.each([
+    ["comma_period", "1,234.56"],
+    ["period_comma", "1.234,56"],
+    ["space_comma", "1 234,56"],
+    ["apostrophe_period", "1'234.56"],
+  ] as const)("reads %s amounts in minor units", (format, text) => {
+    expect(parseAmount(text, 2, format)).toBe(123456);
+  });
+
+  it("reads back what it writes, in every format", () => {
+    for (const format of [
+      "comma_period",
+      "period_comma",
+      "space_comma",
+      "apostrophe_period",
+    ] as const)
+      expect(parseAmount(formatAmount(-123456789, 2, format), 2, format)).toBe(-123456789);
+  });
+
+  it("reads amounts without grouping or decimals", () => {
+    expect(parseAmount("1500", 2, "comma_period")).toBe(150000);
+    expect(parseAmount("12,5", 2, "period_comma")).toBe(1250);
+    expect(parseAmount(" -40 ", 0, "comma_period")).toBe(-40);
+  });
+
+  it("refuses text that isn't an amount", () => {
+    expect(parseAmount("", 2, "comma_period")).toBeNull();
+    expect(parseAmount("ten", 2, "comma_period")).toBeNull();
+    expect(parseAmount("1.2.3", 2, "comma_period")).toBeNull();
+    expect(parseAmount("-", 2, "comma_period")).toBeNull();
+  });
+
+  it("refuses more decimals than the currency has", () => {
+    expect(parseAmount("1.234", 2, "comma_period")).toBeNull();
+    expect(parseAmount("1.5", 0, "comma_period")).toBeNull();
   });
 });
