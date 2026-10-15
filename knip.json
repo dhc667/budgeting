@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["i18next.config.ts"],
   "ignoreIssues": {
     "src/supabase/database.types.ts": ["exports", "types"]
   }

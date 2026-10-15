@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "home": "Início",
+    "transactions": "Transações",
+    "budgets": "Orçamentos",
+    "reports": "Relatórios",
+    "profile": "Perfil",
+    "addTransaction": "Adicionar transação",
+    "comingSoon": "Em breve"
+  },
+  "comingSoon": "Em breve.",
+  "instance": {
+    "connectedTo": "Conectado a {{host}}.",
+    "welcome": {
+      "title": "Boas-vindas",
+      "body": "Para começar, escaneie o QR code de convite de quem administra o orçamento da sua família, ou abra o link que essa pessoa enviou."
+    },
+    "unreachable": {
+      "title": "Não foi possível acessar seu orçamento",
+      "body": "Verifique sua conexão e tente novamente.",
+      "retry": "Tentar novamente"
+    },
+    "outdated": {
+      "title": "Seu orçamento precisa de uma atualização",
+      "body": "Esta versão do app espera um banco de dados mais novo. Peça a quem administra o orçamento da sua família para atualizá-lo."
+    }
+  },
+  "connect": {
+    "incomplete": {
+      "title": "Este link está incompleto",
+      "body": "Escaneie o QR code novamente, ou peça um novo a quem convidou você."
+    },
+    "switch": {
+      "title": "Mudar para outro orçamento?",
+      "body": "Este dispositivo está conectado a {{current}}. O link que você abriu o conectaria a {{next}} e encerraria sua sessão aqui.",
+      "trust": "Só mude se você confia em quem enviou o link.",
+      "confirm": "Mudar",
+      "stay": "Continuar conectado a {{host}}"
+    }
+  },
+  "auth": {
+    "email": "E-mail",
+    "password": "Senha",
+    "signOut": "Sair",
+    "disconnect": "Desconectar",
+    "signIn": {
+      "title": "Entrar",
+      "submit": "Entrar",
+      "forgotPassword": "Esqueceu sua senha? Peça a quem administra o orçamento da sua família para redefini-la."
+    },
+    "signUp": {
+      "title": "Crie sua conta",
+      "name": "Seu nome",
+      "submit": "Criar conta",
+      "inviteOnce": "Seu convite funciona uma única vez. Se você já tem uma conta, <signIn>entre</signIn>."
+    },
+    "alreadySignedIn": {
+      "title": "Você já entrou",
+      "body": "Este dispositivo está conectado como {{email}}. Para criar uma nova conta com este convite, saia primeiro.",
+      "keepUsing": "Continuar usando o app como {{email}}"
+    },
+    "errors": {
+      "unreachable": "Não foi possível acessar seu orçamento. Verifique sua conexão.",
+      "inviteRejected": "Este código de convite é inválido, já foi usado ou expirou. Peça um novo.",
+      "invalidCredentials": "E-mail ou senha inválidos.",
+      "emailTaken": "Já existe uma conta com este e-mail.",
+      "weakPassword": "Esta senha é muito fraca.",
+      "samePassword": "A nova senha deve ser diferente da atual."
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Bom dia, {{name}}",
+      "afternoon": "Boa tarde, {{name}}",
+      "evening": "Boa noite, {{name}}"
+    },
+    "netWorth": "Patrimônio líquido",
+    "netWorthPlaceholder": "O gráfico do patrimônio líquido de todos os tempos vai aqui.",
+    "accounts": "Contas",
+    "accountsPlaceholder": "Suas contas e seus saldos vão aqui.",
+    "upcoming": "Próximas",
+    "upcomingPlaceholder": "Transações recorrentes aguardando pagamento vão aqui.",
+    "budgets": "Orçamentos",
+    "budgetsPlaceholder": "O progresso dos orçamentos vai aqui.",
+    "recent": "Transações recentes",
+    "recentPlaceholder": "Suas últimas transações vão aqui."
+  },
+  "profile": {
+    "title": "Perfil",
+    "save": "Salvar",
+    "saved": "Salvo.",
+    "about": {
+      "title": "Sobre você",
+      "name": "Nome",
+      "displayCurrency": "Moeda de exibição",
+      "displayCurrencyHint": "Totais em várias moedas são mostrados nesta."
+    },
+    "formats": {
+      "title": "Idioma e formatos",
+      "language": "Idioma",
+      "numbers": "Números",
+      "dates": "Datas",
+      "automatic": "Automático ({{example}})",
+      "automaticHint": "Automático segue as configurações deste dispositivo."
+    },
+    "password": {
+      "title": "Senha",
+      "new": "Nova senha",
+      "repeat": "Repita a nova senha",
+      "submit": "Alterar senha",
+      "changed": "Senha alterada.",
+      "mismatch": "As senhas não coincidem."
+    },
+    "device": {
+      "title": "Este dispositivo",
+      "signOutAndDisconnect": "Sair e desconectar"
+    }
+  },
+  "error": {
+    "title": "Algo deu errado",
+    "unexpected": "O app encontrou um erro inesperado.",
+    "reload": "Recarregar",
+    "disconnect": "Desconectar este dispositivo"
+  }
+}

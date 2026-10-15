@@ -25,7 +25,7 @@ export function useUpdateProfile() {
   const user = useSignedInUser();
   const queryClient = useQueryClient();
   return useMutation({
-    async mutationFn(changes: Pick<TablesUpdate<"profiles">, "display_name" | "display_currency">) {
+    async mutationFn(changes: ProfileChanges) {
       const { error } = await supabase.from("profiles").update(changes).eq("id", user.id);
       if (error) throw error;
     },
@@ -34,3 +34,5 @@ export function useUpdateProfile() {
 }
 
 export type Profile = Tables<"profiles">;
+
+type ProfileChanges = Omit<TablesUpdate<"profiles">, "id" | "created_at">;

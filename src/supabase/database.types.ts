@@ -35,14 +35,14 @@ export type Database = {
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"display_currency": string,"display_name": string,"id": string
+                    "created_at": string,"date_format": Database["public"]['Enums']["date_format"] | null,"display_currency": string,"display_name": string,"id": string,"language": Database["public"]['Enums']["language"] | null,"number_format": Database["public"]['Enums']["number_format"] | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"display_currency"?: string,"display_name": string,"id": string
+                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name": string,"id": string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null
                   }
                   Update: {
-                    "created_at"?: string,"display_currency"?: string,"display_name"?: string,"id"?: string
+                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name"?: string,"id"?: string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null
                   }
                   Relationships: [
                     {
@@ -67,7 +67,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            [_ in never]: never
+            "date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -183,7 +183,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            
+            "date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"]
           }
         }
 } as const

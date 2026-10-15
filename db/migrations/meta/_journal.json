@@ -50,6 +50,20 @@
       "when": 1792016641316,
       "tag": "0006_invite_signup",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792024577871,
+      "tag": "0007_profile_language_and_formats",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792024578402,
+      "tag": "0008_profile_format_grants",
+      "breakpoints": true
     }
   ]
 }

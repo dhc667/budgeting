@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -94,12 +94,13 @@ describe("profile", () => {
   });
 
   it("renames the user and changes the currency totals are shown in", async () => {
-    const name = await screen.findByLabelText("Name");
+    const card = within(await screen.findByRole("region", { name: "About you" }));
+    const name = card.getByLabelText("Name");
     await user.clear(name);
     await user.type(name, "Daniela");
-    await user.selectOptions(screen.getByLabelText("Display currency"), "EUR");
-    await user.click(screen.getByRole("button", { name: "Save" }));
-    await screen.findByText("Saved.");
+    await user.selectOptions(card.getByLabelText("Display currency"), "EUR");
+    await user.click(card.getByRole("button", { name: "Save" }));
+    await card.findByText("Saved.");
 
     await user.click(defined(screen.getAllByRole("link", { name: "Home" })[0]));
 
@@ -125,6 +126,44 @@ describe("profile", () => {
 
   it("signs out to the sign-in screen", async () => {
     await user.click(await screen.findByRole("button", { name: "Sign out" }));
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeTruthy();
+  });
+});
+
+describe("language and formats", () => {
+  it("shows the app in the chosen language, with numbers in the chosen format", async () => {
+    await openSignedIn("Dani");
+    await openProfile();
+
+    await chooseFormats({ language: "es-419", numbers: "period_comma" });
+    await user.click(defined(screen.getAllByRole("link", { name: "Inicio" })[0]));
+
+    expect(await screen.findByRole("heading", { name: /^Buen[oa]s .+, Dani$/ })).toBeTruthy();
+    expect(screen.getByText(/^US\$\s0,00$/)).toBeTruthy();
+  });
+
+  it("follows the user to another device", async () => {
+    const { email } = await openSignedIn("Dani");
+    await openProfile();
+    await chooseFormats({ language: "pt-BR" });
+    cleanup();
+    localStorage.clear();
+
+    openApp(signInLink());
+    await signIn(email, password);
+
+    expect(
+      await screen.findByRole("heading", { name: /^(Bom dia|Boa tarde|Boa noite), Dani$/ }),
+    ).toBeTruthy();
+  });
+
+  it("goes back to the device's language for the next person after signing out", async () => {
+    await openSignedIn("Dani");
+    await openProfile();
+    await chooseFormats({ language: "es-419" });
+
+    await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeTruthy();
   });
@@ -249,6 +288,18 @@ async function openSignedIn(name: string) {
   await signIn(email, password);
   await screen.findByRole("heading", { name: new RegExp(`, ${name}$`) });
   return { email };
+}
+
+async function openProfile() {
+  await user.click(defined(screen.getAllByRole("link", { name: "Profile" })[0]));
+}
+
+async function chooseFormats(choices: { language?: string; numbers?: string }) {
+  const card = within(await screen.findByRole("region", { name: "Language and formats" }));
+  if (choices.language) await user.selectOptions(card.getByLabelText("Language"), choices.language);
+  if (choices.numbers) await user.selectOptions(card.getByLabelText("Numbers"), choices.numbers);
+  await user.click(card.getByRole("button", { name: "Save" }));
+  await screen.findByText(/^(Saved|Guardado|Salvo)\.$/);
 }
 
 async function signUpAs(name: string) {

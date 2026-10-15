@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { check, pgPolicy, pgTable, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  check,
+  pgEnum,
+  pgPolicy,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { authenticatedRole, authUsers } from "drizzle-orm/supabase";
 
 // ISO 4217 currencies in circulation. `decimals` is the number of minor units: 2 for USD, 0 for JPY.
@@ -18,6 +27,19 @@ export const currencies = pgTable(
   ],
 );
 
+export const language = pgEnum("language", ["en", "es-419", "pt-BR"]);
+export const numberFormat = pgEnum("number_format", [
+  "comma_period",
+  "period_comma",
+  "space_comma",
+  "apostrophe_period",
+]);
+export const dateFormat = pgEnum("date_format", [
+  "day_month_year",
+  "month_day_year",
+  "year_month_day",
+]);
+
 export const profiles = pgTable(
   "profiles",
   {
@@ -31,6 +53,10 @@ export const profiles = pgTable(
       .notNull()
       .default("USD")
       .references(() => currencies.code),
+    // Null means Automatic: whatever the device is set to.
+    language: language(),
+    numberFormat: numberFormat("number_format"),
+    dateFormat: dateFormat("date_format"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
