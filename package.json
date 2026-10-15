@@ -18,7 +18,7 @@
     "translations": "i18next-cli status && i18next-cli status --unused",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
-    "db:start": "supabase start && scripts/write-local-env.sh && node cli/instance.ts migrate --env .env.owner.local",
+    "db:start": "supabase start && scripts/write-local-env.sh && node cli/instance.ts migrate --env .env.instance.local",
     "db:stop": "supabase stop",
     "db:generate": "drizzle-kit generate",
     "db:types": "supabase gen types typescript --local --schema public > src/supabase/database.types.ts",

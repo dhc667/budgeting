@@ -18,10 +18,11 @@ You need a free [Supabase](https://supabase.com) account and this repository clo
 
 2. Create a Supabase project in the region closest to your family, from the dashboard or with
    `pnpm exec supabase projects create`. Keep its database password; step 3 needs it.
-3. Copy `.env.owner.example` to `.env.owner` and fill it in. Keep `.env.owner` private: its secret
-   key and database URL give full access to your family's data.
+3. Copy `.env.instance.example` to `.env.instance` and fill it in. Keep `.env.instance` private:
+   its secret key and database URL give full access to your family's data.
    - `pnpm exec supabase projects api-keys --project-ref <ref> --reveal` prints the keys. Without
-     `--reveal`, the secret key comes back masked and the owner commands fail with "Invalid API key".
+     `--reveal`, the secret key comes back masked and the instance commands fail with "Invalid API
+     key".
    - For `DATABASE_URL`, copy the **Session pooler** string from the dashboard's **Connect** dialog,
      put the database password in it, and add `?sslmode=require` so the connection is encrypted.
 
@@ -53,7 +54,7 @@ You need a free [Supabase](https://supabase.com) account and this repository clo
    Scan the QR code with a phone camera. The code works once and expires after 24 hours
    (`--expires <hours>` to change that).
 
-Other owner commands: `link` prints a QR that connects another device to sign in, without an
+Other commands: `link` prints a QR that connects another device to sign in, without an
 invite; `reset-password <email>` gives a user a temporary password. Run `pnpm run instance --help` for
 details. Users created from the Supabase dashboard are refused, since they have no invite code.
 
@@ -66,13 +67,13 @@ Local development runs a Supabase stack in Docker.
 
 ```bash
 pnpm install
-pnpm db:start   # starts Supabase, writes .env.owner.local, applies migrations
+pnpm db:start   # starts Supabase, writes .env.instance.local, applies migrations
 pnpm dev
-pnpm run instance invite --env .env.owner.local   # open the printed link to sign up
+pnpm run instance invite --env .env.instance.local   # open the printed link to sign up
 ```
 
-The `--env` file decides which instance an owner command acts on: `.env.owner.local` is the local
-stack, and without `--env` it is your family's real instance in `.env.owner`. Changes to
+The `--env` file decides which instance a command acts on: `.env.instance.local` is the local
+stack, and without `--env` it is your family's real instance in `.env.instance`. Changes to
 `supabase/config.toml` reach the local stack after `pnpm db:stop && pnpm db:start`.
 
 Schema changes go in `db/schema.ts`; then run `pnpm db:generate` to write the migration and

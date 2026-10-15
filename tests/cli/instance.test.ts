@@ -10,7 +10,7 @@ function instanceCli(args: string[], env: NodeJS.ProcessEnv = {}) {
 
 describe("the instance CLI's settings", () => {
   it("come from the env file even when the shell exports the same names", () => {
-    const run = instanceCli(["migrate", "--env", ".env.owner.local"], {
+    const run = instanceCli(["migrate", "--env", ".env.instance.local"], {
       DATABASE_URL: "postgresql://someone-else@127.0.0.1:1/their_database",
     });
 
@@ -19,9 +19,9 @@ describe("the instance CLI's settings", () => {
   });
 
   it("are refused when the env file doesn't exist", () => {
-    const run = instanceCli(["migrate", "--env", ".env.owner.missing"]);
+    const run = instanceCli(["migrate", "--env", ".env.instance.missing"]);
 
-    expect(run.stderr).toContain("No env file at .env.owner.missing");
+    expect(run.stderr).toContain("No env file at .env.instance.missing");
     expect(run.status).toBe(1);
   });
 });
