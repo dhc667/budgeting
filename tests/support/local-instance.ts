@@ -4,7 +4,7 @@ import { createInviteCode } from "../../cli/invites.ts";
 import { buildConnectLink, type Instance } from "../../src/instance/connect-link.ts";
 import type { Database } from "../../src/supabase/database.types.ts";
 
-process.loadEnvFile(".env.owner.local");
+process.loadEnvFile(".env.instance.local");
 const env = (name: string) => process.env[name] ?? "";
 
 const instance: Instance = {

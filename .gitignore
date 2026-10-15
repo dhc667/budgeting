@@ -3,7 +3,7 @@ dist
 *.log
 *.local
 .env*
-!.env.owner.example
+!.env.instance.example
 supabase/.temp
 supabase/.branches
 .vscode/*

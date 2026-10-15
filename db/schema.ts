@@ -75,7 +75,7 @@ export const profiles = pgTable(
   ],
 );
 
-// No policies: only the signup hook and trigger (security definer) and the owner's CLI (secret key) touch it.
+// No policies: only the signup hook and trigger (security definer) and the instance CLI (secret key) touch it.
 export const inviteCodes = pgTable("invite_codes", {
   codeHash: text("code_hash").primaryKey(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

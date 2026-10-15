@@ -1,4 +1,4 @@
-// Shared with the owner's CLI, which runs under Node's type stripping: keep this file free of imports.
+// Shared with the instance CLI, which runs under Node's type stripping: keep this file free of imports.
 
 export type Instance = {
   supabaseUrl: string;

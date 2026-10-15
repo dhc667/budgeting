@@ -41,7 +41,7 @@ jobs:
         run: |
           pnpm exec supabase start -x studio
           scripts/write-local-env.sh
-          pnpm run instance migrate --env .env.owner.local
+          pnpm run instance migrate --env .env.instance.local
       - name: Migrations match the Drizzle schema
         run: |
           pnpm db:generate

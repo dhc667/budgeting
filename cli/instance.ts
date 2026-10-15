@@ -20,7 +20,7 @@ Commands:
   reset-password <email>      Give a user a temporary password
 
 Options:
-  --env <file>                Instance settings (default: .env.owner; see .env.owner.example)
+  --env <file>                Instance settings (default: .env.instance; see .env.instance.example)
 `;
 
 type Options = { args: string[]; expiresInHours: number; env: Env };
@@ -40,7 +40,7 @@ async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
-      env: { type: "string", default: ".env.owner" },
+      env: { type: "string", default: ".env.instance" },
       expires: { type: "string", default: "24" },
       help: { type: "boolean", short: "h" },
     },
@@ -63,7 +63,7 @@ async function main() {
 // and those may belong to another project's database.
 function readEnvFile(path: string): Env {
   if (!existsSync(path)) {
-    fail(`No env file at ${path}. Copy .env.owner.example to .env.owner and fill it in.`);
+    fail(`No env file at ${path}. Copy .env.instance.example to .env.instance and fill it in.`);
   }
   return parseEnv(readFileSync(path, "utf8"));
 }
@@ -136,7 +136,7 @@ function instanceFromEnv(env: Env) {
 
 function requireEnv(env: Env, name: string): string {
   const value = env[name];
-  if (!value) fail(`${name} is not set. Add it to your env file (see .env.owner.example).`);
+  if (!value) fail(`${name} is not set. Add it to your env file (see .env.instance.example).`);
   return value;
 }
 
