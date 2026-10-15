@@ -61,6 +61,56 @@ details. Users created from the Supabase dashboard are refused, since they have 
 After pulling a new version, run `migrate` again: the app refuses to open on a database older than
 itself.
 
+## Backups
+
+Supabase's free plan keeps no downloadable backups, so this is your family's only protection
+against a dropped table or a lost project. Run it regularly:
+
+```bash
+pnpm run instance backup
+```
+
+It writes `backup-<date>.sql` in the current folder (`-2`, `-3` and so on for further backups the
+same day) and never overwrites a file. The backup holds the app's data and everyone's sign-in
+records, password hashes included, so keep the files somewhere safe and private. It needs
+`pg_dump` and `psql` version 17 or newer, which come with the PostgreSQL client tools: `pg_dump`
+refuses a database newer than itself, and Supabase runs PostgreSQL 17.
+
+Free Supabase projects pause after a week without use, and a project left paused long enough is
+deleted. Open the app now and then, and keep a recent backup.
+
+### Restoring
+
+1. Create a new Supabase project and repeat the setup steps that live outside the database: the
+   keys and `DATABASE_URL` in `.env.instance` (step 3) and the auth settings with the signup hook
+   (step 5, `supabase link` and `config push`).
+2. Do **not** run `migrate`. A restore needs a fresh project and refuses one that already has
+   tables or users.
+3. Load the backup:
+
+   ```bash
+   pnpm run instance restore backup-<date>.sql
+   ```
+
+   The first line of a backup records the schema version it was taken at. The restore migrates a
+   fresh project to that version, loads the data in a single transaction, then migrates to the
+   current version, so a backup from an older version of the app ends up on the current schema. A
+   backup from a newer version is refused: update the app first. If the load fails, the project now
+   has a schema but no data and a retry is refused as not fresh, so create another project.
+
+If the CLI can't be used, a backup is still plain SQL data. Check out the app version whose
+migrations match the number on the backup's first line, run `pnpm run instance migrate` on a fresh
+project, then load it with `psql`:
+
+```bash
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --command 'SET session_replication_role = replica' \
+  --command "DO \$\$ BEGIN EXECUTE (SELECT 'TRUNCATE ' || string_agg(format('%I.%I', schemaname, tablename), ', ') FROM pg_tables WHERE schemaname = 'public'); END \$\$" \
+  --file backup-<date>.sql "<DATABASE_URL>"
+```
+
+Devices keep their connection to the old project, so scan a new `invite` or `link` QR on each one.
+
 ## Development
 
 Local development runs a Supabase stack in Docker.
