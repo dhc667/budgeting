@@ -1,8 +1,8 @@
 import { type ComponentProps, useId } from "react";
 
-type FieldProps = ComponentProps<"input"> & { label: string };
+type FieldProps = ComponentProps<"input"> & { label: string; hint?: string };
 
-export function Field({ label, ...props }: FieldProps) {
+export function Field({ label, hint, ...props }: FieldProps) {
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
@@ -10,6 +10,7 @@ export function Field({ label, ...props }: FieldProps) {
         {label}
       </label>
       <input id={id} className={inputClass} {...props} />
+      {hint && <p className="text-xs text-zinc-500">{hint}</p>}
     </div>
   );
 }

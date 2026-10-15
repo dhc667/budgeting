@@ -31,6 +31,28 @@ export function formatAmount(
   return sign + writeDigits(Math.abs(minorUnits), decimals, conventions[format]);
 }
 
+// Reads an amount the way formatAmount writes it, so typing follows the user's number format.
+// Anything but digits and the decimal separator is taken for grouping and left out.
+export function parseAmount(
+  text: string,
+  decimals: number,
+  format: NumberFormat | null,
+): number | null {
+  const decimal = format ? conventions[format].decimal : deviceDecimalSeparator();
+  const trimmed = text.trim();
+  const negative = /^[-\u2212]/.test(trimmed);
+  const parts = (negative ? trimmed.slice(1) : trimmed).split(decimal);
+  if (parts.length > 2) return null;
+  const whole = (parts[0] ?? "").replace(/[\s'’.,]/g, "");
+  const fraction = parts[1] ?? "";
+  if (!/^\d+$/.test(whole + fraction) || !/^\d*$/.test(whole) || !/^\d*$/.test(fraction))
+    return null;
+  if (fraction.length > decimals) return null;
+  const minorUnits = Number(whole + fraction.padEnd(decimals, "0"));
+  if (!Number.isSafeInteger(minorUnits)) return null;
+  return negative && minorUnits !== 0 ? -minorUnits : minorUnits;
+}
+
 export function formatDate(date: Date, format: DateFormat | null): string {
   if (!format) {
     return new Intl.DateTimeFormat(undefined, {
@@ -63,6 +85,11 @@ function deviceFormat(minorUnits: number, decimals: number, options: Intl.Number
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(decimal);
+}
+
+function deviceDecimalSeparator(): string {
+  const parts = new Intl.NumberFormat().formatToParts(1.5);
+  return parts.find((part) => part.type === "decimal")?.value ?? ".";
 }
 
 function isDecimal(text: string): text is Intl.StringNumericLiteral {

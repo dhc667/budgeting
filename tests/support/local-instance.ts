@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { createInviteCode } from "../../cli/invites.ts";
 import { buildConnectLink, type Instance } from "../../src/instance/connect-link.ts";
-import type { Database } from "../../src/supabase/database.types.ts";
+import type { Database } from "../../src/supabase/database.ts";
 
 process.loadEnvFile(".env.instance.local");
 const env = (name: string) => process.env[name] ?? "";
@@ -54,6 +54,31 @@ export async function signedInUser(displayName: string) {
   if (error) throw error;
   return { client, userId: defined(data.user).id };
 }
+
+export async function privateSpaceOf(user: SignedInUser) {
+  const { data, error } = await user.client
+    .from("spaces")
+    .select("id, name")
+    .eq("private_owner", user.userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createSpace(
+  creator: SignedInUser,
+  name: string,
+  members: SignedInUser[],
+): Promise<string> {
+  const { data, error } = await creator.client.rpc("create_space", {
+    space_name: name,
+    member_ids: members.map(({ userId }) => userId),
+  });
+  if (error) throw error;
+  return data;
+}
+
+export type SignedInUser = Awaited<ReturnType<typeof signedInUser>>;
 
 export function anonClient() {
   return createClient<Database>(instance.supabaseUrl, instance.publishableKey, {

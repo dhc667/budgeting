@@ -77,7 +77,6 @@
     "netWorth": "Net worth",
     "netWorthPlaceholder": "The all-time net worth chart goes here.",
     "accounts": "Accounts",
-    "accountsPlaceholder": "Your accounts and their balances go here.",
     "upcoming": "Upcoming",
     "upcomingPlaceholder": "Recurring transactions waiting to be paid go here.",
     "budgets": "Budgets",
@@ -185,6 +184,99 @@
       "left": "{{actor}} left",
       "accountDeleted": "A member's account was deleted"
     },
-    "deletedUser": "a deleted user"
+    "deletedUser": "a deleted user",
+    "account": {
+      "added": "{{actor}} added the account “{{name}}”",
+      "renamed": "{{actor}} renamed the account “{{from}}” to “{{to}}”",
+      "recolored": "{{actor}} changed the color of “{{name}}”",
+      "currencyChanged": "{{actor}} changed the currency of “{{name}}” from {{from}} to {{to}}",
+      "archived": "{{actor}} archived “{{name}}”",
+      "unarchived": "{{actor}} unarchived “{{name}}”",
+      "deleted": "{{actor}} deleted the account “{{name}}”"
+    },
+    "openingBalance": {
+      "set": "{{actor}} set the opening balance of “{{account}}” to {{amount}}, as of {{date}}",
+      "changed": "{{actor}} changed the opening balance of “{{account}}” to {{amount}}, as of {{date}}",
+      "removed": "{{actor}} removed the opening balance of “{{account}}”"
+    }
+  },
+  "accounts": {
+    "add": "Add account",
+    "editOrder": "Edit order",
+    "doneOrdering": "Done",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "none": "No accounts yet. Add one to start tracking your money.",
+    "noneShown": "No accounts in the spaces you're viewing.",
+    "archivedSection_one": "Archived ({{count}})",
+    "archivedSection_other": "Archived ({{count}})",
+    "details": "Details",
+    "balance": "Balance",
+    "archivedBadge": "Archived",
+    "history": "History",
+    "notFound": "This account doesn't exist, or it's in a space you're not a member of.",
+    "backHome": "Back to home",
+    "new": {
+      "title": "New account",
+      "submit": "Add account"
+    },
+    "form": {
+      "name": "Name",
+      "space": "Space",
+      "currency": "Currency",
+      "currencyFixed": "An account's currency can't change once it has transactions.",
+      "color": "Color",
+      "openingBalance": "Opening balance",
+      "openingBalanceHint": "What the account held on the date below. Use a minus sign for a debt, like a credit card's.",
+      "currencyChanged": "Enter the opening balance again, in {{currency}}.",
+      "openingDate": "Opening balance date",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "archive": {
+      "title": "Archive",
+      "explained": "Archived accounts are hidden from lists but keep their history, and still count in totals.",
+      "submit": "Archive account",
+      "stillHolds": "{{name}} still holds {{balance}}. Archived, it still counts in totals.",
+      "confirm": "Archive anyway",
+      "cancel": "Cancel",
+      "isArchived": "This account is archived: it's hidden from lists, but still counts in totals.",
+      "unarchive": "Unarchive"
+    },
+    "delete": {
+      "title": "Delete account",
+      "explained": "An account can be deleted while its opening balance is its only transaction. The opening balance is deleted with it.",
+      "hasTransactions": "This account has transactions, so it can't be deleted. Archive it instead.",
+      "submit": "Delete account",
+      "confirm": "Delete {{name}}",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "nameBlank": "An account's name can't be blank.",
+      "amount": "Enter an amount like {{example}}.",
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete this account. Check your connection and try again."
+    }
+  },
+  "colors": {
+    "red": "Red",
+    "orange": "Orange",
+    "amber": "Amber",
+    "lime": "Lime",
+    "green": "Green",
+    "teal": "Teal",
+    "cyan": "Cyan",
+    "blue": "Blue",
+    "indigo": "Indigo",
+    "violet": "Violet",
+    "pink": "Pink",
+    "slate": "Slate"
+  },
+  "spacePicker": {
+    "legend": "Show spaces",
+    "all": "All spaces",
+    "some_one": "{{count}} space",
+    "some_other": "{{count}} spaces",
+    "manage": "Manage spaces"
   }
 }

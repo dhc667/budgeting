@@ -77,7 +77,6 @@
     "netWorth": "Patrimonio neto",
     "netWorthPlaceholder": "Aquí irá el gráfico del patrimonio neto de todos los tiempos.",
     "accounts": "Cuentas",
-    "accountsPlaceholder": "Aquí irán tus cuentas y sus saldos.",
     "upcoming": "Próximos",
     "upcomingPlaceholder": "Aquí irán los movimientos recurrentes pendientes de pago.",
     "budgets": "Presupuestos",
@@ -185,6 +184,99 @@
       "left": "{{actor}} salió",
       "accountDeleted": "Se eliminó la cuenta de un miembro"
     },
-    "deletedUser": "un usuario eliminado"
+    "deletedUser": "un usuario eliminado",
+    "account": {
+      "added": "{{actor}} agregó la cuenta “{{name}}”",
+      "renamed": "{{actor}} cambió el nombre de la cuenta “{{from}}” a “{{to}}”",
+      "recolored": "{{actor}} cambió el color de “{{name}}”",
+      "currencyChanged": "{{actor}} cambió la moneda de “{{name}}” de {{from}} a {{to}}",
+      "archived": "{{actor}} archivó “{{name}}”",
+      "unarchived": "{{actor}} desarchivó “{{name}}”",
+      "deleted": "{{actor}} eliminó la cuenta “{{name}}”"
+    },
+    "openingBalance": {
+      "set": "{{actor}} fijó el saldo inicial de “{{account}}” en {{amount}}, al {{date}}",
+      "changed": "{{actor}} cambió el saldo inicial de “{{account}}” a {{amount}}, al {{date}}",
+      "removed": "{{actor}} quitó el saldo inicial de “{{account}}”"
+    }
+  },
+  "accounts": {
+    "add": "Agregar cuenta",
+    "editOrder": "Editar orden",
+    "doneOrdering": "Listo",
+    "moveUp": "Subir {{name}}",
+    "moveDown": "Bajar {{name}}",
+    "none": "Todavía no hay cuentas. Agrega una para empezar a seguir tu dinero.",
+    "noneShown": "No hay cuentas en los espacios que estás viendo.",
+    "archivedSection_one": "Archivada ({{count}})",
+    "archivedSection_other": "Archivadas ({{count}})",
+    "details": "Detalles",
+    "balance": "Saldo",
+    "archivedBadge": "Archivada",
+    "history": "Historial",
+    "notFound": "Esta cuenta no existe, o está en un espacio del que no eres miembro.",
+    "backHome": "Volver al inicio",
+    "new": {
+      "title": "Nueva cuenta",
+      "submit": "Agregar cuenta"
+    },
+    "form": {
+      "name": "Nombre",
+      "space": "Espacio",
+      "currency": "Moneda",
+      "currencyFixed": "La moneda de una cuenta no puede cambiar una vez que tiene movimientos.",
+      "color": "Color",
+      "openingBalance": "Saldo inicial",
+      "openingBalanceHint": "Lo que tenía la cuenta en la fecha de abajo. Usa un signo menos para una deuda, como la de una tarjeta de crédito.",
+      "currencyChanged": "Ingresa el saldo inicial otra vez, en {{currency}}.",
+      "openingDate": "Fecha del saldo inicial",
+      "save": "Guardar",
+      "saved": "Guardado."
+    },
+    "archive": {
+      "title": "Archivar",
+      "explained": "Las cuentas archivadas no aparecen en las listas, pero conservan su historial y siguen contando en los totales.",
+      "submit": "Archivar cuenta",
+      "stillHolds": "{{name}} todavía tiene {{balance}}. Archivada, sigue contando en los totales.",
+      "confirm": "Archivar de todos modos",
+      "cancel": "Cancelar",
+      "isArchived": "Esta cuenta está archivada: no aparece en las listas, pero sigue contando en los totales.",
+      "unarchive": "Desarchivar"
+    },
+    "delete": {
+      "title": "Eliminar cuenta",
+      "explained": "Una cuenta se puede eliminar mientras su saldo inicial sea su único movimiento. El saldo inicial se elimina con ella.",
+      "hasTransactions": "Esta cuenta tiene movimientos, así que no se puede eliminar. Archívala en su lugar.",
+      "submit": "Eliminar cuenta",
+      "confirm": "Eliminar {{name}}",
+      "cancel": "Cancelar"
+    },
+    "errors": {
+      "nameBlank": "El nombre de una cuenta no puede quedar vacío.",
+      "amount": "Ingresa un monto como {{example}}.",
+      "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar esta cuenta. Revisa tu conexión e inténtalo de nuevo."
+    }
+  },
+  "colors": {
+    "red": "Rojo",
+    "orange": "Naranja",
+    "amber": "Ámbar",
+    "lime": "Lima",
+    "green": "Verde",
+    "teal": "Verde azulado",
+    "cyan": "Cian",
+    "blue": "Azul",
+    "indigo": "Índigo",
+    "violet": "Violeta",
+    "pink": "Rosa",
+    "slate": "Pizarra"
+  },
+  "spacePicker": {
+    "legend": "Mostrar espacios",
+    "all": "Todos los espacios",
+    "some_one": "{{count}} espacio",
+    "some_other": "{{count}} espacios",
+    "manage": "Administrar espacios"
   }
 }

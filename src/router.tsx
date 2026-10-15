@@ -1,4 +1,6 @@
 import { createHashRouter } from "react-router";
+import { AccountScreen } from "./accounts/AccountScreen";
+import { NewAccountScreen } from "./accounts/NewAccountScreen";
 import { RequireSession, SessionGate } from "./auth/SessionGate";
 import { SignInScreen } from "./auth/SignInScreen";
 import { SignUpScreen } from "./auth/SignUpScreen";
@@ -50,6 +52,8 @@ export function createAppRouter() {
                         { path: "profile", element: <ProfileScreen /> },
                         { path: "spaces", element: <SpacesScreen /> },
                         { path: "spaces/:spaceId", element: <SpaceScreen /> },
+                        { path: "accounts/new", element: <NewAccountScreen /> },
+                        { path: "accounts/:accountId", element: <AccountScreen /> },
                       ],
                     },
                   ],
