@@ -118,6 +118,10 @@
     "device": {
       "title": "This device",
       "signOutAndDisconnect": "Sign out and disconnect"
+    },
+    "spaces": {
+      "explained": "Your private space and the spaces you share with others.",
+      "manage": "Manage spaces"
     }
   },
   "error": {
@@ -125,5 +129,62 @@
     "unexpected": "The app hit an unexpected error.",
     "reload": "Reload",
     "disconnect": "Disconnect this device"
+  },
+  "spaces": {
+    "title": "Spaces",
+    "yours": "Your spaces",
+    "private": "Private",
+    "privateExplained": "Only you can see this space. It can't be shared, renamed or deleted.",
+    "onlyYou": "Only you",
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members",
+    "name": "Name",
+    "rename": "Rename",
+    "saved": "Saved.",
+    "notFound": "This space doesn't exist, or you're not a member of it.",
+    "backToSpaces": "Back to your spaces",
+    "new": {
+      "title": "New shared space",
+      "members": "Members",
+      "submit": "Create space"
+    },
+    "members": {
+      "title": "Members",
+      "you": "{{name}} (you)",
+      "remove": "Remove",
+      "removeNamed": "Remove {{name}}",
+      "leave": "Leave",
+      "lastMember": "You're the last member, so you can't leave this space.",
+      "add": "Add a member",
+      "addSubmit": "Add"
+    },
+    "delete": {
+      "title": "Delete space",
+      "explained": "A space can be deleted only while it holds no transactions other than opening balances.",
+      "submit": "Delete space",
+      "confirm": "Delete {{name}}",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete this space. Check your connection and try again.",
+      "nameBlank": "A space's name can't be blank."
+    }
+  },
+  "activity": {
+    "title": "Activity",
+    "empty": "Nothing has changed yet.",
+    "someone": "Someone",
+    "space": {
+      "created": "{{actor}} created the space",
+      "renamed": "{{actor}} renamed the space from “{{from}}” to “{{to}}”"
+    },
+    "member": {
+      "added": "{{actor}} added {{member}}",
+      "removed": "{{actor}} removed {{member}}",
+      "left": "{{actor}} left",
+      "accountDeleted": "A member's account was deleted"
+    },
+    "deletedUser": "a deleted user"
   }
 }

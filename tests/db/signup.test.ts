@@ -6,6 +6,7 @@ import {
   anonClient,
   defined,
   password,
+  signedInUser,
   sql,
   uniqueEmail,
 } from "../support/local-instance.ts";
@@ -164,18 +165,6 @@ describe("schema version", () => {
     expect(data).toBe(migrationCount());
   });
 });
-
-async function signedInUser(displayName: string) {
-  const client = anonClient();
-  const inviteCode = await createInviteCode(admin, 24);
-  const { data, error } = await client.auth.signUp({
-    email: uniqueEmail(),
-    password,
-    options: { data: { invite_code: inviteCode, display_name: displayName } },
-  });
-  if (error) throw error;
-  return { client, userId: defined(data.user).id };
-}
 
 function signUp(metadata: Record<string, string>) {
   return anonClient().auth.signUp({ email: uniqueEmail(), password, options: { data: metadata } });

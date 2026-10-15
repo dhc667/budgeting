@@ -1,9 +1,10 @@
 import type { ComponentProps } from "react";
 
-type ButtonProps = ComponentProps<"button"> & { variant?: "primary" | "secondary" };
+type ButtonProps = ComponentProps<"button"> & { variant?: keyof typeof variants };
 
 const variants = {
   primary: "bg-emerald-600 text-white hover:bg-emerald-700",
+  danger: "bg-red-600 text-white hover:bg-red-700",
   secondary:
     "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800",
 };

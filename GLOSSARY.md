@@ -33,7 +33,7 @@ _Avoid_: household, group, workspace
 The space every user gets at signup, always named Private. Its owner is its only member, forever: it can't be shared, renamed or deleted.
 
 **Shared space**:
-A space any user can create and add other users of the instance to; they're members at once. Its last member can't leave, and it can be deleted only while it holds no transactions.
+A space any user can create and add other users of the instance to; they're members at once. Its last member can't leave, and it can be deleted only while it holds no transactions other than opening balances.
 
 **Member**:
 A user who belongs to a space.
@@ -49,7 +49,7 @@ A place where money is held, in a single currency, belonging to one space for go
 _Avoid_: wallet
 
 **Archived account**:
-An account hidden from lists and pickers but kept with its full history, and still counted in net worth. Accounts that have transactions are archived, never deleted.
+An account hidden from lists and pickers but kept with its full history, and still counted in net worth. Accounts that have transactions other than their opening balance are archived, never deleted.
 
 **Shared account**:
 An account in a space with more than one member; a joint pot that every member can see and use. It is not a record of who owes whom.
