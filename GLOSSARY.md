@@ -77,6 +77,10 @@ A transaction that moves money from a category into an account.
 **Transfer**:
 A transaction that moves money between two accounts, possibly in different currencies.
 
+**Unsynced transaction**:
+A transaction recorded on a device without a connection that the instance hasn't accepted yet. It counts in that device's balances and can be changed or discarded until it is sent. One the instance refuses stays unsynced, with the reason, until it is fixed or discarded.
+_Avoid_: pending, queued, offline transaction
+
 **Display currency**:
 A user's chosen currency for viewing totals across accounts in different currencies.
 _Avoid_: base currency, home currency
