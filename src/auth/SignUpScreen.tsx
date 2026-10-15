@@ -1,7 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
+import { Trans, useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation } from "react-router";
 import { useSupabase } from "../instance/instance-context";
 import { signOutHere } from "../supabase/client";
+import { signUpErrorMessage } from "./auth-errors";
 import { AuthLayout } from "./AuthLayout";
 import { useSession } from "./session";
 import { Button } from "../ui/Button";
@@ -10,6 +12,7 @@ import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
 
 export function SignUpScreen() {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   const session = useSession();
   const inviteCode = inviteCodeIn(useLocation().state);
@@ -34,45 +37,49 @@ export function SignUpScreen() {
   }
 
   return (
-    <AuthLayout title="Create your account">
+    <AuthLayout title={t("auth.signUp.title")}>
       <form onSubmit={submitWith(signUp.mutate)} className="flex flex-col gap-4">
-        <Field label="Your name" name="displayName" autoComplete="given-name" required />
-        <Field label="Email" name="email" type="email" autoComplete="email" required />
         <Field
-          label="Password"
+          label={t("auth.signUp.name")}
+          name="displayName"
+          autoComplete="given-name"
+          required
+        />
+        <Field label={t("auth.email")} name="email" type="email" autoComplete="email" required />
+        <Field
+          label={t("auth.password")}
           name="password"
           type="password"
           autoComplete="new-password"
           minLength={8}
           required
         />
-        {signUp.error && <ErrorText>{signUp.error.message}</ErrorText>}
+        {signUp.error && <ErrorText>{signUpErrorMessage(signUp.error, t)}</ErrorText>}
         <Button type="submit" disabled={signUp.isPending}>
-          Create account
+          {t("auth.signUp.submit")}
         </Button>
       </form>
       <p className="text-sm text-zinc-500">
-        Your invite works once. If you already have an account,{" "}
-        <Link to="/sign-in" className="underline">
-          sign in
-        </Link>{" "}
-        instead.
+        <Trans
+          i18nKey="auth.signUp.inviteOnce"
+          components={{ signIn: <Link to="/sign-in" className="underline" /> }}
+        />
       </p>
     </AuthLayout>
   );
 }
 
-function AlreadySignedIn({ email }: { email: string | undefined }) {
+function AlreadySignedIn({ email = "" }: { email: string | undefined }) {
+  const { t } = useTranslation();
   const supabase = useSupabase();
   return (
-    <AuthLayout title="You're already signed in">
+    <AuthLayout title={t("auth.alreadySignedIn.title")}>
       <p className="text-zinc-600 dark:text-zinc-400">
-        This device is signed in as {email}. To create a new account with this invite, sign out
-        first.
+        {t("auth.alreadySignedIn.body", { email })}
       </p>
-      <Button onClick={() => void signOutHere(supabase)}>Sign out</Button>
+      <Button onClick={() => void signOutHere(supabase)}>{t("auth.signOut")}</Button>
       <Link to="/" replace className="text-sm text-zinc-500 underline">
-        Keep using the app as {email}
+        {t("auth.alreadySignedIn.keepUsing", { email })}
       </Link>
     </AuthLayout>
   );

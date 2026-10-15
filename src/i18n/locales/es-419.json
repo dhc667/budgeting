@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "transactions": "Movimientos",
+    "budgets": "Presupuestos",
+    "reports": "Reportes",
+    "profile": "Perfil",
+    "addTransaction": "Agregar movimiento",
+    "comingSoon": "Próximamente"
+  },
+  "comingSoon": "Próximamente.",
+  "instance": {
+    "connectedTo": "Conectado a {{host}}.",
+    "welcome": {
+      "title": "Te damos la bienvenida",
+      "body": "Para empezar, escanea el código QR de invitación de quien administra el presupuesto de tu familia, o abre el enlace que te envió."
+    },
+    "unreachable": {
+      "title": "No se puede conectar con tu presupuesto",
+      "body": "Revisa tu conexión e inténtalo de nuevo.",
+      "retry": "Reintentar"
+    },
+    "outdated": {
+      "title": "Tu presupuesto necesita una actualización",
+      "body": "Esta versión de la app espera una base de datos más nueva. Pídele a quien administra el presupuesto de tu familia que la actualice."
+    }
+  },
+  "connect": {
+    "incomplete": {
+      "title": "Este enlace está incompleto",
+      "body": "Escanea el código QR de nuevo, o pídele uno nuevo a quien te invitó."
+    },
+    "switch": {
+      "title": "¿Cambiar a otro presupuesto?",
+      "body": "Este dispositivo está conectado a {{current}}. El enlace que abriste lo conectaría a {{next}} y cerraría tu sesión aquí.",
+      "trust": "Cambia solo si confías en quien te envió el enlace.",
+      "confirm": "Cambiar",
+      "stay": "Seguir conectado a {{host}}"
+    }
+  },
+  "auth": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "signOut": "Cerrar sesión",
+    "disconnect": "Desconectar",
+    "signIn": {
+      "title": "Iniciar sesión",
+      "submit": "Iniciar sesión",
+      "forgotPassword": "¿Olvidaste tu contraseña? Pídele a quien administra el presupuesto de tu familia que la restablezca."
+    },
+    "signUp": {
+      "title": "Crea tu cuenta",
+      "name": "Tu nombre",
+      "submit": "Crear cuenta",
+      "inviteOnce": "Tu invitación funciona una sola vez. Si ya tienes una cuenta, <signIn>inicia sesión</signIn>."
+    },
+    "alreadySignedIn": {
+      "title": "Ya iniciaste sesión",
+      "body": "Este dispositivo tiene la sesión iniciada como {{email}}. Para crear una cuenta nueva con esta invitación, primero cierra sesión.",
+      "keepUsing": "Seguir usando la app como {{email}}"
+    },
+    "errors": {
+      "unreachable": "No se puede conectar con tu presupuesto. Revisa tu conexión.",
+      "inviteRejected": "Este código de invitación no es válido, ya se usó o venció. Pide uno nuevo.",
+      "invalidCredentials": "El correo o la contraseña no son válidos.",
+      "emailTaken": "Ya existe una cuenta con este correo.",
+      "weakPassword": "Esta contraseña es demasiado débil.",
+      "samePassword": "La nueva contraseña debe ser distinta de la actual."
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Buenos días, {{name}}",
+      "afternoon": "Buenas tardes, {{name}}",
+      "evening": "Buenas noches, {{name}}"
+    },
+    "netWorth": "Patrimonio neto",
+    "netWorthPlaceholder": "Aquí irá el gráfico del patrimonio neto de todos los tiempos.",
+    "accounts": "Cuentas",
+    "accountsPlaceholder": "Aquí irán tus cuentas y sus saldos.",
+    "upcoming": "Próximos",
+    "upcomingPlaceholder": "Aquí irán los movimientos recurrentes pendientes de pago.",
+    "budgets": "Presupuestos",
+    "budgetsPlaceholder": "Aquí irá el progreso de los presupuestos.",
+    "recent": "Movimientos recientes",
+    "recentPlaceholder": "Aquí irán tus últimos movimientos."
+  },
+  "profile": {
+    "title": "Perfil",
+    "save": "Guardar",
+    "saved": "Guardado.",
+    "about": {
+      "title": "Sobre ti",
+      "name": "Nombre",
+      "displayCurrency": "Moneda de visualización",
+      "displayCurrencyHint": "Los totales en varias monedas se muestran en esta."
+    },
+    "formats": {
+      "title": "Idioma y formatos",
+      "language": "Idioma",
+      "numbers": "Números",
+      "dates": "Fechas",
+      "automatic": "Automático ({{example}})",
+      "automaticHint": "Automático sigue la configuración de este dispositivo."
+    },
+    "password": {
+      "title": "Contraseña",
+      "new": "Nueva contraseña",
+      "repeat": "Repite la nueva contraseña",
+      "submit": "Cambiar contraseña",
+      "changed": "Contraseña cambiada.",
+      "mismatch": "Las contraseñas no coinciden."
+    },
+    "device": {
+      "title": "Este dispositivo",
+      "signOutAndDisconnect": "Cerrar sesión y desconectar"
+    }
+  },
+  "error": {
+    "title": "Algo salió mal",
+    "unexpected": "La app encontró un error inesperado.",
+    "reload": "Recargar",
+    "disconnect": "Desconectar este dispositivo"
+  }
+}

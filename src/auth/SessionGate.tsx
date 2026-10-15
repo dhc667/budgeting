@@ -1,8 +1,11 @@
 import type { Session } from "@supabase/supabase-js";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, Outlet } from "react-router";
+import { deviceLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
+import { useProfile } from "../profile/profile-queries";
 import { createQueryClient } from "../query-client";
 import { SessionContext, useSession } from "./session";
 
@@ -29,7 +32,9 @@ export function RequireSession() {
   if (!session) return <Navigate to="/sign-in" replace />;
   return (
     <UserQueryCache key={session.user.id}>
-      <Outlet />
+      <UserLanguage>
+        <Outlet />
+      </UserLanguage>
     </UserQueryCache>
   );
 }
@@ -39,4 +44,17 @@ export function RequireSession() {
 function UserQueryCache({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
+// Signing out hands the device back to its own language for the sign-in screen.
+function UserLanguage({ children }: { children: ReactNode }) {
+  const { i18n } = useTranslation();
+  const language = useProfile().data?.language ?? null;
+
+  useEffect(() => {
+    void i18n.changeLanguage(language ?? deviceLanguage());
+    return () => void i18n.changeLanguage(deviceLanguage());
+  }, [i18n, language]);
+
+  return children;
 }

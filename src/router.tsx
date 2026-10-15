@@ -35,10 +35,16 @@ export function createAppRouter() {
                         { index: true, element: <DashboardScreen /> },
                         {
                           path: "transactions",
-                          element: <ComingSoonScreen title="Transactions" />,
+                          element: <ComingSoonScreen title={(t) => t("nav.transactions")} />,
                         },
-                        { path: "budgets", element: <ComingSoonScreen title="Budgets" /> },
-                        { path: "reports", element: <ComingSoonScreen title="Reports" /> },
+                        {
+                          path: "budgets",
+                          element: <ComingSoonScreen title={(t) => t("nav.budgets")} />,
+                        },
+                        {
+                          path: "reports",
+                          element: <ComingSoonScreen title={(t) => t("nav.reports")} />,
+                        },
                         { path: "profile", element: <ProfileScreen /> },
                       ],
                     },

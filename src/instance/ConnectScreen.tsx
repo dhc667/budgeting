@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router";
 import { signOutHere } from "../supabase/client";
 import { Button } from "../ui/Button";
@@ -8,14 +9,15 @@ import { type ConnectRequest, type Instance, parseConnectParams } from "./connec
 import { useInstance } from "./instance-context";
 
 export function ConnectScreen() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const request = useMemo(() => parseConnectParams(params), [params]);
   const { instance } = useInstance();
 
   if (!request) {
     return (
-      <CenteredMessage title="This link is incomplete">
-        Scan the QR code again, or ask whoever invited you for a new one.
+      <CenteredMessage title={t("connect.incomplete.title")}>
+        {t("connect.incomplete.body")}
       </CenteredMessage>
     );
   }
@@ -43,6 +45,7 @@ function Connect({ request }: { request: ConnectRequest }) {
 
 // Once connected to the new instance, ConnectScreen renders Connect, which carries on to sign-in.
 function ConfirmSwitch({ current, request }: { current: Instance; request: ConnectRequest }) {
+  const { t } = useTranslation();
   const { supabase, connect } = useInstance();
   const navigate = useNavigate();
   const switchInstance = useMutation({
@@ -53,17 +56,16 @@ function ConfirmSwitch({ current, request }: { current: Instance; request: Conne
   });
 
   return (
-    <CenteredMessage title="Switch to a different budget?">
+    <CenteredMessage title={t("connect.switch.title")}>
       <p>
-        This device is connected to {hostOf(current)}. The link you opened would connect it to{" "}
-        {hostOf(request.instance)} instead, and sign you out here.
+        {t("connect.switch.body", { current: hostOf(current), next: hostOf(request.instance) })}
       </p>
-      <p>Only switch if you trust whoever sent you the link.</p>
+      <p>{t("connect.switch.trust")}</p>
       <Button onClick={() => switchInstance.mutate()} disabled={switchInstance.isPending}>
-        Switch
+        {t("connect.switch.confirm")}
       </Button>
       <Button variant="secondary" onClick={() => void navigate("/", { replace: true })}>
-        Stay connected to {hostOf(current)}
+        {t("connect.switch.stay", { host: hostOf(current) })}
       </Button>
     </CenteredMessage>
   );

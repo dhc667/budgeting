@@ -1,5 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import "./i18n/i18n";
 import { RouterProvider } from "react-router/dom";
 import { InstanceProvider } from "./instance/InstanceProvider";
 import { createQueryClient } from "./query-client";

@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "home": "Home",
+    "transactions": "Transactions",
+    "budgets": "Budgets",
+    "reports": "Reports",
+    "profile": "Profile",
+    "addTransaction": "Add transaction",
+    "comingSoon": "Coming soon"
+  },
+  "comingSoon": "Coming soon.",
+  "instance": {
+    "connectedTo": "Connected to {{host}}.",
+    "welcome": {
+      "title": "Welcome",
+      "body": "To get started, scan the invite QR code from the person who runs your family's budget, or open the link they sent you."
+    },
+    "unreachable": {
+      "title": "Can't reach your budget",
+      "body": "Check your connection and try again.",
+      "retry": "Try again"
+    },
+    "outdated": {
+      "title": "Your budget needs an update",
+      "body": "This version of the app expects a newer database. Ask the person who runs your family's budget to update it."
+    }
+  },
+  "connect": {
+    "incomplete": {
+      "title": "This link is incomplete",
+      "body": "Scan the QR code again, or ask whoever invited you for a new one."
+    },
+    "switch": {
+      "title": "Switch to a different budget?",
+      "body": "This device is connected to {{current}}. The link you opened would connect it to {{next}} instead, and sign you out here.",
+      "trust": "Only switch if you trust whoever sent you the link.",
+      "confirm": "Switch",
+      "stay": "Stay connected to {{host}}"
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "signOut": "Sign out",
+    "disconnect": "Disconnect",
+    "signIn": {
+      "title": "Sign in",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot your password? Ask the person who runs your family's budget to reset it."
+    },
+    "signUp": {
+      "title": "Create your account",
+      "name": "Your name",
+      "submit": "Create account",
+      "inviteOnce": "Your invite works once. If you already have an account, <signIn>sign in</signIn> instead."
+    },
+    "alreadySignedIn": {
+      "title": "You're already signed in",
+      "body": "This device is signed in as {{email}}. To create a new account with this invite, sign out first.",
+      "keepUsing": "Keep using the app as {{email}}"
+    },
+    "errors": {
+      "unreachable": "Can't reach your budget. Check your connection.",
+      "inviteRejected": "This invite code is invalid, already used or expired. Ask for a new one.",
+      "invalidCredentials": "Invalid email or password.",
+      "emailTaken": "There's already an account with this email.",
+      "weakPassword": "This password is too weak.",
+      "samePassword": "The new password must be different from the current one."
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}"
+    },
+    "netWorth": "Net worth",
+    "netWorthPlaceholder": "The all-time net worth chart goes here.",
+    "accounts": "Accounts",
+    "accountsPlaceholder": "Your accounts and their balances go here.",
+    "upcoming": "Upcoming",
+    "upcomingPlaceholder": "Recurring transactions waiting to be paid go here.",
+    "budgets": "Budgets",
+    "budgetsPlaceholder": "Budget progress goes here.",
+    "recent": "Recent transactions",
+    "recentPlaceholder": "Your latest transactions go here."
+  },
+  "profile": {
+    "title": "Profile",
+    "save": "Save",
+    "saved": "Saved.",
+    "about": {
+      "title": "About you",
+      "name": "Name",
+      "displayCurrency": "Display currency",
+      "displayCurrencyHint": "Totals across currencies are shown in this one."
+    },
+    "formats": {
+      "title": "Language and formats",
+      "language": "Language",
+      "numbers": "Numbers",
+      "dates": "Dates",
+      "automatic": "Automatic ({{example}})",
+      "automaticHint": "Automatic follows this device's settings."
+    },
+    "password": {
+      "title": "Password",
+      "new": "New password",
+      "repeat": "Repeat new password",
+      "submit": "Change password",
+      "changed": "Password changed.",
+      "mismatch": "The passwords don't match."
+    },
+    "device": {
+      "title": "This device",
+      "signOutAndDisconnect": "Sign out and disconnect"
+    }
+  },
+  "error": {
+    "title": "Something went wrong",
+    "unexpected": "The app hit an unexpected error.",
+    "reload": "Reload",
+    "disconnect": "Disconnect this device"
+  }
+}
