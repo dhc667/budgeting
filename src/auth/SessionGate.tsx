@@ -7,6 +7,7 @@ import { deviceLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
 import { useProfile } from "../profile/profile-queries";
 import { createQueryClient } from "../query-client";
+import { isNoRows } from "../supabase/errors";
 import { SessionContext, useSession } from "./session";
 
 export function SessionGate() {
@@ -32,9 +33,11 @@ export function RequireSession() {
   if (!session) return <Navigate to="/sign-in" replace />;
   return (
     <UserQueryCache key={session.user.id}>
-      <UserLanguage>
-        <Outlet />
-      </UserLanguage>
+      <SignOutDeletedUser>
+        <UserLanguage>
+          <Outlet />
+        </UserLanguage>
+      </SignOutDeletedUser>
     </UserQueryCache>
   );
 }
@@ -44,6 +47,20 @@ export function RequireSession() {
 function UserQueryCache({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
+// A user deleted while signed in keeps a valid access token until it expires, with no profile to
+// show; signing out is the only way forward.
+function SignOutDeletedUser({ children }: { children: ReactNode }) {
+  const supabase = useSupabase();
+  const { error } = useProfile();
+  const userDeleted = error !== null && isNoRows(error);
+
+  useEffect(() => {
+    if (userDeleted) void supabase.auth.signOut({ scope: "local" });
+  }, [supabase, userDeleted]);
+
+  return children;
 }
 
 // Signing out hands the device back to its own language for the sign-in screen.
