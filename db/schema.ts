@@ -1,8 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
+  date,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgPolicy,
@@ -11,6 +14,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { authenticatedRole, authUsers } from "drizzle-orm/supabase";
@@ -182,6 +186,127 @@ export const activity = pgTable(
       for: "select",
       to: authenticatedRole,
       using: sql`public.is_space_member(${t.spaceId})`,
+    }),
+  ],
+);
+
+export const color = pgEnum("color", [
+  "red",
+  "orange",
+  "amber",
+  "lime",
+  "green",
+  "teal",
+  "cyan",
+  "blue",
+  "indigo",
+  "violet",
+  "pink",
+  "slate",
+]);
+
+export const ledgerAccountKind = pgEnum("ledger_account_kind", [
+  "account",
+  "expense",
+  "income",
+  "opening_balance",
+]);
+
+// Money accounts and categories alike (ADR 0002). The app reads money accounts through the
+// `accounts` view, and adds them with `create_account`.
+export const ledgerAccounts = pgTable(
+  "ledger_accounts",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    kind: ledgerAccountKind().notNull(),
+    name: text(),
+    // Only a money account holds one currency: money of any currency can pass through a category.
+    currency: text().references(() => currencies.code),
+    color: color(),
+    position: integer().notNull().default(0),
+    archived: boolean().notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "named_unless_opening_balance",
+      sql`(${t.kind} = 'opening_balance') = (${t.name} is null)`,
+    ),
+    check("name_not_blank", sql`trim(${t.name}) <> ''`),
+    check("currency_only_on_accounts", sql`(${t.kind} = 'account') = (${t.currency} is not null)`),
+    check(
+      "colored_unless_opening_balance",
+      sql`(${t.kind} = 'opening_balance') = (${t.color} is null)`,
+    ),
+    index("ledger_accounts_space_id_idx").on(t.spaceId),
+    uniqueIndex("one_opening_balance_category_per_space")
+      .on(t.spaceId)
+      .where(sql`${t.kind} = 'opening_balance'`),
+    pgPolicy("members see their spaces' accounts and categories", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`public.is_space_member(${t.spaceId})`,
+    }),
+    pgPolicy("members edit their spaces' accounts", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`public.is_space_member(${t.spaceId}) and ${t.kind} = 'account'`,
+      withCheck: sql`public.is_space_member(${t.spaceId}) and ${t.kind} = 'account'`,
+    }),
+    pgPolicy("members delete their spaces' accounts", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.is_space_member(${t.spaceId}) and ${t.kind} = 'account'`,
+    }),
+  ],
+);
+
+// Written only by Postgres functions, which keep each transaction's postings balanced.
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    date: date().notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("transactions_created_by_idx").on(t.createdBy),
+    pgPolicy("members see transactions touching their spaces", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.postings where postings.transaction_id = ${t.id})`,
+    }),
+  ],
+);
+
+export const postings = pgTable(
+  "postings",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    transactionId: uuid("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+    ledgerAccountId: uuid("ledger_account_id")
+      .notNull()
+      .references(() => ledgerAccounts.id),
+    currency: text()
+      .notNull()
+      .references(() => currencies.code),
+    amount: bigint({ mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("postings_transaction_id_idx").on(t.transactionId),
+    index("postings_ledger_account_id_idx").on(t.ledgerAccountId),
+    pgPolicy("members see postings in their spaces", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.ledger_accounts where ledger_accounts.id = ${t.ledgerAccountId})`,
     }),
   ],
 );
