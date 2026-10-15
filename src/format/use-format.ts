@@ -15,6 +15,7 @@ export function useFormat() {
       money: (minorUnits: number, currency: Currency) =>
         formatMoney(minorUnits, currency, numberFormat, language),
       date: (date: Date) => formatDate(date, dateFormat),
+      time: (date: Date) => new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date),
     }),
     [language, numberFormat, dateFormat],
   );

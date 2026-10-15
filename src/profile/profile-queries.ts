@@ -33,6 +33,27 @@ export function useUpdateProfile() {
   });
 }
 
+export function useUsers() {
+  const supabase = useSupabase();
+  return useQuery({
+    queryKey: ["users"],
+    async queryFn(): Promise<User[]> {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .order("display_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function displayNameOf(users: User[], userId: string | null): string | undefined {
+  return users.find(({ id }) => id === userId)?.display_name;
+}
+
 export type Profile = Tables<"profiles">;
+
+export type User = Pick<Profile, "id" | "display_name">;
 
 type ProfileChanges = Omit<TablesUpdate<"profiles">, "id" | "created_at">;

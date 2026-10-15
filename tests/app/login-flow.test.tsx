@@ -1,9 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { StrictMode } from "react";
+import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import { App } from "../../src/App";
 import { buildConnectLink } from "../../src/instance/connect-link";
 import {
   anonClient,
@@ -15,8 +12,7 @@ import {
   sql,
   uniqueEmail,
 } from "../support/local-instance";
-
-const user = userEvent.setup();
+import { openApp, openSignedIn, signIn, user } from "../support/app";
 
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
@@ -282,23 +278,6 @@ describe("a database behind the app", () => {
 
 type MigrationRow = { id: number; hash: string; created_at: string };
 
-function openApp(url: string) {
-  window.location.hash = new URL(url).hash;
-  render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-}
-
-async function openSignedIn(name: string) {
-  const { email } = await existingUser(name);
-  openApp(signInLink());
-  await signIn(email, password);
-  await screen.findByRole("heading", { name: new RegExp(`, ${name}$`) });
-  return { email };
-}
-
 async function openProfile() {
   await user.click(defined(screen.getAllByRole("link", { name: "Profile" })[0]));
 }
@@ -316,10 +295,4 @@ async function signUpAs(name: string) {
   await user.type(screen.getByLabelText("Email"), uniqueEmail());
   await user.type(screen.getByLabelText("Password"), password);
   await user.click(screen.getByRole("button", { name: "Create account" }));
-}
-
-async function signIn(email: string, withPassword: string) {
-  await user.type(await screen.findByLabelText("Email"), email);
-  await user.type(screen.getByLabelText("Password"), withPassword);
-  await user.click(screen.getByRole("button", { name: "Sign in" }));
 }

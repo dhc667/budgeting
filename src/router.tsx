@@ -10,6 +10,8 @@ import { AppShell } from "./layout/AppShell";
 import { ProfileScreen } from "./profile/ProfileScreen";
 import { ComingSoonScreen } from "./screens/ComingSoonScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
+import { SpaceScreen } from "./spaces/SpaceScreen";
+import { SpacesScreen } from "./spaces/SpacesScreen";
 
 // Hash routing: GitHub Pages can't rewrite deep links to index.html.
 export function createAppRouter() {
@@ -46,6 +48,8 @@ export function createAppRouter() {
                           element: <ComingSoonScreen title={(t) => t("nav.reports")} />,
                         },
                         { path: "profile", element: <ProfileScreen /> },
+                        { path: "spaces", element: <SpacesScreen /> },
+                        { path: "spaces/:spaceId", element: <SpaceScreen /> },
                       ],
                     },
                   ],

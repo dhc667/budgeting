@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { authErrorMessage } from "../auth/auth-errors";
 import { useSignedInUser } from "../auth/session";
 import {
@@ -14,6 +15,7 @@ import { deviceLanguage, languageNames, languages } from "../i18n/languages";
 import { useInstance, useSupabase } from "../instance/instance-context";
 import { useCurrencies } from "../money/currency-queries";
 import { signOutHere } from "../supabase/client";
+import { isCheckViolation } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
@@ -32,6 +34,7 @@ export function ProfileScreen() {
       <h1 className="text-2xl font-semibold">{t("profile.title")}</h1>
       <AboutForm profile={profile} />
       <FormatsForm profile={profile} />
+      <SpacesCard />
       <PasswordForm />
       <DeviceCard />
     </div>
@@ -159,8 +162,20 @@ function SaveControls({ mutation }: { mutation: ReturnType<typeof useUpdateProfi
 }
 
 function saveErrorMessage(error: Error, t: TFunction): string {
-  if ("code" in error && error.code === "23514") return t("profile.errors.nameBlank");
+  if (isCheckViolation(error)) return t("profile.errors.nameBlank");
   return t("profile.errors.saveFailed");
+}
+
+function SpacesCard() {
+  const { t } = useTranslation();
+  return (
+    <Card title={t("spaces.title")}>
+      <p className="text-sm text-zinc-500">{t("profile.spaces.explained")}</p>
+      <Link to="/spaces" className="self-start font-medium text-emerald-700 dark:text-emerald-400">
+        {t("profile.spaces.manage")}
+      </Link>
+    </Card>
+  );
 }
 
 function PasswordForm() {

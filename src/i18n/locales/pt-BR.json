@@ -118,6 +118,10 @@
     "device": {
       "title": "Este dispositivo",
       "signOutAndDisconnect": "Sair e desconectar"
+    },
+    "spaces": {
+      "explained": "Seu espaço privado e os espaços que você compartilha com outras pessoas.",
+      "manage": "Gerenciar espaços"
     }
   },
   "error": {
@@ -125,5 +129,62 @@
     "unexpected": "O app encontrou um erro inesperado.",
     "reload": "Recarregar",
     "disconnect": "Desconectar este dispositivo"
+  },
+  "spaces": {
+    "title": "Espaços",
+    "yours": "Seus espaços",
+    "private": "Privado",
+    "privateExplained": "Só você pode ver este espaço. Ele não pode ser compartilhado, renomeado nem excluído.",
+    "onlyYou": "Só você",
+    "memberCount_one": "{{count}} membro",
+    "memberCount_other": "{{count}} membros",
+    "name": "Nome",
+    "rename": "Renomear",
+    "saved": "Salvo.",
+    "notFound": "Este espaço não existe, ou você não é membro dele.",
+    "backToSpaces": "Voltar para seus espaços",
+    "new": {
+      "title": "Novo espaço compartilhado",
+      "members": "Membros",
+      "submit": "Criar espaço"
+    },
+    "members": {
+      "title": "Membros",
+      "you": "{{name}} (você)",
+      "remove": "Remover",
+      "removeNamed": "Remover {{name}}",
+      "leave": "Sair",
+      "lastMember": "Você é o último membro, então não pode sair deste espaço.",
+      "add": "Adicionar um membro",
+      "addSubmit": "Adicionar"
+    },
+    "delete": {
+      "title": "Excluir espaço",
+      "explained": "Um espaço só pode ser excluído enquanto não tiver transações além dos saldos iniciais.",
+      "submit": "Excluir espaço",
+      "confirm": "Excluir {{name}}",
+      "cancel": "Cancelar"
+    },
+    "errors": {
+      "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
+      "deleteFailed": "Não foi possível excluir este espaço. Verifique sua conexão e tente de novo.",
+      "nameBlank": "O nome do espaço não pode ficar em branco."
+    }
+  },
+  "activity": {
+    "title": "Atividade",
+    "empty": "Nada mudou ainda.",
+    "someone": "Alguém",
+    "space": {
+      "created": "{{actor}} criou o espaço",
+      "renamed": "{{actor}} renomeou o espaço de “{{from}}” para “{{to}}”"
+    },
+    "member": {
+      "added": "{{actor}} adicionou {{member}}",
+      "removed": "{{actor}} removeu {{member}}",
+      "left": "{{actor}} saiu",
+      "accountDeleted": "A conta de um membro foi excluída"
+    },
+    "deletedUser": "um usuário excluído"
   }
 }

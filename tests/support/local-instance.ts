@@ -43,6 +43,18 @@ export async function existingUser(displayName: string) {
   return { email, userId: defined(data.user).id };
 }
 
+export async function signedInUser(displayName: string) {
+  const client = anonClient();
+  const inviteCode = await createInviteCode(admin, 24);
+  const { data, error } = await client.auth.signUp({
+    email: uniqueEmail(),
+    password,
+    options: { data: { invite_code: inviteCode, display_name: displayName } },
+  });
+  if (error) throw error;
+  return { client, userId: defined(data.user).id };
+}
+
 export function anonClient() {
   return createClient<Database>(instance.supabaseUrl, instance.publishableKey, {
     auth: { persistSession: false },

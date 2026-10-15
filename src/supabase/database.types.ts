@@ -5,7 +5,33 @@ export type Database = {
   
   "public": {
           Tables: {
-            "currencies": {
+            "activity": {
+                  Row: {
+                    "action": Database["public"]['Enums']["activity_action"],"changed_at": string,"changed_by": string | null,"id": number,"new": Json | null,"old": Json | null,"row_id": string,"space_id": string,"table_name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": Database["public"]['Enums']["activity_action"],"changed_at"?: string,"changed_by"?: string | null,"id"?: never,"new"?: Json | null,"old"?: Json | null,"row_id": string,"space_id": string,"table_name": string
+                  }
+                  Update: {
+                    "action"?: Database["public"]['Enums']["activity_action"],"changed_at"?: string,"changed_by"?: string | null,"id"?: never,"new"?: Json | null,"old"?: Json | null,"row_id"?: string,"space_id"?: string,"table_name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_changed_by_profiles_id_fk"
+      columns: ["changed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activity_space_id_spaces_id_fk"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"currencies": {
                   Row: {
                     "code": string,"decimals": number
                   }
@@ -53,6 +79,52 @@ isOneToOne: false
       referencedColumns: ["code"]
     }
                   ]
+                },"space_members": {
+                  Row: {
+                    "created_at": string,"id": string,"space_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"space_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"space_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "space_members_space_id_spaces_id_fk"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "spaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "space_members_user_id_profiles_id_fk"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"spaces": {
+                  Row: {
+                    "created_at": string,"id": string,"name": string | null,"private_owner": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"name"?: string | null,"private_owner"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"name"?: string | null,"private_owner"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "spaces_private_owner_profiles_id_fk"
+      columns: ["private_owner"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -62,12 +134,18 @@ isOneToOne: false
             "check_invite_code":
 { Args: { "event": Json }; Returns: Json
                            },
+"create_space":
+{ Args: { "member_ids": (string)[],"space_name": string }; Returns: string
+                           },
+"is_space_member":
+{ Args: { "space": string }; Returns: boolean
+                           },
 "schema_version":
 { Args: Record<PropertyKey, never>; Returns: number
                            }
           }
           Enums: {
-            "date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period"
+            "activity_action": "insert"|"update"|"delete","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -183,7 +261,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"]
+            "activity_action": ["insert", "update", "delete"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"]
           }
         }
 } as const

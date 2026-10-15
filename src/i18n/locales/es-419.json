@@ -118,6 +118,10 @@
     "device": {
       "title": "Este dispositivo",
       "signOutAndDisconnect": "Cerrar sesión y desconectar"
+    },
+    "spaces": {
+      "explained": "Tu espacio privado y los espacios que compartes con otros.",
+      "manage": "Administrar espacios"
     }
   },
   "error": {
@@ -125,5 +129,62 @@
     "unexpected": "La app encontró un error inesperado.",
     "reload": "Recargar",
     "disconnect": "Desconectar este dispositivo"
+  },
+  "spaces": {
+    "title": "Espacios",
+    "yours": "Tus espacios",
+    "private": "Privado",
+    "privateExplained": "Solo tú puedes ver este espacio. No se puede compartir, renombrar ni eliminar.",
+    "onlyYou": "Solo tú",
+    "memberCount_one": "{{count}} miembro",
+    "memberCount_other": "{{count}} miembros",
+    "name": "Nombre",
+    "rename": "Renombrar",
+    "saved": "Guardado.",
+    "notFound": "Este espacio no existe, o no eres miembro.",
+    "backToSpaces": "Volver a tus espacios",
+    "new": {
+      "title": "Nuevo espacio compartido",
+      "members": "Miembros",
+      "submit": "Crear espacio"
+    },
+    "members": {
+      "title": "Miembros",
+      "you": "{{name}} (tú)",
+      "remove": "Quitar",
+      "removeNamed": "Quitar a {{name}}",
+      "leave": "Salir",
+      "lastMember": "Eres el último miembro, así que no puedes salir de este espacio.",
+      "add": "Agregar un miembro",
+      "addSubmit": "Agregar"
+    },
+    "delete": {
+      "title": "Eliminar espacio",
+      "explained": "Un espacio solo se puede eliminar mientras no tenga transacciones aparte de los saldos iniciales.",
+      "submit": "Eliminar espacio",
+      "confirm": "Eliminar {{name}}",
+      "cancel": "Cancelar"
+    },
+    "errors": {
+      "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar este espacio. Revisa tu conexión e inténtalo de nuevo.",
+      "nameBlank": "El nombre del espacio no puede quedar vacío."
+    }
+  },
+  "activity": {
+    "title": "Actividad",
+    "empty": "Todavía no ha cambiado nada.",
+    "someone": "Alguien",
+    "space": {
+      "created": "{{actor}} creó el espacio",
+      "renamed": "{{actor}} renombró el espacio de «{{from}}» a «{{to}}»"
+    },
+    "member": {
+      "added": "{{actor}} agregó a {{member}}",
+      "removed": "{{actor}} quitó a {{member}}",
+      "left": "{{actor}} salió",
+      "accountDeleted": "Se eliminó la cuenta de un miembro"
+    },
+    "deletedUser": "un usuario eliminado"
   }
 }
