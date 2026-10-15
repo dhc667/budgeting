@@ -16,11 +16,11 @@ export function openApp(url: string) {
 }
 
 export async function openSignedIn(name: string) {
-  const { email } = await existingUser(name);
+  const signedIn = await existingUser(name);
   openApp(signInLink());
-  await signIn(email, password);
+  await signIn(signedIn.email, password);
   await screen.findByRole("heading", { name: new RegExp(`, ${name}$`) });
-  return { email };
+  return signedIn;
 }
 
 export async function signIn(email: string, withPassword: string) {

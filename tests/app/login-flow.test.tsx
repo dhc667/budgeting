@@ -3,6 +3,7 @@ import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildConnectLink } from "../../src/instance/connect-link";
 import {
+  admin,
   anonClient,
   defined,
   existingUser,
@@ -197,6 +198,17 @@ describe("signing out", () => {
     await signIn(email, password);
 
     expect(await screen.findByRole("heading", { name: /, Lola$/ })).toBeTruthy();
+  });
+  it("happens on its own once the user has been deleted", async () => {
+    const { userId } = await openSignedIn("Nora");
+    await admin.auth.admin.deleteUser(userId);
+    cleanup();
+
+    openApp("http://localhost:3000/#/");
+
+    expect(
+      await screen.findByRole("heading", { name: "Sign in" }, { timeout: 5_000 }),
+    ).toBeTruthy();
   });
 });
 
