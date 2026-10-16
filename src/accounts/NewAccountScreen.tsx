@@ -5,6 +5,7 @@ import { localToday } from "../format/days";
 import { useProfile } from "../profile/profile-queries";
 import { spaceName } from "../spaces/space";
 import { type Space, useSpaces } from "../spaces/space-queries";
+import { BackLink } from "../ui/BackLink";
 import { Card } from "../ui/Card";
 import { SelectField } from "../ui/SelectField";
 import { useCreateAccount } from "./account-queries";
@@ -22,7 +23,10 @@ export function NewAccountScreen() {
 
   return (
     <div className="flex max-w-xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{t("accounts.new.title")}</h1>
+      <header className="flex flex-col gap-1">
+        <BackLink to="/" place={t("nav.home")} />
+        <h1 className="text-2xl font-semibold">{t("accounts.new.title")}</h1>
+      </header>
       <Card title={t("accounts.details")}>
         <AccountForm
           initial={{

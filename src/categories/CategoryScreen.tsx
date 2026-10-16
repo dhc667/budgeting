@@ -1,10 +1,11 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { afterSuccess } from "../query-client";
 import { ActivityList } from "../spaces/ActivityList";
 import { spaceName } from "../spaces/space";
 import { useSpaces } from "../spaces/space-queries";
+import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
@@ -33,31 +34,18 @@ export function CategoryScreen() {
   const space = spaces.find(({ id }) => id === category.space_id);
   const parent = categories.find(({ id }) => id === category.parent_id);
 
-  const details = [
-    space && (
-      <Link key="space" to={`/spaces/${space.id}`} className="underline">
-        {spaceName(space, t)}
-      </Link>
-    ),
-    kindName(category.kind, t),
-    parent && t("categories.under", { parent: parent.name }),
-  ].filter(Boolean);
-
   // Keyed so that another category's screen starts with fresh forms rather than this one's.
   return (
     <div key={category.id} className="flex max-w-xl flex-col gap-6">
       <header className="flex flex-col gap-1">
+        {space && <BackLink to={`/spaces/${space.id}`} place={spaceName(space, t)} />}
         <h1 className="flex items-center gap-3 text-2xl font-semibold">
           <CategoryIcon icon={category.icon} color={category.color} />
           {category.name}
         </h1>
         <p className="text-sm text-zinc-500">
-          {details.map((detail, index) => (
-            <Fragment key={index}>
-              {index > 0 && " · "}
-              {detail}
-            </Fragment>
-          ))}
+          {kindName(category.kind, t)}
+          {parent && ` · ${t("categories.under", { parent: parent.name })}`}
         </p>
       </header>
       <EditCard category={category} />

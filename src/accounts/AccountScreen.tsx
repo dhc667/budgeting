@@ -7,6 +7,7 @@ import { afterSuccess } from "../query-client";
 import { ActivityList } from "../spaces/ActivityList";
 import { spaceName } from "../spaces/space";
 import { useSpaces } from "../spaces/space-queries";
+import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
@@ -37,6 +38,7 @@ export function AccountScreen() {
   return (
     <div key={account.id} className="flex max-w-xl flex-col gap-6">
       <header className="flex flex-col gap-1">
+        <BackLink to="/" place={t("nav.home")} />
         <h1 className="flex items-center gap-3 text-2xl font-semibold">
           <ColorDot color={account.color} />
           {account.name}
