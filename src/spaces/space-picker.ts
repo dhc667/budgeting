@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { useSignedInUser } from "../auth/session";
-import { useInstance } from "../instance/instance-context";
+import { useDeviceKey } from "../instance/device-key";
 import { type Space, useSpaces } from "./space-queries";
 
 export function useShownSpaces(): Space[] | undefined {
@@ -10,9 +9,9 @@ export function useShownSpaces(): Space[] | undefined {
 }
 
 // The device remembers the spaces it hides rather than those it shows, so a space the user is
-// newly added to shows up. Two people may share a device, and a device may switch instances.
+// newly added to shows up.
 export function useHiddenSpaces(): [string[], (spaceIds: string[]) => void] {
-  const storageKey = useStorageKey();
+  const storageKey = useDeviceKey("hiddenSpaces");
   const stored = useSyncExternalStore(subscribe, () => localStorage.getItem(storageKey));
   const hidden = useMemo(() => parseIds(stored), [stored]);
   const setHidden = useCallback(
@@ -23,12 +22,6 @@ export function useHiddenSpaces(): [string[], (spaceIds: string[]) => void] {
     [storageKey],
   );
   return [hidden, setHidden];
-}
-
-function useStorageKey(): string {
-  const { instance } = useInstance();
-  const user = useSignedInUser();
-  return `budgeting.hiddenSpaces ${instance?.supabaseUrl} ${user.id}`;
 }
 
 const listeners = new Set<() => void>();

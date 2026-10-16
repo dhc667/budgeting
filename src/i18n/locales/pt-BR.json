@@ -6,7 +6,6 @@
     "reports": "Relatórios",
     "profile": "Perfil",
     "addTransaction": "Adicionar transação",
-    "comingSoon": "Em breve",
     "backTo": "Voltar para {{place}}"
   },
   "comingSoon": "Em breve.",
@@ -82,8 +81,7 @@
     "upcomingPlaceholder": "Transações recorrentes aguardando pagamento vão aqui.",
     "budgets": "Orçamentos",
     "budgetsPlaceholder": "O progresso dos orçamentos vai aqui.",
-    "recent": "Transações recentes",
-    "recentPlaceholder": "Suas últimas transações vão aqui."
+    "recent": "Transações recentes"
   },
   "profile": {
     "title": "Perfil",
@@ -213,6 +211,22 @@
       "madeExpense": "{{actor}} transformou “{{name}}” em uma categoria de despesas",
       "iconChanged": "{{actor}} mudou o ícone de “{{name}}”",
       "recolored": "{{actor}} mudou a cor de “{{name}}”"
+    },
+    "transaction": {
+      "added": "{{actor}} adicionou “{{label}}”: {{summary}}",
+      "deleted": "{{actor}} excluiu “{{label}}”: {{summary}}",
+      "movedIn": "{{actor}} trouxe “{{label}}” para este espaço: {{summary}}",
+      "movedOut": "{{actor}} tirou “{{label}}” deste espaço: {{summary}}",
+      "renamed": "{{actor}} renomeou “{{from}}” para “{{to}}”",
+      "changed": "{{actor}} mudou “{{label}}” de {{was}} para {{now}}",
+      "noteChanged": "{{actor}} mudou a observação de “{{label}}”",
+      "expense": "uma despesa de {{amount}} de “{{account}}” em “{{category}}”, em {{date}}",
+      "refund": "um reembolso de {{amount}} para “{{account}}” de “{{category}}”, em {{date}}",
+      "income": "uma receita de {{amount}} para “{{account}}” de “{{category}}”, em {{date}}",
+      "transfer": "uma transferência de {{amount}} de “{{from}}” para “{{to}}”, em {{date}}",
+      "transferExchanged": "uma transferência de {{amount}} de “{{from}}” para “{{to}}”, recebida como {{received}}, em {{date}}",
+      "transferToOtherSpace": "uma transferência de {{amount}} de “{{from}}” para outro espaço, em {{date}}",
+      "transferFromOtherSpace": "uma transferência de {{amount}} para “{{to}}” de outro espaço, em {{date}}"
     }
   },
   "accounts": {
@@ -322,6 +336,70 @@
       "deleteFailed": "Não foi possível excluir esta categoria. Verifique sua conexão e tente de novo.",
       "saveRefused": "Não foi possível salvar esta alteração. As categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo.",
       "deleteRefused": "Não foi possível excluir esta categoria. As categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo."
+    }
+  },
+  "transactions": {
+    "title": "Transações",
+    "transfer": "Transferência",
+    "anotherSpace": "Outro espaço",
+    "none": "Nenhuma transação ainda.",
+    "showMore": "Mostrar mais",
+    "seeAll": "Ver todas",
+    "details": "Detalhes",
+    "history": "Histórico",
+    "addedBy": "Adicionada por {{name}} em {{date}}",
+    "notFound": "Esta transação não existe, ou está em um espaço do qual você não é membro.",
+    "backToList": "Voltar para as transações",
+    "type": {
+      "expense": "Despesa",
+      "income": "Receita",
+      "transfer": "Transferência"
+    },
+    "new": {
+      "title": "Nova transação",
+      "submit": "Adicionar transação",
+      "noAccounts": "Adicione uma conta antes de registrar transações."
+    },
+    "form": {
+      "type": "Tipo",
+      "refund": "Reembolso",
+      "refundHint": "Dinheiro que volta de uma compra. Reduz o que a categoria gastou.",
+      "amount": "Valor",
+      "account": "Conta",
+      "from": "De",
+      "to": "Para",
+      "chooseAccount": "Escolha uma conta",
+      "category": "Categoria",
+      "chooseCategory": "Escolha uma categoria",
+      "amountReceived": "Valor recebido",
+      "amountReceivedHint": "Em {{currency}}, como chegou à conta.",
+      "date": "Data",
+      "title": "Título",
+      "pastTitles": "Títulos anteriores",
+      "note": "Observação",
+      "save": "Salvar",
+      "saved": "Salvo."
+    },
+    "oneSided": {
+      "toAnotherSpace": "De “{{account}}” para outro espaço",
+      "fromAnotherSpace": "De outro espaço para “{{account}}”",
+      "explained": "Esta transferência liga um espaço do qual você não é membro, então só quem está nos dois espaços pode alterá-la ou excluí-la."
+    },
+    "delete": {
+      "title": "Excluir transação",
+      "explained": "Os saldos das suas contas voltam ao que eram sem ela. O registro de atividade guarda como ela era.",
+      "submit": "Excluir transação",
+      "confirmTitle": "Excluir “{{label}}”?",
+      "confirm": "Excluir"
+    },
+    "errors": {
+      "amount": "Informe um valor acima de zero, como {{example}}.",
+      "category": "Escolha uma categoria.",
+      "toAccount": "Escolha a conta para onde vai o dinheiro.",
+      "saveRefused": "Não foi possível salvar esta transação. As contas ou categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo.",
+      "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
+      "deleteFailed": "Não foi possível excluir esta transação. Verifique sua conexão e tente de novo.",
+      "loadFailed": "Não foi possível carregar as transações. Verifique sua conexão e tente de novo."
     }
   },
   "colors": {

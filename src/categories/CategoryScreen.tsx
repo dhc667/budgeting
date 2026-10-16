@@ -12,7 +12,8 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import { isRaisedException } from "../supabase/errors";
 import { SelectField } from "../ui/SelectField";
-import { categoryLabel, categoryTree, kindName } from "./category";
+import { TransactionList } from "../transactions/TransactionList";
+import { categoryLabel, categoryTree, kindName, withSubcategories } from "./category";
 import {
   type Category,
   useCategories,
@@ -48,6 +49,14 @@ export function CategoryScreen() {
           {parent && ` · ${t("categories.under", { parent: parent.name })}`}
         </p>
       </header>
+      <Card title={t("transactions.title")}>
+        <TransactionList
+          filter={{
+            kind: "categories",
+            categoryIds: withSubcategories(category, categories).map(({ id }) => id),
+          }}
+        />
+      </Card>
       <EditCard category={category} />
       <DeleteCard category={category} categories={categories} />
       <HistoryCard category={category} />

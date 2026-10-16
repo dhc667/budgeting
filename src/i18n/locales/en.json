@@ -6,7 +6,6 @@
     "reports": "Reports",
     "profile": "Profile",
     "addTransaction": "Add transaction",
-    "comingSoon": "Coming soon",
     "backTo": "Back to {{place}}"
   },
   "comingSoon": "Coming soon.",
@@ -82,8 +81,7 @@
     "upcomingPlaceholder": "Recurring transactions waiting to be paid go here.",
     "budgets": "Budgets",
     "budgetsPlaceholder": "Budget progress goes here.",
-    "recent": "Recent transactions",
-    "recentPlaceholder": "Your latest transactions go here."
+    "recent": "Recent transactions"
   },
   "profile": {
     "title": "Profile",
@@ -213,6 +211,22 @@
       "madeExpense": "{{actor}} made “{{name}}” an expense category",
       "iconChanged": "{{actor}} changed the icon of “{{name}}”",
       "recolored": "{{actor}} changed the color of “{{name}}”"
+    },
+    "transaction": {
+      "added": "{{actor}} added “{{label}}”: {{summary}}",
+      "deleted": "{{actor}} deleted “{{label}}”: {{summary}}",
+      "movedIn": "{{actor}} moved “{{label}}” into this space: {{summary}}",
+      "movedOut": "{{actor}} moved “{{label}}” out of this space: {{summary}}",
+      "renamed": "{{actor}} renamed “{{from}}” to “{{to}}”",
+      "changed": "{{actor}} changed “{{label}}” from {{was}} to {{now}}",
+      "noteChanged": "{{actor}} changed the note of “{{label}}”",
+      "expense": "an expense of {{amount}} from “{{account}}” in “{{category}}”, on {{date}}",
+      "refund": "a refund of {{amount}} into “{{account}}” from “{{category}}”, on {{date}}",
+      "income": "an income of {{amount}} into “{{account}}” from “{{category}}”, on {{date}}",
+      "transfer": "a transfer of {{amount}} from “{{from}}” to “{{to}}”, on {{date}}",
+      "transferExchanged": "a transfer of {{amount}} from “{{from}}” to “{{to}}”, received as {{received}}, on {{date}}",
+      "transferToOtherSpace": "a transfer of {{amount}} from “{{from}}” to another space, on {{date}}",
+      "transferFromOtherSpace": "a transfer of {{amount}} into “{{to}}” from another space, on {{date}}"
     }
   },
   "accounts": {
@@ -322,6 +336,70 @@
       "deleteFailed": "Couldn't delete this category. Check your connection and try again.",
       "saveRefused": "Couldn't save this change. The categories may have changed meanwhile; reload and try again.",
       "deleteRefused": "Couldn't delete this category. The categories may have changed meanwhile; reload and try again."
+    }
+  },
+  "transactions": {
+    "title": "Transactions",
+    "transfer": "Transfer",
+    "anotherSpace": "Another space",
+    "none": "No transactions yet.",
+    "showMore": "Show more",
+    "seeAll": "See all",
+    "details": "Details",
+    "history": "History",
+    "addedBy": "Added by {{name}} on {{date}}",
+    "notFound": "This transaction doesn't exist, or it's in a space you're not a member of.",
+    "backToList": "Back to transactions",
+    "type": {
+      "expense": "Expense",
+      "income": "Income",
+      "transfer": "Transfer"
+    },
+    "new": {
+      "title": "New transaction",
+      "submit": "Add transaction",
+      "noAccounts": "Add an account before recording transactions."
+    },
+    "form": {
+      "type": "Type",
+      "refund": "Refund",
+      "refundHint": "Money coming back from a purchase. It lowers what the category spent.",
+      "amount": "Amount",
+      "account": "Account",
+      "from": "From",
+      "to": "To",
+      "chooseAccount": "Choose an account",
+      "category": "Category",
+      "chooseCategory": "Choose a category",
+      "amountReceived": "Amount received",
+      "amountReceivedHint": "In {{currency}}, as it reached the account.",
+      "date": "Date",
+      "title": "Title",
+      "pastTitles": "Past titles",
+      "note": "Note",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "oneSided": {
+      "toAnotherSpace": "From “{{account}}” to another space",
+      "fromAnotherSpace": "From another space to “{{account}}”",
+      "explained": "This transfer joins a space you're not a member of, so only someone in both spaces can change or delete it."
+    },
+    "delete": {
+      "title": "Delete transaction",
+      "explained": "Its accounts' balances go back to what they were without it. The activity record keeps what it was.",
+      "submit": "Delete transaction",
+      "confirmTitle": "Delete “{{label}}”?",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "amount": "Enter an amount above zero, like {{example}}.",
+      "category": "Choose a category.",
+      "toAccount": "Choose the account the money goes to.",
+      "saveRefused": "Couldn't save this transaction. Its accounts or categories may have changed meanwhile; reload and try again.",
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete this transaction. Check your connection and try again.",
+      "loadFailed": "Couldn't load transactions. Check your connection and try again."
     }
   },
   "colors": {

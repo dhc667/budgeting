@@ -434,6 +434,7 @@ describe("deleting a category", () => {
     const groceries = await addCategory(ana, familyId, { category_name: "Groceries" });
     await recordTransaction(ana, account, food, 500);
     await recordTransaction(ana, account, food, 200);
+    const transactionActivityBefore = await transactionActivityCount(ana, familyId);
 
     const { error } = await ben.client.rpc("delete_category", {
       category_id: food,
@@ -450,12 +451,7 @@ describe("deleting a category", () => {
       old: { name: "Food", moved_to: { id: groceries, name: "Groceries" }, moved_transactions: 2 },
       new: null,
     });
-    const { data: transactionEntries } = await ana.client
-      .from("activity")
-      .select("id")
-      .eq("space_id", familyId)
-      .eq("table_name", "transactions");
-    expect(transactionEntries).toEqual([]);
+    expect(await transactionActivityCount(ana, familyId)).toBe(transactionActivityBefore);
   });
 
   it("moves a subcategory's transactions to its parent", async () => {
@@ -627,6 +623,16 @@ async function categoryActivityOf(user: User, spaceId: string) {
   return data;
 }
 
+async function transactionActivityCount(user: User, spaceId: string): Promise<number> {
+  const { count, error } = await user.client
+    .from("activity")
+    .select("id", { count: "exact", head: true })
+    .eq("space_id", spaceId)
+    .eq("table_name", "transactions");
+  if (error) throw error;
+  return defined(count);
+}
+
 async function addAccount(user: User, spaceId: string): Promise<string> {
   const { data, error } = await user.client.rpc("create_account", {
     space: spaceId,
@@ -640,18 +646,20 @@ async function addAccount(user: User, spaceId: string): Promise<string> {
   return data;
 }
 
-// Members can't record transactions until #39, so this writes as the database's owner.
 async function recordTransaction(user: User, account: string, category: string, amount: number) {
-  await sql.begin(async (tx) => {
-    const [transaction] = await tx<{ id: string }[]>`
-      insert into transactions (date, created_by)
-      values (current_date, ${user.userId})
-      returning id`;
-    const id = defined(transaction).id;
-    await tx`
-      insert into postings (transaction_id, ledger_account_id, currency, amount)
-      values (${id}, ${account}, 'USD', ${-amount}), (${id}, ${category}, 'USD', ${amount})`;
+  const { error } = await user.client.rpc("add_transaction", {
+    transaction_id: crypto.randomUUID(),
+    transaction_type: "expense",
+    transaction_date: new Date().toISOString().slice(0, 10),
+    title: null,
+    note: null,
+    account,
+    amount,
+    category,
+    to_account: null,
+    to_amount: null,
   });
+  if (error) throw error;
 }
 
 // Members never see a space's opening-balance category, so this reads it as the database's owner.

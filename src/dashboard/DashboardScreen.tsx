@@ -4,6 +4,7 @@ import { AccountsCard } from "../accounts/AccountsCard";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
+import { RecentTransactionsCard } from "../transactions/RecentTransactionsCard";
 import { Card, EmptyState } from "../ui/Card";
 
 // Layout draft: a card showing placeholder text stands in for a feature that doesn't exist yet.
@@ -40,9 +41,7 @@ export function DashboardScreen() {
           </Card>
         </div>
 
-        <Card title={t("dashboard.recent")} className="lg:col-span-2">
-          <EmptyState>{t("dashboard.recentPlaceholder")}</EmptyState>
-        </Card>
+        <RecentTransactionsCard className="lg:col-span-2" />
       </div>
     </div>
   );

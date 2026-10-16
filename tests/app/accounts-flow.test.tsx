@@ -1,7 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createSharedSpace, openApp, openSignedIn, uniqueName, user } from "../support/app";
+import {
+  addAccount,
+  createSharedSpace,
+  goHome,
+  openApp,
+  openNewAccount,
+  openSignedIn,
+  uniqueName,
+  user,
+} from "../support/app";
 import { defined, sql } from "../support/local-instance";
 
 beforeEach(() => localStorage.clear());
@@ -188,27 +197,6 @@ describe("the space picker", () => {
     ]);
   });
 });
-
-type NewAccount = { name: string; openingBalance: string; space?: string };
-
-async function addAccount({ name, openingBalance, space }: NewAccount) {
-  await openNewAccount();
-  if (space) await user.selectOptions(screen.getByLabelText("Space"), space);
-  await user.type(screen.getByLabelText("Name"), name);
-  if (openingBalance) await user.type(screen.getByLabelText("Opening balance"), openingBalance);
-  await user.click(screen.getByRole("button", { name: "Add account" }));
-  await screen.findByRole("heading", { name, level: 1 });
-}
-
-async function openNewAccount() {
-  await goHome();
-  await user.click(await screen.findByRole("link", { name: "Add account" }));
-  await screen.findByRole("heading", { name: "New account" });
-}
-
-async function goHome() {
-  await user.click(defined(screen.getAllByRole("link", { name: "Home" })[0]));
-}
 
 function balanceShown(): string {
   return within(screen.getByRole("region", { name: "Balance" })).getByText(/\d/).textContent;

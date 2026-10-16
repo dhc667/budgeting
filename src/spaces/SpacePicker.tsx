@@ -1,8 +1,9 @@
 import type { TFunction } from "i18next";
 import { ChevronDown, Layers } from "lucide-react";
-import { type RefObject, useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { useDismiss } from "../ui/use-dismiss";
 import { spaceName } from "./space";
 import { useHiddenSpaces, useShownSpaces } from "./space-picker";
 import { type Space, useSpaces } from "./space-queries";
@@ -77,22 +78,4 @@ function pickerLabel(spaces: Space[], shown: Space[], t: TFunction): string {
   if (shown.length === spaces.length) return t("spacePicker.all");
   if (shown.length === 1 && only) return spaceName(only, t);
   return t("spacePicker.some", { count: shown.length });
-}
-
-function useDismiss(open: boolean, inside: RefObject<HTMLElement | null>, close: () => void) {
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && !inside.current?.contains(event.target)) close();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, inside, close]);
 }

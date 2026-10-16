@@ -16,6 +16,9 @@ import { ComingSoonScreen } from "./screens/ComingSoonScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
 import { SpaceScreen } from "./spaces/SpaceScreen";
 import { SpacesScreen } from "./spaces/SpacesScreen";
+import { NewTransactionScreen } from "./transactions/NewTransactionScreen";
+import { TransactionScreen } from "./transactions/TransactionScreen";
+import { TransactionsScreen } from "./transactions/TransactionsScreen";
 
 // Hash routing: GitHub Pages can't rewrite deep links to index.html.
 export function createAppRouter() {
@@ -39,10 +42,9 @@ export function createAppRouter() {
                       element: <AppShell />,
                       children: [
                         { index: true, element: <DashboardScreen /> },
-                        {
-                          path: "transactions",
-                          element: <ComingSoonScreen title={(t) => t("nav.transactions")} />,
-                        },
+                        { path: "transactions", element: <TransactionsScreen /> },
+                        { path: "transactions/new", element: <NewTransactionScreen /> },
+                        { path: "transactions/:transactionId", element: <TransactionScreen /> },
                         {
                           path: "budgets",
                           element: <ComingSoonScreen title={(t) => t("nav.budgets")} />,

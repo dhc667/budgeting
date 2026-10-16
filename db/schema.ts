@@ -294,19 +294,32 @@ export const starterCategoryNames = pgTable(
   (t) => [primaryKey({ columns: [t.starterCategoryId, t.language] })],
 ).enableRLS();
 
+// Never stored: the `transaction_details` view works it out from a transaction's postings.
+export const transactionType = pgEnum("transaction_type", [
+  "expense",
+  "refund",
+  "income",
+  "transfer",
+]);
+
 // Written only by Postgres functions, which keep each transaction's postings balanced.
 export const transactions = pgTable(
   "transactions",
   {
     id: uuid().primaryKey().defaultRandom(),
     date: date().notNull(),
+    title: text(),
+    note: text(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => profiles.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    check("title_not_blank", sql`trim(${t.title}) <> ''`),
+    check("note_not_blank", sql`trim(${t.note}) <> ''`),
     index("transactions_created_by_idx").on(t.createdBy),
+    index("transactions_newest_first_idx").on(t.date.desc(), t.createdAt.desc()),
     pgPolicy("members see transactions touching their spaces", {
       for: "select",
       to: authenticatedRole,
