@@ -479,7 +479,14 @@ left join lateral (
   where postings.transaction_id = transactions.id and ledger_accounts.kind in ('expense', 'income')
   limit 1
 ) as category on true
-where not public.is_opening_balance(transactions.id);
+-- Not is_opening_balance(): a function Postgres can't inline would run for every transaction read,
+-- where this looks the opening balances up once.
+where transactions.id not in (
+  select postings.transaction_id
+  from public.postings
+  join public.ledger_accounts on ledger_accounts.id = postings.ledger_account_id
+  where ledger_accounts.kind = 'opening_balance'
+);
 --> statement-breakpoint
 -- The latest transaction of each title, one per category, or per pair of accounts for a transfer,
 -- so that picking a title fills in the rest the way it was last time.
@@ -489,28 +496,100 @@ language sql
 stable
 set search_path = ''
 as $$
-  select *
-  from (
+  with latest as (
+    -- Told apart by what decides the type rather than by the type, which would cost a function call
+    -- for each of the user's transactions: a category's kind, and which way its money went.
     select distinct on (
-      lower(title),
-      type,
+      title,
       category_id,
+      category_gains,
       case when category_id is null then from_account_id end,
       case when category_id is null then to_account_id end
-    ) *
-    from public.transaction_details
-    where created_by = auth.uid() and title is not null and type is not null and not one_sided
+    ) id
+    from (
+      select
+        transactions.id,
+        transactions.date,
+        transactions.created_at,
+        lower(transactions.title) as title,
+        count(*) as seen_postings,
+        (array_agg(postings.ledger_account_id) filter (where ledger_accounts.kind in ('expense', 'income')))[1] as category_id,
+        bool_or(postings.amount > 0) filter (where ledger_accounts.kind in ('expense', 'income')) as category_gains,
+        (array_agg(postings.ledger_account_id) filter (where ledger_accounts.kind = 'account' and postings.amount < 0))[1] as from_account_id,
+        (array_agg(postings.ledger_account_id) filter (where ledger_accounts.kind = 'account' and postings.amount > 0))[1] as to_account_id
+      from public.transactions
+      join public.postings on postings.transaction_id = transactions.id
+      join public.ledger_accounts on ledger_accounts.id = postings.ledger_account_id
+      where transactions.created_by = (select auth.uid()) and transactions.title is not null
+      group by transactions.id
+    ) as own
+    -- Both of its two postings in sight: a transfer the user sees one side of, they can't change.
+    where seen_postings = 2
     order by
-      lower(title),
-      type,
+      title,
       category_id,
+      category_gains,
       case when category_id is null then from_account_id end,
       case when category_id is null then to_account_id end,
       date desc,
       created_at desc
-  ) as latest
+  )
+  -- An array, so that Postgres reads the details of these transactions alone.
+  select * from public.transaction_details
+  where id = any (array(select id from latest)) and type is not null
   order by date desc, created_at desc;
 $$;
+--> statement-breakpoint
+-- Through the space's opening balance category, which holds a posting for each account opened with
+-- money: asking is_opening_balance() of every posting of the account grows with its transactions.
+create or replace function public.opening_balance_transaction(account uuid)
+returns uuid
+language sql
+stable
+set search_path = ''
+as $$
+  select counterpart.transaction_id
+  from public.ledger_accounts as money
+  join public.ledger_accounts as opening_category
+    on opening_category.space_id = money.space_id and opening_category.kind = 'opening_balance'
+  join public.postings as counterpart on counterpart.ledger_account_id = opening_category.id
+  join public.postings as own
+    on own.transaction_id = counterpart.transaction_id and own.ledger_account_id = money.id
+  where money.id = account;
+$$;
+--> statement-breakpoint
+create or replace view public.accounts with (security_invoker = true) as
+select
+  id,
+  space_id,
+  name,
+  currency,
+  color,
+  position,
+  archived,
+  created_at,
+  coalesce(
+    (select sum(amount) from public.postings where ledger_account_id = ledger_accounts.id),
+    0
+  )::bigint as balance,
+  coalesce(
+    (
+      select amount from public.postings
+      where transaction_id = public.opening_balance_transaction(ledger_accounts.id)
+        and ledger_account_id = ledger_accounts.id
+    ),
+    0
+  ) as opening_balance,
+  (
+    select date from public.transactions
+    where id = public.opening_balance_transaction(ledger_accounts.id)
+  ) as opening_date,
+  exists (
+    select 1 from public.postings
+    where ledger_account_id = ledger_accounts.id and not public.is_opening_balance(transaction_id)
+  ) as has_transactions
+from public.ledger_accounts
+where kind = 'account';
 --> statement-breakpoint
 grant execute on function
   public.add_transaction(uuid, public.transaction_type, date, text, text, uuid, bigint, uuid, uuid, bigint),
@@ -519,6 +598,7 @@ grant execute on function
   public.transaction_history(uuid),
   public.merged_snapshot(jsonb[]),
   public.title_suggestions(),
+  public.opening_balance_transaction(uuid),
   public.transaction_type(uuid),
   public.can_change_transaction(uuid)
 to authenticated;

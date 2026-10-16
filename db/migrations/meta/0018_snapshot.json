@@ -1,6 +1,6 @@
 {
-  "id": "4090cb86-2d4b-405b-9c16-341ee2cf1e11",
-  "prevId": "d50d4649-f680-4a1f-8463-1ac7cc492d42",
+  "id": "8c0863b6-0fbb-4826-aa82-5f399f4fc18d",
+  "prevId": "dc90abe3-eed1-449e-bd28-9adaee4e2455",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1098,13 +1098,19 @@
               "expression": "date",
               "isExpression": false,
               "asc": false,
-              "nulls": "last"
+              "nulls": "first"
             },
             {
               "expression": "created_at",
               "isExpression": false,
               "asc": false,
-              "nulls": "last"
+              "nulls": "first"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
             }
           ],
           "isUnique": false,

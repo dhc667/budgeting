@@ -319,7 +319,13 @@ export const transactions = pgTable(
     check("title_not_blank", sql`trim(${t.title}) <> ''`),
     check("note_not_blank", sql`trim(${t.note}) <> ''`),
     index("transactions_created_by_idx").on(t.createdBy),
-    index("transactions_newest_first_idx").on(t.date.desc(), t.createdAt.desc()),
+    // In the app's order exactly, nulls first as Postgres puts them in a descending order: with
+    // Drizzle's nulls last, the list sorts every transaction rather than reading one page.
+    index("transactions_newest_first_idx").on(
+      t.date.desc().nullsFirst(),
+      t.createdAt.desc().nullsFirst(),
+      t.id.desc().nullsFirst(),
+    ),
     pgPolicy("members see transactions touching their spaces", {
       for: "select",
       to: authenticatedRole,
