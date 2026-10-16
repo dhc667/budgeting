@@ -409,6 +409,189 @@ describe("deleting a transaction", () => {
   });
 });
 
+describe("restoring a deleted transaction", () => {
+  it("brings it back as it was, and logs it as restored", async () => {
+    const id = await addTransaction(ana, expense({ amount: 100, title: "Bread", note: "Rye" }));
+    const before = await detailsOf(ana, id);
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await ben.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    expect(await detailsOf(ana, id)).toEqual(before);
+    expect(await balanceOf(ana, checking)).toBe(9_900);
+    expect((await transactionActivityOf(ana, familyId)).at(-1)).toMatchObject({
+      action: "restore",
+      row_id: id,
+      changed_by: ben.userId,
+      old: null,
+      new: { title: "Bread", postings: expect.any(Array) as unknown },
+    });
+  });
+
+  it("brings back a transfer between spaces with both sides", async () => {
+    const wallet = await addAccount(ana, (await privateSpaceOf(ana)).id, "Wallet");
+    const id = await addTransaction(ana, transfer(wallet, checking, 2_000));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    expect(await detailsOf(ana, id)).toMatchObject({
+      from_account_id: wallet,
+      to_account_id: checking,
+      one_sided: false,
+    });
+    expect(await balanceOf(ana, wallet)).toBe(-2_000);
+  });
+
+  it("puts it back in an archived account", async () => {
+    const id = await addTransaction(ana, expense({ amount: 100 }));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.from("accounts").update({ archived: true }).eq("id", checking);
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    expect(await balanceOf(ana, checking)).toBe(9_900);
+  });
+
+  it("puts it where its deleted category's transactions went", async () => {
+    const snacks = await addCategory(ana, "Snacks");
+    const treats = await addCategory(ana, "Treats");
+    const id = await addTransaction(ana, expense({ category: snacks }));
+    await addTransaction(ana, expense({ category: snacks }));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.rpc("delete_category", { category_id: snacks, move_to: treats });
+    await addTransaction(ana, expense({ category: treats }));
+    await ana.client.rpc("delete_category", { category_id: treats, move_to: groceries });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    expect(await detailsOf(ana, id)).toMatchObject({ category_id: groceries });
+  });
+
+  it("refuses when its category was deleted with no transactions to move", async () => {
+    const snacks = await addCategory(ana, "Snacks");
+    const id = await addTransaction(ana, expense({ category: snacks }));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.rpc("delete_category", { category_id: snacks, move_to: groceries });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.details).toBe("category_deleted");
+  });
+
+  it("refuses when an account it used was deleted", async () => {
+    const savings = await addAccount(ana, familyId, "Savings");
+    const id = await addTransaction(ana, transfer(checking, savings, 1_000));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.from("accounts").delete().eq("id", savings);
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.details).toBe("account_deleted");
+    expect(await balanceOf(ana, checking)).toBe(10_000);
+  });
+
+  it("refuses when the space on the other side of a transfer was deleted", async () => {
+    const trip = await createSpace(ana, "Trip", []);
+    const kitty = await addAccount(ana, trip, "Kitty");
+    const id = await addTransaction(ana, transfer(checking, kitty, 1_000));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.from("spaces").delete().eq("id", trip);
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.details).toBe("account_deleted");
+  });
+
+  it("refuses when an account it used changed currency", async () => {
+    const savings = await addAccount(ana, familyId, "Savings");
+    const id = await addTransaction(ana, transfer(checking, savings, 1_000));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.rpc("update_account", {
+      account_id: savings,
+      account_name: "Savings",
+      account_currency: "EUR",
+      account_color: "blue",
+      opening_amount: 0,
+      opening_date: today(),
+    });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.details).toBe("currency_changed");
+  });
+
+  it("refuses a transfer to a member of one side only", async () => {
+    const wallet = await addAccount(ana, (await privateSpaceOf(ana)).id, "Wallet");
+    const id = await addTransaction(ana, transfer(wallet, checking, 2_000));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await ben.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.details).toBe("other_space");
+    expect(await balanceOf(ana, checking)).toBe(10_000);
+  });
+
+  it("refuses a transaction that exists again", async () => {
+    const id = await addTransaction(ana, expense({ amount: 100 }));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.details).toBe("exists");
+    expect(await balanceOf(ana, checking)).toBe(9_900);
+  });
+
+  it("restores the latest deletion when it was deleted twice", async () => {
+    const id = await addTransaction(ana, expense({ amount: 100 }));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.rpc("restore_transaction", { transaction_id: id });
+    await ana.client.rpc("update_transaction", {
+      ...expense({ amount: 300 }),
+      transaction_id: id,
+    });
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    expect(await balanceOf(ana, checking)).toBe(9_700);
+  });
+
+  it("is only for members of its space", async () => {
+    const id = await addTransaction(ana, expense());
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await carla.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.message).toMatch(/no such deleted transaction in your spaces/);
+  });
+
+  it("leaves opening balances to their account", async () => {
+    const [opening] = await sql<{ transaction_id: string }[]>`
+      select transaction_id from postings where ledger_account_id = ${checking}`;
+    const id = defined(opening).transaction_id;
+    await ana.client.rpc("update_account", {
+      account_id: checking,
+      account_name: "Checking",
+      account_currency: "USD",
+      account_color: "blue",
+      opening_amount: 0,
+      opening_date: today(),
+    });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error?.message).toMatch(/opening balance comes back by setting it on its account/);
+    expect(await balanceOf(ana, checking)).toBe(0);
+  });
+});
+
 describe("sending a deleted transaction again", () => {
   it("doesn't bring it back", async () => {
     const args = expense({ title: "Bread" });
@@ -529,6 +712,7 @@ describe("grants", () => {
       }),
       ana.client.rpc("snapshots_by_space", { transaction: id }),
       ana.client.rpc("transaction_snapshot", { transaction: id, space: familyId }),
+      ana.client.rpc("restored_ledger_account", { posting: {} }),
     ]);
 
     expect(calls.map(({ error }) => error?.code)).toEqual(calls.map(() => permissionDenied));
@@ -599,6 +783,19 @@ async function categoryIn(user: User, spaceId: string, name: string): Promise<st
     .single();
   if (error) throw error;
   return data.id;
+}
+
+async function addCategory(user: User, name: string): Promise<string> {
+  const { data, error } = await user.client.rpc("create_category", {
+    space: familyId,
+    category_kind: "expense",
+    category_name: name,
+    category_icon: "utensils",
+    category_color: "blue",
+    parent: null,
+  });
+  if (error) throw error;
+  return data;
 }
 
 async function balanceOf(user: User, accountId: string): Promise<number> {

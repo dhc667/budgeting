@@ -148,6 +148,20 @@
       "when": 1792178549052,
       "tag": "0020_space_policies_look_up_spaces_once",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792184885775,
+      "tag": "0021_activity_restore",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792184886266,
+      "tag": "0022_restore_transactions",
+      "breakpoints": true
     }
   ]
 }

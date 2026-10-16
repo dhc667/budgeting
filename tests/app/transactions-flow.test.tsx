@@ -201,6 +201,31 @@ describe("transactions", () => {
     expect(screen.getByRole("heading", { name: "Transactions", level: 1 })).toBeTruthy();
   });
 
+  it("restores a deleted transaction from its account's history", async () => {
+    const ana = uniqueName("Ana");
+    await openSignedIn(ana);
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await recordTransaction({ amount: "9", category: "Gifts", title: "Present" });
+    await user.click(await screen.findByRole("link", { name: /Present/ }));
+    await user.click(await screen.findByRole("button", { name: "Delete transaction" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));
+    await screen.findByText("No transactions yet.");
+
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    await user.click(await accounts.findByRole("link", { name: /Checking/ }));
+    const history = within(await screen.findByRole("region", { name: "History" }));
+    await user.click(await history.findByRole("button", { name: "Restore" }));
+
+    expect(await history.findByText(new RegExp(`^${ana} restored “Present”`))).toBeTruthy();
+    expect(history.queryByRole("button", { name: "Restore" })).toBeNull();
+    await goHome();
+    const restored = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await restored.findByRole("link", { name: /Checking/ })).textContent).toMatch(
+      /\$91\.00/,
+    );
+  });
+
   it("refuses an amount that isn't above zero", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "" });

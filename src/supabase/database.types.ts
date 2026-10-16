@@ -504,6 +504,12 @@ isOneToOne: false
 "reorder_accounts":
 { Args: { "account_ids": (string)[] }; Returns: undefined
                            },
+"restore_transaction":
+{ Args: { "transaction_id": string }; Returns: undefined
+                           },
+"restored_ledger_account":
+{ Args: { "posting": Json }; Returns: string
+                           },
 "schema_version":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -601,7 +607,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "activity_action": "insert"|"update"|"delete","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","transaction_type": "expense"|"refund"|"income"|"transfer"
+            "activity_action": "insert"|"update"|"delete"|"restore","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","transaction_type": "expense"|"refund"|"income"|"transfer"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -717,7 +723,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_action": ["insert", "update", "delete"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"transaction_type": ["expense", "refund", "income", "transfer"]
+            "activity_action": ["insert", "update", "delete", "restore"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"transaction_type": ["expense", "refund", "income", "transfer"]
           }
         }
 } as const

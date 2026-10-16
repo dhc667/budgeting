@@ -215,6 +215,7 @@
     "transaction": {
       "added": "{{actor}} added “{{label}}”: {{summary}}",
       "deleted": "{{actor}} deleted “{{label}}”: {{summary}}",
+      "restored": "{{actor}} restored “{{label}}”: {{summary}}",
       "movedIn": "{{actor}} moved “{{label}}” into this space: {{summary}}",
       "movedOut": "{{actor}} moved “{{label}}” out of this space: {{summary}}",
       "renamed": "{{actor}} renamed “{{from}}” to “{{to}}”",
@@ -391,6 +392,16 @@
       "submit": "Delete transaction",
       "confirmTitle": "Delete “{{label}}”?",
       "confirm": "Delete"
+    },
+    "restore": {
+      "submit": "Restore",
+      "exists": "It's already back.",
+      "otherSpace": "This transfer joins a space you're not a member of, so only someone in both spaces can restore it.",
+      "accountDeleted": "Couldn't restore it: an account it used has been deleted.",
+      "currencyChanged": "Couldn't restore it: an account it used now holds another currency.",
+      "categoryDeleted": "Couldn't restore it: its category has been deleted.",
+      "refused": "Couldn't restore it. Reload and try again.",
+      "failed": "Couldn't restore it. Check your connection and try again."
     },
     "errors": {
       "amount": "Enter an amount above zero, like {{example}}.",

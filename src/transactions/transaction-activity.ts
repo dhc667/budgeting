@@ -12,8 +12,7 @@ export function describeTransactionChange(
   const after = snapshotOf(entry.new);
   const shown = after ?? before;
   if (!shown) return [];
-  if (shown.postings.some(({ account_kind }) => account_kind === "opening_balance"))
-    return describeOpeningBalanceChange(entry, actor, shown, phrasing);
+  if (isOpeningBalance(shown)) return describeOpeningBalanceChange(entry, actor, shown, phrasing);
   const { t } = phrasing;
   const details = { actor, label: snapshotLabel(shown, t), summary: summarize(shown, phrasing) };
   switch (entry.action) {
@@ -21,12 +20,29 @@ export function describeTransactionChange(
       return [t("activity.transaction.added", details)];
     case "delete":
       return [t("activity.transaction.deleted", details)];
+    case "restore":
+      return [t("activity.transaction.restored", details)];
     case "update":
       // An edit can move a transaction into or out of a space, which then has only one side.
       if (!before) return [t("activity.transaction.movedIn", details)];
       if (!after) return [t("activity.transaction.movedOut", details)];
       return describeTransactionEdit(before, after, actor, phrasing);
   }
+}
+
+// Newest first, as activity lists come: a transaction's latest deletion can be restored unless
+// something later in the same list shows it back.
+export function restorableDeletions(activity: Activity[]): Set<number> {
+  const seen = new Set<string>();
+  const restorable = new Set<number>();
+  for (const entry of activity) {
+    if (entry.table_name !== "transactions" || seen.has(entry.row_id)) continue;
+    seen.add(entry.row_id);
+    const deleted = snapshotOf(entry.old);
+    if (entry.action === "delete" && deleted && !isOpeningBalance(deleted))
+      restorable.add(entry.id);
+  }
+  return restorable;
 }
 
 function describeTransactionEdit(
@@ -71,7 +87,13 @@ function describeOpeningBalanceChange(
       return [t("activity.openingBalance.changed", details)];
     case "delete":
       return [t("activity.openingBalance.removed", details)];
+    case "restore":
+      return [];
   }
+}
+
+function isOpeningBalance(snapshot: Snapshot): boolean {
+  return snapshot.postings.some(({ account_kind }) => account_kind === "opening_balance");
 }
 
 function snapshotLabel(snapshot: Snapshot, t: TFunction): string {
