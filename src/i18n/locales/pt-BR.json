@@ -6,7 +6,8 @@
     "reports": "Relatórios",
     "profile": "Perfil",
     "addTransaction": "Adicionar transação",
-    "comingSoon": "Em breve"
+    "comingSoon": "Em breve",
+    "backTo": "Voltar para {{place}}"
   },
   "comingSoon": "Em breve.",
   "instance": {

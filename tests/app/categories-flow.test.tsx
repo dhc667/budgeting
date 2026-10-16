@@ -86,7 +86,7 @@ describe("categories", () => {
     await user.click(screen.getByRole("button", { name: "Add category" }));
     await screen.findByRole("heading", { name: "Bakery", level: 1 });
 
-    await user.click(screen.getByRole("link", { name: "Private" }));
+    await user.click(screen.getByRole("link", { name: "Back to Private" }));
     const categories = within(await screen.findByRole("region", { name: "Categories" }));
     const names = (await categories.findAllByRole("link")).map(({ textContent }) => textContent);
     expect(names.indexOf("Bakery")).toBe(names.indexOf("Groceries") + 1);
@@ -94,6 +94,19 @@ describe("categories", () => {
     const deleteCard = within(await screen.findByRole("region", { name: "Delete category" }));
     expect(deleteCard.getByText(/has subcategories, so it can't be deleted/)).toBeTruthy();
     expect(deleteCard.queryByRole("button")).toBeNull();
+  });
+
+  it("goes back to its space from a new category without adding it", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await openSpace("Private");
+
+    await user.click(await screen.findByRole("link", { name: "Add category" }));
+    await user.type(await screen.findByLabelText("Name"), "Bakery");
+    await user.click(screen.getByRole("link", { name: "Back to Private" }));
+
+    const categories = within(await screen.findByRole("region", { name: "Categories" }));
+    await categories.findByRole("link", { name: "Groceries" });
+    expect(categories.queryByRole("link", { name: "Bakery" })).toBeNull();
   });
 
   it("edits a category and shows the change in its history", async () => {

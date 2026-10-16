@@ -6,6 +6,7 @@ import { CategoriesCard } from "../categories/CategoriesCard";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
 import { afterSuccess } from "../query-client";
 import { Avatar } from "../ui/Avatar";
+import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
@@ -36,7 +37,10 @@ export function SpaceScreen() {
   // Keyed so that another space's screen starts with fresh forms rather than this one's.
   return (
     <div key={space.id} className="flex max-w-xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{spaceName(space, t)}</h1>
+      <header className="flex flex-col gap-1">
+        <BackLink to="/spaces" place={t("spaces.title")} />
+        <h1 className="text-2xl font-semibold">{spaceName(space, t)}</h1>
+      </header>
       {isPrivate(space) ? (
         <>
           <p className="text-zinc-500">{t("spaces.privateExplained")}</p>

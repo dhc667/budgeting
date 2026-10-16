@@ -23,6 +23,15 @@ describe("accounts", () => {
     );
   });
 
+  it("leads back home from an account", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "0" });
+
+    await user.click(screen.getByRole("link", { name: "Back to Home" }));
+
+    expect(await screen.findByRole("region", { name: "Accounts" })).toBeTruthy();
+  });
+
   it("edits the opening balance, and records it in the account's history", async () => {
     const ana = uniqueName("Ana");
     await openSignedIn(ana);
