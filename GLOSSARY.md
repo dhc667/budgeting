@@ -108,5 +108,5 @@ _Avoid_: pending, scheduled
 ### Oversight
 
 **Activity**:
-A space's record of every change made to its data: who made it, when, and what it was before. A deleted transaction can be restored from it. The categories a space starts with aren't in it, and deleting a category is a single change that says where its transactions went, not one per transaction moved.
+A space's record of every change made to its data: who made it, when, and what it was before. A deleted transaction can be restored from it, unless an account it used is gone; if its category was deleted since, it goes where that category's transactions went. The categories a space starts with aren't in it, and deleting a category is a single change that says where its transactions went, not one per transaction moved.
 _Avoid_: audit log, history

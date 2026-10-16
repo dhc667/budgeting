@@ -26,7 +26,7 @@ export function useSpaceActivity(spaceId: string) {
     async queryFn(): Promise<Activity[]> {
       const { data, error } = await supabase
         .from("activity")
-        .select("id, table_name, action, changed_by, changed_at, old, new")
+        .select("id, table_name, row_id, action, changed_by, changed_at, old, new")
         .eq("space_id", spaceId)
         .order("id", { ascending: false });
       if (error) throw error;
@@ -108,5 +108,5 @@ export type Space = Pick<Tables<"spaces">, "id" | "name" | "private_owner"> & {
 
 export type Activity = Pick<
   Tables<"activity">,
-  "id" | "table_name" | "action" | "changed_by" | "changed_at" | "old" | "new"
+  "id" | "table_name" | "row_id" | "action" | "changed_by" | "changed_at" | "old" | "new"
 >;

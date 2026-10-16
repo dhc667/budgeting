@@ -23,7 +23,7 @@ export function useCategoryHistory(categoryId: string) {
     async queryFn(): Promise<Activity[]> {
       const { data, error } = await supabase
         .from("activity")
-        .select("id, table_name, action, changed_by, changed_at, old, new")
+        .select("id, table_name, row_id, action, changed_by, changed_at, old, new")
         .eq("table_name", "ledger_accounts")
         // Including deletes of other categories that moved their transactions into this one.
         .or(`row_id.eq.${categoryId},old->moved_to->>id.eq.${categoryId}`)

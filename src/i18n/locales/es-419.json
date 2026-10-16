@@ -215,6 +215,7 @@
     "transaction": {
       "added": "{{actor}} agregó “{{label}}”: {{summary}}",
       "deleted": "{{actor}} eliminó “{{label}}”: {{summary}}",
+      "restored": "{{actor}} restauró “{{label}}”: {{summary}}",
       "movedIn": "{{actor}} trajo “{{label}}” a este espacio: {{summary}}",
       "movedOut": "{{actor}} sacó “{{label}}” de este espacio: {{summary}}",
       "renamed": "{{actor}} renombró “{{from}}” a “{{to}}”",
@@ -391,6 +392,16 @@
       "submit": "Eliminar movimiento",
       "confirmTitle": "¿Eliminar “{{label}}”?",
       "confirm": "Eliminar"
+    },
+    "restore": {
+      "submit": "Restaurar",
+      "exists": "Ya está de vuelta.",
+      "otherSpace": "Esta transferencia une un espacio del que no eres miembro, así que solo alguien de ambos espacios puede restaurarla.",
+      "accountDeleted": "No se pudo restaurar: se eliminó una cuenta que usaba.",
+      "currencyChanged": "No se pudo restaurar: una cuenta que usaba ahora tiene otra moneda.",
+      "categoryDeleted": "No se pudo restaurar: se eliminó su categoría.",
+      "refused": "No se pudo restaurar. Recarga e inténtalo de nuevo.",
+      "failed": "No se pudo restaurar. Revisa tu conexión e inténtalo de nuevo."
     },
     "errors": {
       "amount": "Ingresa un monto mayor que cero, como {{example}}.",

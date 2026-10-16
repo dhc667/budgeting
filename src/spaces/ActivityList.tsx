@@ -3,7 +3,11 @@ import { useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
-import { describeTransactionChange } from "../transactions/transaction-activity";
+import { RestoreTransaction } from "../transactions/RestoreTransaction";
+import {
+  describeTransactionChange,
+  restorableDeletions,
+} from "../transactions/transaction-activity";
 import { EmptyState } from "../ui/Card";
 import { hasChanged, ledgerAccountKinds, type Phrasing, stringAt, valueAt } from "./activity";
 import type { Activity } from "./space-queries";
@@ -16,15 +20,18 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
   const { data: categories = [] } = useCategories();
   if (!activity) return null;
   const phrasing: Phrasing = { users, categories, t, money, day: format.day };
+  const restorable = restorableDeletions(activity);
   const entries = activity.flatMap((entry) => {
     const lines = describe(entry, phrasing);
-    return lines.length === 0 ? [] : [{ id: entry.id, lines, at: new Date(entry.changed_at) }];
+    if (lines.length === 0) return [];
+    const at = new Date(entry.changed_at);
+    return [{ id: entry.id, lines, at, restores: restorable.has(entry.id), rowId: entry.row_id }];
   });
   if (entries.length === 0) return <EmptyState>{t("activity.empty")}</EmptyState>;
 
   return (
     <ol className="flex flex-col gap-3">
-      {entries.map(({ id, lines, at }) => (
+      {entries.map(({ id, lines, at, restores, rowId }) => (
         <li key={id} className="flex flex-col">
           {lines.map((line) => (
             <span key={line}>{line}</span>
@@ -32,6 +39,7 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
           <time dateTime={at.toISOString()} className="text-sm text-zinc-500">
             {format.date(at)} {format.time(at)}
           </time>
+          {restores && <RestoreTransaction transactionId={rowId} />}
         </li>
       ))}
     </ol>
@@ -64,6 +72,7 @@ function describeSpaceChange(entry: Activity, actor: string, { t }: Phrasing): s
       return from === to ? [] : [t("activity.space.renamed", { actor, from, to })];
     }
     case "delete":
+    case "restore":
       return [];
   }
 }
@@ -85,6 +94,7 @@ function describeMembershipChange(
         ? []
         : [t("activity.member.added", { actor, member: member ?? t("activity.deletedUser") })];
     case "update":
+    case "restore":
       return [];
     case "delete":
       if (member === undefined) return [t("activity.member.accountDeleted")];
@@ -115,6 +125,8 @@ function describeAccountChange(entry: Activity, actor: string, { t }: Phrasing):
       return [t("activity.account.added", { actor, name })];
     case "delete":
       return [t("activity.account.deleted", { actor, name })];
+    case "restore":
+      return [];
     case "update": {
       const changed = (key: string) => hasChanged(entry, key);
       const lines: string[] = [];
@@ -155,6 +167,8 @@ function describeCategoryChange(
         ? [t("activity.category.deleted", { actor, name })]
         : [t("activity.category.deletedAndMoved", { actor, name, count, to: movedTo })];
     }
+    case "restore":
+      return [];
     case "update": {
       const lines: string[] = [];
       if (hasChanged(entry, "name"))

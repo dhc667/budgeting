@@ -161,7 +161,7 @@ export const spaceMembers = pgTable(
   ],
 );
 
-export const activityAction = pgEnum("activity_action", ["insert", "update", "delete"]);
+export const activityAction = pgEnum("activity_action", ["insert", "update", "delete", "restore"]);
 
 // Written only by the activity trigger.
 export const activity = pgTable(

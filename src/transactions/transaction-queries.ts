@@ -110,6 +110,14 @@ export function useDeleteTransaction(transactionId: string) {
   });
 }
 
+export function useRestoreTransaction() {
+  const supabase = useSupabase();
+  return useTransactionMutation(async (transactionId: string) => {
+    const { error } = await supabase.rpc("restore_transaction", { transaction_id: transactionId });
+    if (error) throw error;
+  });
+}
+
 // A transaction moves balances, counts in its category, and shows in its spaces' activity.
 function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
   const queryClient = useQueryClient();
