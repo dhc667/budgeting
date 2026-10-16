@@ -112,18 +112,18 @@ export const spaces = pgTable(
     pgPolicy("members see their spaces", {
       for: "select",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.id})`,
+      using: inMySpaces(t.id),
     }),
     pgPolicy("members rename shared spaces", {
       for: "update",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.id}) and ${t.privateOwner} is null`,
-      withCheck: sql`public.is_space_member(${t.id}) and ${t.privateOwner} is null`,
+      using: sql`${inMySpaces(t.id)} and ${t.privateOwner} is null`,
+      withCheck: sql`${inMySpaces(t.id)} and ${t.privateOwner} is null`,
     }),
     pgPolicy("members delete shared spaces", {
       for: "delete",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.id}) and ${t.privateOwner} is null`,
+      using: sql`${inMySpaces(t.id)} and ${t.privateOwner} is null`,
     }),
   ],
 );
@@ -146,17 +146,17 @@ export const spaceMembers = pgTable(
     pgPolicy("members see who else is a member", {
       for: "select",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.spaceId})`,
+      using: inMySpaces(t.spaceId),
     }),
     pgPolicy("members add users", {
       for: "insert",
       to: authenticatedRole,
-      withCheck: sql`public.is_space_member(${t.spaceId})`,
+      withCheck: inMySpaces(t.spaceId),
     }),
     pgPolicy("members remove members or leave", {
       for: "delete",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.spaceId})`,
+      using: inMySpaces(t.spaceId),
     }),
   ],
 );
@@ -187,7 +187,7 @@ export const activity = pgTable(
     pgPolicy("members see their spaces' activity", {
       for: "select",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.spaceId})`,
+      using: inMySpaces(t.spaceId),
     }),
   ],
 );
@@ -258,18 +258,18 @@ export const ledgerAccounts = pgTable(
     pgPolicy("members see their spaces' accounts and categories", {
       for: "select",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.spaceId})`,
+      using: inMySpaces(t.spaceId),
     }),
     pgPolicy("members edit their spaces' accounts", {
       for: "update",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.spaceId}) and ${t.kind} = 'account'`,
-      withCheck: sql`public.is_space_member(${t.spaceId}) and ${t.kind} = 'account'`,
+      using: sql`${inMySpaces(t.spaceId)} and ${t.kind} = 'account'`,
+      withCheck: sql`${inMySpaces(t.spaceId)} and ${t.kind} = 'account'`,
     }),
     pgPolicy("members delete their spaces' accounts", {
       for: "delete",
       to: authenticatedRole,
-      using: sql`public.is_space_member(${t.spaceId}) and ${t.kind} = 'account'`,
+      using: sql`${inMySpaces(t.spaceId)} and ${t.kind} = 'account'`,
     }),
   ],
 );
@@ -359,3 +359,9 @@ export const postings = pgTable(
     }),
   ],
 );
+
+// Rather than `in (select …)`: Postgres then expects the few spaces a user is in, not a thousand
+// rows, and reads only theirs through the space_id index instead of scanning the whole table.
+function inMySpaces(spaceId: AnyPgColumn) {
+  return sql`${spaceId} = any (array(select public.my_space_ids()))`;
+}
