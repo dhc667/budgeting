@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { localToday } from "../format/days";
 import { useMoney } from "../money/use-money";
+import { afterSuccess } from "../query-client";
 import { ActivityList } from "../spaces/ActivityList";
 import { spaceName } from "../spaces/space";
 import { useSpaces } from "../spaces/space-queries";
@@ -152,7 +153,7 @@ function DeleteCard({ account }: { account: Account }) {
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const deleteAccount = useDeleteAccount(account.id);
-  const confirm = () => deleteAccount.mutate(undefined, { onSuccess: () => void navigate("/") });
+  const confirm = () => afterSuccess(deleteAccount.mutateAsync(), () => navigate("/"));
 
   if (account.has_transactions) {
     return (
