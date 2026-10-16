@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../src/supabase/database.types.ts";
+import type { Database } from "../src/supabase/database.ts";
 
 export async function createInviteCode(
   admin: SupabaseClient<Database>,

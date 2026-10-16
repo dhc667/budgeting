@@ -4,13 +4,23 @@ type FieldProps = ComponentProps<"input"> & { label: string; hint?: string };
 
 export function Field({ label, hint, ...props }: FieldProps) {
   const id = useId();
+  const hintId = useId();
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <input id={id} className={inputClass} {...props} />
-      {hint && <p className="text-xs text-zinc-500">{hint}</p>}
+      <input
+        id={id}
+        className={inputClass}
+        aria-describedby={hint ? hintId : undefined}
+        {...props}
+      />
+      {hint && (
+        <p id={hintId} className="text-xs text-zinc-500">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

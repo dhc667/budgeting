@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
-import { Constants } from "../supabase/database.types";
-import type { Color } from "./account-queries";
+import { Constants, type Enums } from "../supabase/database.types";
+
+export type Color = Enums<"color">;
 
 export const colors = Constants.public.Enums.color;
 

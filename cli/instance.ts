@@ -12,7 +12,7 @@ import postgres from "postgres";
 import qrcode from "qrcode-terminal";
 import { migrationCount } from "../db/migration-count.ts";
 import { buildConnectLink, type ConnectRequest } from "../src/instance/connect-link.ts";
-import type { Database } from "../src/supabase/database.types.ts";
+import type { Database } from "../src/supabase/database.ts";
 import { createInviteCode } from "./invites.ts";
 
 const usage = `Usage: pnpm run instance <command> [--env <file>]

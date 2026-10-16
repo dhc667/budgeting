@@ -3,6 +3,7 @@ import postgres from "postgres";
 import { createInviteCode } from "../../cli/invites.ts";
 import { buildConnectLink, type Instance } from "../../src/instance/connect-link.ts";
 import type { Database } from "../../src/supabase/database.ts";
+import type { Enums } from "../../src/supabase/database.types.ts";
 
 process.loadEnvFile(".env.instance.local");
 const env = (name: string) => process.env[name] ?? "";
@@ -43,13 +44,13 @@ export async function existingUser(displayName: string) {
   return { email, userId: defined(data.user).id };
 }
 
-export async function signedInUser(displayName: string) {
+export async function signedInUser(displayName: string, language?: Language) {
   const client = anonClient();
   const inviteCode = await createInviteCode(admin, 24);
   const { data, error } = await client.auth.signUp({
     email: uniqueEmail(),
     password,
-    options: { data: { invite_code: inviteCode, display_name: displayName } },
+    options: { data: { invite_code: inviteCode, display_name: displayName, language } },
   });
   if (error) throw error;
   return { client, userId: defined(data.user).id };
@@ -69,16 +70,20 @@ export async function createSpace(
   creator: SignedInUser,
   name: string,
   members: SignedInUser[],
+  language: Language = "en",
 ): Promise<string> {
   const { data, error } = await creator.client.rpc("create_space", {
     space_name: name,
     member_ids: members.map(({ userId }) => userId),
+    starter_language: language,
   });
   if (error) throw error;
   return data;
 }
 
 export type SignedInUser = Awaited<ReturnType<typeof signedInUser>>;
+
+type Language = Enums<"language">;
 
 export function anonClient() {
   return createClient<Database>(instance.supabaseUrl, instance.publishableKey, {

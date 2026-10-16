@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { useSignedInUser } from "../auth/session";
+import { CategoriesCard } from "../categories/CategoriesCard";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
 import { afterSuccess } from "../query-client";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
@@ -31,15 +33,20 @@ export function SpaceScreen() {
   const space = spaces.find(({ id }) => id === spaceId);
   if (!space) return <SpaceNotFound />;
 
+  // Keyed so that another space's screen starts with fresh forms rather than this one's.
   return (
-    <div className="flex max-w-xl flex-col gap-6">
+    <div key={space.id} className="flex max-w-xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">{spaceName(space, t)}</h1>
       {isPrivate(space) ? (
-        <p className="text-zinc-500">{t("spaces.privateExplained")}</p>
+        <>
+          <p className="text-zinc-500">{t("spaces.privateExplained")}</p>
+          <CategoriesCard spaceId={space.id} />
+        </>
       ) : (
         <>
           <RenameForm space={space} />
           <MembersCard space={space} />
+          <CategoriesCard spaceId={space.id} />
           <ActivityCard space={space} />
           <DeleteCard space={space} />
         </>
@@ -48,7 +55,7 @@ export function SpaceScreen() {
   );
 }
 
-function SpaceNotFound() {
+export function SpaceNotFound() {
   const { t } = useTranslation();
   return (
     <div className="flex max-w-xl flex-col gap-6">
@@ -179,21 +186,23 @@ function DeleteCard({ space }: { space: Space }) {
   return (
     <Card title={t("spaces.delete.title")}>
       <p className="text-sm text-zinc-500">{t("spaces.delete.explained")}</p>
-      {deleteSpace.error && <ErrorText>{t("spaces.errors.deleteFailed")}</ErrorText>}
-      {confirming ? (
-        <div className="flex flex-wrap gap-3">
-          <Button variant="danger" disabled={deleteSpace.isPending} onClick={confirm}>
-            {t("spaces.delete.confirm", { name: spaceName(space, t) })}
-          </Button>
-          <Button variant="secondary" onClick={() => setConfirming(false)}>
-            {t("spaces.delete.cancel")}
-          </Button>
-        </div>
-      ) : (
-        <Button variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
-          {t("spaces.delete.submit")}
-        </Button>
-      )}
+      <Button variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
+        {t("spaces.delete.submit")}
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        title={t("spaces.delete.confirmTitle", { name: spaceName(space, t) })}
+        confirmLabel={t("spaces.delete.confirm")}
+        danger
+        pending={deleteSpace.isPending}
+        onConfirm={confirm}
+        onCancel={() => {
+          deleteSpace.reset();
+          setConfirming(false);
+        }}
+      >
+        {deleteSpace.error && <ErrorText>{t("spaces.errors.deleteFailed")}</ErrorText>}
+      </ConfirmDialog>
     </Card>
   );
 }

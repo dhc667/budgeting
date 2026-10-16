@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   check,
@@ -10,6 +11,7 @@ import {
   pgEnum,
   pgPolicy,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -226,6 +228,9 @@ export const ledgerAccounts = pgTable(
     // Only a money account holds one currency: money of any currency can pass through a category.
     currency: text().references(() => currencies.code),
     color: color(),
+    // A Lucide icon name. The app draws a fallback for a name it doesn't offer.
+    icon: text(),
+    parentId: uuid("parent_id").references((): AnyPgColumn => ledgerAccounts.id),
     position: integer().notNull().default(0),
     archived: boolean().notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -241,7 +246,12 @@ export const ledgerAccounts = pgTable(
       "colored_unless_opening_balance",
       sql`(${t.kind} = 'opening_balance') = (${t.color} is null)`,
     ),
+    check(
+      "icon_only_on_categories",
+      sql`(${t.kind} in ('expense', 'income')) = (${t.icon} is not null)`,
+    ),
     index("ledger_accounts_space_id_idx").on(t.spaceId),
+    index("ledger_accounts_parent_id_idx").on(t.parentId),
     uniqueIndex("one_opening_balance_category_per_space")
       .on(t.spaceId)
       .where(sql`${t.kind} = 'opening_balance'`),
@@ -263,6 +273,26 @@ export const ledgerAccounts = pgTable(
     }),
   ],
 );
+
+// The categories every new space starts with. No policies: only the trigger adding them reads it.
+export const starterCategories = pgTable("starter_categories", {
+  id: smallint().primaryKey(),
+  kind: ledgerAccountKind().notNull(),
+  icon: text().notNull(),
+  color: color().notNull(),
+}).enableRLS();
+
+export const starterCategoryNames = pgTable(
+  "starter_category_names",
+  {
+    starterCategoryId: smallint("starter_category_id")
+      .notNull()
+      .references(() => starterCategories.id),
+    language: language().notNull(),
+    name: text().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.starterCategoryId, t.language] })],
+).enableRLS();
 
 // Written only by Postgres functions, which keep each transaction's postings balanced.
 export const transactions = pgTable(

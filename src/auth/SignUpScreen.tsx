@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Trans, useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation } from "react-router";
+import { shownLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
 import { signOutHere } from "../supabase/client";
 import { signUpErrorMessage } from "./auth-errors";
@@ -12,7 +13,7 @@ import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
 
 export function SignUpScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const supabase = useSupabase();
   const session = useSession();
   const inviteCode = inviteCodeIn(useLocation().state);
@@ -22,7 +23,12 @@ export function SignUpScreen() {
         email: textField(form, "email"),
         password: textField(form, "password"),
         options: {
-          data: { invite_code: inviteCode, display_name: textField(form, "displayName") },
+          data: {
+            invite_code: inviteCode,
+            display_name: textField(form, "displayName"),
+            // Names the private space's starter categories.
+            language: shownLanguage(i18n.resolvedLanguage),
+          },
         },
       });
       if (error) throw error;

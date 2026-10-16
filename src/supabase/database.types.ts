@@ -61,14 +61,14 @@ isOneToOne: false
                   ]
                 },"ledger_accounts": {
                   Row: {
-                    "archived": boolean,"color": Database["public"]['Enums']["color"] | null,"created_at": string,"currency": string | null,"id": string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name": string | null,"position": number,"space_id": string
+                    "archived": boolean,"color": Database["public"]['Enums']["color"] | null,"created_at": string,"currency": string | null,"icon": string | null,"id": string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name": string | null,"parent_id": string | null,"position": number,"space_id": string,"came_with_space": boolean | null
                   }
-                  ComputedFields: never
+                  ComputedFields: "came_with_space"
                   Insert: {
-                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"position"?: number,"space_id": string
+                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id": string
                   }
                   Update: {
-                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"position"?: number,"space_id"?: string
+                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id"?: string
                   }
                   Relationships: [
                     {
@@ -77,6 +77,24 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "currencies"
       referencedColumns: ["code"]
+    },{
+      foreignKeyName: "ledger_accounts_parent_id_ledger_accounts_id_fk"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ledger_accounts_parent_id_ledger_accounts_id_fk"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ledger_accounts_parent_id_ledger_accounts_id_fk"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "ledger_accounts_space_id_spaces_id_fk"
       columns: ["space_id"]
@@ -108,6 +126,12 @@ isOneToOne: false
       columns: ["ledger_account_id"]
 isOneToOne: false
       referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["ledger_account_id"]
+isOneToOne: false
+      referencedRelation: "categories"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
@@ -189,6 +213,40 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"starter_categories": {
+                  Row: {
+                    "color": Database["public"]['Enums']["color"],"icon": string,"id": number,"kind": Database["public"]['Enums']["ledger_account_kind"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "color": Database["public"]['Enums']["color"],"icon": string,"id": number,"kind": Database["public"]['Enums']["ledger_account_kind"]
+                  }
+                  Update: {
+                    "color"?: Database["public"]['Enums']["color"],"icon"?: string,"id"?: number,"kind"?: Database["public"]['Enums']["ledger_account_kind"]
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"starter_category_names": {
+                  Row: {
+                    "language": Database["public"]['Enums']["language"],"name": string,"starter_category_id": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "language": Database["public"]['Enums']["language"],"name": string,"starter_category_id": number
+                  }
+                  Update: {
+                    "language"?: Database["public"]['Enums']["language"],"name"?: string,"starter_category_id"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "starter_category_names_starter_category_id_starter_categories_i"
+      columns: ["starter_category_id"]
+isOneToOne: false
+      referencedRelation: "starter_categories"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"transactions": {
                   Row: {
                     "created_at": string,"created_by": string,"date": string,"id": string
@@ -238,6 +296,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"categories": {
+                  Row: {
+                    "color": Database["public"]['Enums']["color"] | null,"created_at": string | null,"icon": string | null,"id": string | null,"kind": Database["public"]['Enums']["ledger_account_kind"] | null,"name": string | null,"parent_id": string | null,"space_id": string | null,"transaction_count": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string | null,"icon"?: string | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["ledger_account_kind"] | null,"name"?: string | null,"parent_id"?: string | null,"space_id"?: string | null,"transaction_count"?: never
+                         }
+                        Update: {
+                           "color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string | null,"icon"?: string | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["ledger_account_kind"] | null,"name"?: string | null,"parent_id"?: string | null,"space_id"?: string | null,"transaction_count"?: never
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "ledger_accounts_parent_id_ledger_accounts_id_fk"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ledger_accounts_parent_id_ledger_accounts_id_fk"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ledger_accounts_parent_id_ledger_accounts_id_fk"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "ledger_accounts_space_id_spaces_id_fk"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Functions: {
@@ -259,6 +355,9 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"came_with_space":
+{ Args: { "category": Omit<Database["public"]['Tables']["ledger_accounts"]['Row'], Database["public"]['Tables']["ledger_accounts"]['ComputedFields']> }; Returns: boolean
+                           },
 "check_invite_code":
 { Args: { "event": Json }; Returns: Json
                            },
@@ -268,8 +367,14 @@ isOneToOne: false
 "create_account":
 { Args: { "account_color": Database["public"]['Enums']["color"],"account_currency": string,"account_name": string,"opening_amount": number,"opening_date": string,"space": string }; Returns: string
                            },
+"create_category":
+{ Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string,"space": string }; Returns: string
+                           },
 "create_space":
-{ Args: { "member_ids": (string)[],"space_name": string }; Returns: string
+{ Args: { "member_ids": (string)[],"space_name": string,"starter_language"?: Database["public"]['Enums']["language"] }; Returns: string
+                           },
+"delete_category":
+{ Args: { "category_id": string,"move_to": string }; Returns: undefined
                            },
 "is_opening_balance":
 { Args: { "transaction": string }; Returns: boolean
@@ -294,6 +399,9 @@ isOneToOne: false
                            },
 "update_account":
 { Args: { "account_color": Database["public"]['Enums']["color"],"account_currency": string,"account_id": string,"account_name": string,"opening_amount": number,"opening_date": string }; Returns: undefined
+                           },
+"update_category":
+{ Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_id": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string }; Returns: undefined
                            }
           }
           Enums: {

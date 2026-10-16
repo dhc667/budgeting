@@ -9,6 +9,7 @@ import { spaceName } from "../spaces/space";
 import { useSpaces } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import {
   type Account,
@@ -19,7 +20,7 @@ import {
   useUpdateAccount,
 } from "./account-queries";
 import { AccountForm } from "./AccountForm";
-import { ColorDot } from "./ColorDot";
+import { ColorDot } from "../colors/ColorDot";
 
 export function AccountScreen() {
   const { t } = useTranslation();
@@ -32,8 +33,9 @@ export function AccountScreen() {
   if (!account) return <AccountNotFound />;
   const space = spaces.find(({ id }) => id === account.space_id);
 
+  // Keyed so that another account's screen starts with fresh forms rather than this one's.
   return (
-    <div className="flex max-w-xl flex-col gap-6">
+    <div key={account.id} className="flex max-w-xl flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="flex items-center gap-3 text-2xl font-semibold">
           <ColorDot color={account.color} />
@@ -113,23 +115,6 @@ function ArchiveCard({ account }: { account: Account }) {
             {t("accounts.archive.unarchive")}
           </Button>
         </>
-      ) : confirming ? (
-        <>
-          <p className="text-sm">
-            {t("accounts.archive.stillHolds", {
-              name: account.name,
-              balance: money(account.balance, account.currency),
-            })}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button disabled={archive.isPending} onClick={() => setArchived(true)}>
-              {t("accounts.archive.confirm")}
-            </Button>
-            <Button variant="secondary" onClick={() => setConfirming(false)}>
-              {t("accounts.archive.cancel")}
-            </Button>
-          </div>
-        </>
       ) : (
         <>
           <p className="text-sm text-zinc-500">{t("accounts.archive.explained")}</p>
@@ -143,7 +128,26 @@ function ArchiveCard({ account }: { account: Account }) {
           </Button>
         </>
       )}
-      {archive.error && <ErrorText>{t("accounts.errors.saveFailed")}</ErrorText>}
+      {archive.error && !confirming && <ErrorText>{t("accounts.errors.saveFailed")}</ErrorText>}
+      <ConfirmDialog
+        open={confirming}
+        title={t("accounts.archive.confirmTitle", { name: account.name })}
+        confirmLabel={t("accounts.archive.confirm")}
+        pending={archive.isPending}
+        onConfirm={() => setArchived(true)}
+        onCancel={() => {
+          archive.reset();
+          setConfirming(false);
+        }}
+      >
+        <p>
+          {t("accounts.archive.stillHolds", {
+            name: account.name,
+            balance: money(account.balance, account.currency),
+          })}
+        </p>
+        {archive.error && <ErrorText>{t("accounts.errors.saveFailed")}</ErrorText>}
+      </ConfirmDialog>
     </Card>
   );
 }
@@ -165,21 +169,23 @@ function DeleteCard({ account }: { account: Account }) {
   return (
     <Card title={t("accounts.delete.title")}>
       <p className="text-sm text-zinc-500">{t("accounts.delete.explained")}</p>
-      {deleteAccount.error && <ErrorText>{t("accounts.errors.deleteFailed")}</ErrorText>}
-      {confirming ? (
-        <div className="flex flex-wrap gap-3">
-          <Button variant="danger" disabled={deleteAccount.isPending} onClick={confirm}>
-            {t("accounts.delete.confirm", { name: account.name })}
-          </Button>
-          <Button variant="secondary" onClick={() => setConfirming(false)}>
-            {t("accounts.delete.cancel")}
-          </Button>
-        </div>
-      ) : (
-        <Button variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
-          {t("accounts.delete.submit")}
-        </Button>
-      )}
+      <Button variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
+        {t("accounts.delete.submit")}
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        title={t("accounts.delete.confirmTitle", { name: account.name })}
+        confirmLabel={t("accounts.delete.confirm")}
+        danger
+        pending={deleteAccount.isPending}
+        onConfirm={confirm}
+        onCancel={() => {
+          deleteAccount.reset();
+          setConfirming(false);
+        }}
+      >
+        {deleteAccount.error && <ErrorText>{t("accounts.errors.deleteFailed")}</ErrorText>}
+      </ConfirmDialog>
     </Card>
   );
 }

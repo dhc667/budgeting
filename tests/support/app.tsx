@@ -6,6 +6,14 @@ import { defined, existingUser, password, signInLink } from "./local-instance";
 
 export const user = userEvent.setup();
 
+// jsdom has no modal dialogs. Opening and closing are all the app asks of them.
+HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+  this.open = true;
+};
+HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+  this.open = false;
+};
+
 export function openApp(url: string) {
   window.location.hash = new URL(url).hash;
   render(

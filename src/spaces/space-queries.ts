@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { shownLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
 import type { Tables } from "../supabase/database.types";
 import { isPrivate } from "./space";
@@ -35,10 +37,12 @@ export function useSpaceActivity(spaceId: string) {
 
 export function useCreateSpace() {
   const supabase = useSupabase();
+  const { i18n } = useTranslation();
   return useSpaceMutation(async ({ name, memberIds }: { name: string; memberIds: string[] }) => {
     const { data, error } = await supabase.rpc("create_space", {
       space_name: name,
       member_ids: memberIds,
+      starter_language: shownLanguage(i18n.resolvedLanguage),
     });
     if (error) throw error;
     return data;
@@ -79,11 +83,16 @@ export function useRemoveMember() {
   });
 }
 
+// A space comes with its categories and takes them when it's deleted.
 function useSpaceMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["spaces"] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["spaces"] }),
+        queryClient.invalidateQueries({ queryKey: ["categories"] }),
+      ]),
   });
 }
 

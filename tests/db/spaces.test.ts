@@ -97,7 +97,11 @@ describe("a shared space", () => {
   });
 
   it("refuses a blank name", async () => {
-    const { error } = await ana.client.rpc("create_space", { space_name: "  ", member_ids: [] });
+    const { error } = await ana.client.rpc("create_space", {
+      space_name: "  ",
+      member_ids: [],
+      starter_language: "en",
+    });
 
     expect(error).not.toBeNull();
   });

@@ -4,6 +4,8 @@ import { NewAccountScreen } from "./accounts/NewAccountScreen";
 import { RequireSession, SessionGate } from "./auth/SessionGate";
 import { SignInScreen } from "./auth/SignInScreen";
 import { SignUpScreen } from "./auth/SignUpScreen";
+import { CategoryScreen } from "./categories/CategoryScreen";
+import { NewCategoryScreen } from "./categories/NewCategoryScreen";
 import { DashboardScreen } from "./dashboard/DashboardScreen";
 import { ConnectScreen } from "./instance/ConnectScreen";
 import { InstanceGate } from "./instance/InstanceGate";
@@ -52,6 +54,11 @@ export function createAppRouter() {
                         { path: "profile", element: <ProfileScreen /> },
                         { path: "spaces", element: <SpacesScreen /> },
                         { path: "spaces/:spaceId", element: <SpaceScreen /> },
+                        {
+                          path: "spaces/:spaceId/categories/new",
+                          element: <NewCategoryScreen />,
+                        },
+                        { path: "categories/:categoryId", element: <CategoryScreen /> },
                         { path: "accounts/new", element: <NewAccountScreen /> },
                         { path: "accounts/:accountId", element: <AccountScreen /> },
                       ],

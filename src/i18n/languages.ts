@@ -21,6 +21,11 @@ export function deviceLanguage(preferred: readonly string[] = navigator.language
   return "en";
 }
 
+// What the app is showing right now, which a profile on Automatic leaves to the device.
+export function shownLanguage(resolved: string | undefined): Language {
+  return languages.find((language) => language === resolved) ?? "en";
+}
+
 function baseLanguage(tag: string): string {
   return new Intl.Locale(tag).language;
 }

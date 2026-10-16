@@ -75,8 +75,9 @@ describe("accounts", () => {
 
     const archive = within(screen.getByRole("region", { name: "Archive" }));
     await user.click(archive.getByRole("button", { name: "Archive account" }));
-    expect(archive.getByText(/Old card still holds -\$40\.00/)).toBeTruthy();
-    await user.click(archive.getByRole("button", { name: "Archive anyway" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Archive Old card?" }));
+    expect(dialog.getByText(/Old card still holds -\$40\.00/)).toBeTruthy();
+    await user.click(dialog.getByRole("button", { name: "Archive anyway" }));
     await archive.findByRole("button", { name: "Unarchive" });
 
     await goHome();
@@ -106,7 +107,8 @@ describe("accounts", () => {
     await addAccount({ name: "Mistake", openingBalance: "10" });
 
     await user.click(screen.getByRole("button", { name: "Delete account" }));
-    await user.click(screen.getByRole("button", { name: "Delete Mistake" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Delete Mistake?" }));
+    await user.click(dialog.getByRole("button", { name: "Delete" }));
 
     const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
     expect(await accounts.findByText(/No accounts yet/)).toBeTruthy();
