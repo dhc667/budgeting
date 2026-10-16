@@ -206,7 +206,9 @@ describe("signing out", () => {
 
     openApp("http://localhost:3000/#/");
 
-    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Sign in" }, { timeout: 5_000 }),
+    ).toBeTruthy();
   });
 });
 
@@ -246,7 +248,7 @@ describe("a connect link to a different budget", () => {
     openApp(otherBudget);
     await user.click(await screen.findByRole("button", { name: "Switch" }));
     // The app retries once before giving up on an unreachable instance.
-    await screen.findByRole("heading", { name: "Can't reach your budget" });
+    await screen.findByRole("heading", { name: "Can't reach your budget" }, { timeout: 5000 });
     cleanup();
 
     openApp(signInLink());

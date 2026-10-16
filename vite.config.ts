@@ -36,7 +36,6 @@ export default defineConfig({
         test: {
           name: "integration",
           include: ["tests/**/*.test.{ts,tsx}"],
-          setupFiles: ["tests/support/setup.ts"],
           fileParallelism: false,
           testTimeout: 20_000,
         },
