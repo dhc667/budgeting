@@ -77,12 +77,15 @@ function NewSpaceForm() {
         {others.length > 0 && (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1.5 text-sm font-medium">{t("spaces.new.members")}</legend>
-            {others.map((user) => (
-              <label key={user.id} className="flex min-h-11 items-center gap-3">
-                <input type="checkbox" name="members" value={user.id} className="size-5" />
-                {user.display_name}
-              </label>
-            ))}
+            {/* Cut mid-row when it scrolls, so the cut shows there's more. */}
+            <div className="flex max-h-60 flex-col overflow-y-auto rounded-lg border border-zinc-200 px-3 dark:border-zinc-800">
+              {others.map((user) => (
+                <label key={user.id} className="flex min-h-11 shrink-0 items-center gap-3">
+                  <input type="checkbox" name="members" value={user.id} className="size-5" />
+                  {user.display_name}
+                </label>
+              ))}
+            </div>
           </fieldset>
         )}
         {createSpace.error && <ErrorText>{nameErrorMessage(createSpace.error, t)}</ErrorText>}
