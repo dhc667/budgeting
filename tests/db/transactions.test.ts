@@ -471,6 +471,37 @@ describe("title suggestions", () => {
 
     expect(data?.map(({ id }) => id).sort()).toEqual([toSavings, toCash].sort());
   });
+
+  it("give an expense and a refund of the same title and category apart", async () => {
+    const bought = await addTransaction(ana, expense({ title: "Shoes" }));
+    const returned = await addTransaction(
+      ana,
+      expense({ title: "Shoes", transaction_type: "refund" }),
+    );
+
+    const { data } = await ana.client.rpc("title_suggestions");
+
+    expect(data?.map(({ id }) => id).sort()).toEqual([bought, returned].sort());
+  });
+
+  it("leave out a transfer the user now sees one side of", async () => {
+    const tripId = await createSpace(ana, "Trip", [carla]);
+    const tripCash = await addAccount(ana, tripId, "Trip cash");
+    const id = await addTransaction(ana, {
+      ...transfer(checking, tripCash, 500),
+      title: "Trip money",
+    });
+    await ana.client
+      .from("space_members")
+      .delete()
+      .eq("space_id", tripId)
+      .eq("user_id", ana.userId);
+
+    const { data } = await ana.client.rpc("title_suggestions");
+
+    expect(await detailsOf(ana, id)).toMatchObject({ one_sided: true });
+    expect(data).toEqual([]);
+  });
 });
 
 describe("grants", () => {

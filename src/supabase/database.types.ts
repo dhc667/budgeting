@@ -495,6 +495,9 @@ isOneToOne: false
 "merged_snapshot":
 { Args: { "snapshots": (Json)[] }; Returns: Json
                            },
+"opening_balance_transaction":
+{ Args: { "account": string }; Returns: string
+                           },
 "reorder_accounts":
 { Args: { "account_ids": (string)[] }; Returns: undefined
                            },
