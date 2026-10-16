@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { useSignedInUser } from "../auth/session";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
+import { afterSuccess } from "../query-client";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
@@ -88,7 +89,7 @@ function MembersCard({ space }: { space: Space }) {
   const nameOf = (userId: string) => displayNameOf(users, userId) ?? "";
   const canLeave = space.members.length > 1;
   const leave = (membershipId: string) =>
-    remove.mutate(membershipId, { onSuccess: () => void navigate("/spaces") });
+    afterSuccess(remove.mutateAsync(membershipId), () => navigate("/spaces"));
 
   return (
     <Card title={t("spaces.members.title")}>
@@ -173,8 +174,7 @@ function DeleteCard({ space }: { space: Space }) {
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const deleteSpace = useDeleteSpace(space.id);
-  const confirm = () =>
-    deleteSpace.mutate(undefined, { onSuccess: () => void navigate("/spaces") });
+  const confirm = () => afterSuccess(deleteSpace.mutateAsync(), () => navigate("/spaces"));
 
   return (
     <Card title={t("spaces.delete.title")}>
