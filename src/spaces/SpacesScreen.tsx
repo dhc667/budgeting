@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { useSignedInUser } from "../auth/session";
 import { useUsers } from "../profile/profile-queries";
+import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
@@ -16,7 +17,10 @@ export function SpacesScreen() {
   const { t } = useTranslation();
   return (
     <div className="flex max-w-xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{t("spaces.title")}</h1>
+      <header className="flex flex-col gap-1">
+        <BackLink to="/profile" place={t("profile.title")} />
+        <h1 className="text-2xl font-semibold">{t("spaces.title")}</h1>
+      </header>
       <SpaceList />
       <NewSpaceForm />
     </div>

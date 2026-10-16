@@ -6,7 +6,8 @@
     "reports": "Reports",
     "profile": "Profile",
     "addTransaction": "Add transaction",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "backTo": "Back to {{place}}"
   },
   "comingSoon": "Coming soon.",
   "instance": {
