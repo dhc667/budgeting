@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import { type Category, useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
 import { displayNameOf, type User, useUsers } from "../profile/profile-queries";
@@ -12,8 +13,9 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
   const format = useFormat();
   const money = useMoney();
   const { data: users = [] } = useUsers();
+  const { data: categories = [] } = useCategories();
   if (!activity) return null;
-  const phrasing: Phrasing = { users, t, money, day: format.day };
+  const phrasing: Phrasing = { users, categories, t, money, day: format.day };
   const entries = activity.flatMap((entry) => {
     const lines = describe(entry, phrasing);
     return lines.length === 0 ? [] : [{ id: entry.id, lines, at: new Date(entry.changed_at) }];
@@ -44,7 +46,7 @@ function describe(entry: Activity, phrasing: Phrasing): string[] {
     case "space_members":
       return describeMembershipChange(entry, actor, phrasing);
     case "ledger_accounts":
-      return describeAccountChange(entry, actor, phrasing);
+      return describeLedgerAccountChange(entry, actor, phrasing);
     case "transactions":
       return describeTransactionChange(entry, actor, phrasing);
     default:
@@ -92,6 +94,20 @@ function describeMembershipChange(
   }
 }
 
+function describeLedgerAccountChange(entry: Activity, actor: string, phrasing: Phrasing): string[] {
+  const kind = ledgerAccountKinds.find((kind) => kind === valueAt(entry.new ?? entry.old, "kind"));
+  switch (kind) {
+    case "account":
+      return describeAccountChange(entry, actor, phrasing);
+    case "expense":
+    case "income":
+      return describeCategoryChange(entry, actor, phrasing);
+    case "opening_balance":
+    case undefined:
+      return [];
+  }
+}
+
 function describeAccountChange(entry: Activity, actor: string, { t }: Phrasing): string[] {
   const name = stringAt(entry.new ?? entry.old, "name");
   switch (entry.action) {
@@ -100,8 +116,7 @@ function describeAccountChange(entry: Activity, actor: string, { t }: Phrasing):
     case "delete":
       return [t("activity.account.deleted", { actor, name })];
     case "update": {
-      const changed = (key: string) =>
-        JSON.stringify(valueAt(entry.old, key)) !== JSON.stringify(valueAt(entry.new, key));
+      const changed = (key: string) => hasChanged(entry, key);
       const lines: string[] = [];
       if (changed("name"))
         lines.push(
@@ -119,6 +134,53 @@ function describeAccountChange(entry: Activity, actor: string, { t }: Phrasing):
             ? t("activity.account.archived", { actor, name })
             : t("activity.account.unarchived", { actor, name }),
         );
+      return lines;
+    }
+  }
+}
+
+function describeCategoryChange(
+  entry: Activity,
+  actor: string,
+  { categories, t }: Phrasing,
+): string[] {
+  const name = stringAt(entry.new ?? entry.old, "name");
+  switch (entry.action) {
+    case "insert":
+      return [t("activity.category.added", { actor, name })];
+    case "delete": {
+      const movedTo = stringAt(valueAt(entry.old, "moved_to") ?? null, "name");
+      const count = valueAt(entry.old, "moved_transactions");
+      return movedTo === null || typeof count !== "number"
+        ? [t("activity.category.deleted", { actor, name })]
+        : [t("activity.category.deletedAndMoved", { actor, name, count, to: movedTo })];
+    }
+    case "update": {
+      const lines: string[] = [];
+      if (hasChanged(entry, "name"))
+        lines.push(
+          t("activity.category.renamed", { actor, from: stringAt(entry.old, "name"), to: name }),
+        );
+      if (hasChanged(entry, "parent_id")) {
+        const parentId = stringAt(entry.new, "parent_id");
+        const parent = categories.find(({ id }) => id === parentId);
+        lines.push(
+          parentId === null
+            ? t("activity.category.movedToTop", { actor, name })
+            : parent
+              ? t("activity.category.movedUnder", { actor, name, parent: parent.name })
+              : t("activity.category.movedUnderDeleted", { actor, name }),
+        );
+      }
+      if (hasChanged(entry, "kind"))
+        lines.push(
+          valueAt(entry.new, "kind") === "income"
+            ? t("activity.category.madeIncome", { actor, name })
+            : t("activity.category.madeExpense", { actor, name }),
+        );
+      if (hasChanged(entry, "icon"))
+        lines.push(t("activity.category.iconChanged", { actor, name }));
+      if (hasChanged(entry, "color")) lines.push(t("activity.category.recolored", { actor, name }));
       return lines;
     }
   }
@@ -144,6 +206,10 @@ function describeTransactionChange(entry: Activity, actor: string, phrasing: Phr
     case "delete":
       return [t("activity.openingBalance.removed", details)];
   }
+}
+
+function hasChanged(entry: Activity, key: string): boolean {
+  return JSON.stringify(valueAt(entry.old, key)) !== JSON.stringify(valueAt(entry.new, key));
 }
 
 function postingsOf(snapshot: Json): Posting[] {
@@ -175,6 +241,7 @@ const ledgerAccountKinds = Constants.public.Enums.ledger_account_kind;
 
 type Phrasing = {
   users: User[];
+  categories: Category[];
   t: TFunction;
   money: (minorUnits: number, currency: string) => string;
   day: (day: string) => string;

@@ -10,7 +10,7 @@ import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
 import { type Account, useAccounts, useReorderAccounts } from "./account-queries";
-import { ColorDot } from "./ColorDot";
+import { ColorDot } from "../colors/ColorDot";
 
 export function AccountsCard({ className }: { className?: string }) {
   const { t } = useTranslation();

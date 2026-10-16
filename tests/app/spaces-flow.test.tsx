@@ -119,7 +119,8 @@ describe("spaces", () => {
     await createSharedSpace("Family", []);
 
     await user.click(screen.getByRole("button", { name: "Delete space" }));
-    await user.click(screen.getByRole("button", { name: "Delete Family" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Delete Family?" }));
+    await user.click(dialog.getByRole("button", { name: "Delete" }));
 
     await screen.findByRole("heading", { name: "Spaces" });
     expect(screen.queryByRole("link", { name: /^Family/ })).toBeNull();

@@ -161,8 +161,8 @@
       "title": "Eliminar espacio",
       "explained": "Un espacio solo se puede eliminar mientras no tenga transacciones aparte de los saldos iniciales.",
       "submit": "Eliminar espacio",
-      "confirm": "Eliminar {{name}}",
-      "cancel": "Cancelar"
+      "confirm": "Eliminar",
+      "confirmTitle": "¿Eliminar {{name}}?"
     },
     "errors": {
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
@@ -198,6 +198,20 @@
       "set": "{{actor}} fijó el saldo inicial de “{{account}}” en {{amount}}, al {{date}}",
       "changed": "{{actor}} cambió el saldo inicial de “{{account}}” a {{amount}}, al {{date}}",
       "removed": "{{actor}} quitó el saldo inicial de “{{account}}”"
+    },
+    "category": {
+      "added": "{{actor}} agregó la categoría “{{name}}”",
+      "deleted": "{{actor}} eliminó la categoría “{{name}}”",
+      "deletedAndMoved_one": "{{actor}} eliminó la categoría “{{name}}” y pasó su movimiento a “{{to}}”",
+      "deletedAndMoved_other": "{{actor}} eliminó la categoría “{{name}}” y pasó sus {{count}} movimientos a “{{to}}”",
+      "renamed": "{{actor}} renombró la categoría “{{from}}” a “{{to}}”",
+      "movedToTop": "{{actor}} movió “{{name}}” al nivel superior",
+      "movedUnder": "{{actor}} movió “{{name}}” a “{{parent}}”",
+      "movedUnderDeleted": "{{actor}} movió “{{name}}” a una categoría ya eliminada",
+      "madeIncome": "{{actor}} convirtió “{{name}}” en una categoría de ingresos",
+      "madeExpense": "{{actor}} convirtió “{{name}}” en una categoría de gastos",
+      "iconChanged": "{{actor}} cambió el ícono de “{{name}}”",
+      "recolored": "{{actor}} cambió el color de “{{name}}”"
     }
   },
   "accounts": {
@@ -225,7 +239,6 @@
       "space": "Espacio",
       "currency": "Moneda",
       "currencyFixed": "La moneda de una cuenta no puede cambiar una vez que tiene movimientos.",
-      "color": "Color",
       "openingBalance": "Saldo inicial",
       "openingBalanceHint": "Lo que tenía la cuenta en la fecha de abajo. Usa un signo menos para una deuda, como la de una tarjeta de crédito.",
       "currencyChanged": "Ingresa el saldo inicial otra vez, en {{currency}}.",
@@ -239,23 +252,75 @@
       "submit": "Archivar cuenta",
       "stillHolds": "{{name}} todavía tiene {{balance}}. Archivada, sigue contando en los totales.",
       "confirm": "Archivar de todos modos",
-      "cancel": "Cancelar",
       "isArchived": "Esta cuenta está archivada: no aparece en las listas, pero sigue contando en los totales.",
-      "unarchive": "Desarchivar"
+      "unarchive": "Desarchivar",
+      "confirmTitle": "¿Archivar {{name}}?"
     },
     "delete": {
       "title": "Eliminar cuenta",
       "explained": "Una cuenta se puede eliminar mientras su saldo inicial sea su único movimiento. El saldo inicial se elimina con ella.",
       "hasTransactions": "Esta cuenta tiene movimientos, así que no se puede eliminar. Archívala en su lugar.",
       "submit": "Eliminar cuenta",
-      "confirm": "Eliminar {{name}}",
-      "cancel": "Cancelar"
+      "confirm": "Eliminar",
+      "confirmTitle": "¿Eliminar {{name}}?"
     },
     "errors": {
       "nameBlank": "El nombre de una cuenta no puede quedar vacío.",
       "amount": "Ingresa un monto como {{example}}.",
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
       "deleteFailed": "No se pudo eliminar esta cuenta. Revisa tu conexión e inténtalo de nuevo."
+    }
+  },
+  "categories": {
+    "title": "Categorías",
+    "none": "Todavía no hay categorías.",
+    "add": "Agregar categoría",
+    "expenses": "Gastos",
+    "incomes": "Ingresos",
+    "details": "Detalles",
+    "history": "Historial",
+    "notFound": "Esta categoría no existe, o está en un espacio del que no eres miembro.",
+    "under": "dentro de {{parent}}",
+    "kind": {
+      "expense": "Gasto",
+      "income": "Ingreso"
+    },
+    "new": {
+      "title": "Nueva categoría",
+      "submit": "Agregar categoría"
+    },
+    "form": {
+      "name": "Nombre",
+      "parent": "Categoría principal",
+      "noParent": "Ninguna (nivel superior)",
+      "parentFixed": "Una categoría con subcategorías se queda en el nivel superior.",
+      "kind": "Tipo",
+      "kindFromParent": "Una subcategoría tiene el tipo de su categoría principal.",
+      "kindForSubcategories": "Sus subcategorías cambian de tipo con ella.",
+      "icon": "Ícono",
+      "save": "Guardar",
+      "saved": "Guardado."
+    },
+    "delete": {
+      "title": "Eliminar categoría",
+      "explained": "Al eliminar una categoría, sus movimientos pasan a otra categoría del mismo tipo en este espacio.",
+      "hasSubcategories": "Esta categoría tiene subcategorías, así que no se puede eliminar. Muévelas o elimínalas primero.",
+      "submit": "Eliminar categoría",
+      "confirmTitle": "¿Eliminar {{name}}?",
+      "confirm": "Eliminar",
+      "hasTransactions_one": "{{name}} tiene {{count}} movimiento. Elige adónde pasa.",
+      "hasTransactions_other": "{{name}} tiene {{count}} movimientos. Elige adónde pasan.",
+      "moveTo": "Pasar a",
+      "chooseTarget": "Elige una categoría",
+      "nowhereToMove_one": "{{name}} tiene {{count}} movimiento y no hay otra categoría de su tipo en este espacio adonde pasarlo. Agrega una primero.",
+      "nowhereToMove_other": "{{name}} tiene {{count}} movimientos y no hay otra categoría de su tipo en este espacio adonde pasarlos. Agrega una primero."
+    },
+    "errors": {
+      "nameBlank": "El nombre de una categoría no puede quedar vacío.",
+      "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar esta categoría. Revisa tu conexión e inténtalo de nuevo.",
+      "saveRefused": "No se pudo guardar este cambio. Puede que las categorías hayan cambiado mientras tanto; recarga e inténtalo de nuevo.",
+      "deleteRefused": "No se pudo eliminar esta categoría. Puede que las categorías hayan cambiado mientras tanto; recarga e inténtalo de nuevo."
     }
   },
   "colors": {
@@ -270,7 +335,8 @@
     "indigo": "Índigo",
     "violet": "Violeta",
     "pink": "Rosa",
-    "slate": "Pizarra"
+    "slate": "Pizarra",
+    "label": "Color"
   },
   "spacePicker": {
     "legend": "Mostrar espacios",
@@ -278,5 +344,72 @@
     "some_one": "{{count}} espacio",
     "some_other": "{{count}} espacios",
     "manage": "Administrar espacios"
+  },
+  "icons": {
+    "shoppingCart": "Carrito",
+    "utensils": "Cubiertos",
+    "coffee": "Café",
+    "pizza": "Pizza",
+    "wine": "Copa de vino",
+    "apple": "Manzana",
+    "car": "Auto",
+    "bus": "Autobús",
+    "train": "Tren",
+    "bike": "Bicicleta",
+    "fuel": "Surtidor de combustible",
+    "plane": "Avión",
+    "house": "Casa",
+    "sofa": "Sofá",
+    "wrench": "Llave inglesa",
+    "lightbulb": "Bombilla",
+    "zap": "Rayo",
+    "droplet": "Gota",
+    "flame": "Llama",
+    "wifi": "Wi-Fi",
+    "smartphone": "Celular",
+    "heartPulse": "Latido",
+    "stethoscope": "Estetoscopio",
+    "pill": "Pastilla",
+    "dumbbell": "Pesa",
+    "glasses": "Anteojos",
+    "shoppingBag": "Bolsa de compras",
+    "shirt": "Camisa",
+    "scissors": "Tijeras",
+    "gem": "Gema",
+    "film": "Película",
+    "ticket": "Entrada",
+    "gamepad": "Control de videojuegos",
+    "music": "Música",
+    "tv": "Televisor",
+    "book": "Libro",
+    "palette": "Paleta",
+    "camera": "Cámara",
+    "partyPopper": "Fiesta",
+    "baby": "Bebé",
+    "dog": "Perro",
+    "cat": "Gato",
+    "graduationCap": "Birrete",
+    "laptop": "Laptop",
+    "briefcase": "Maletín",
+    "luggage": "Equipaje",
+    "hotel": "Hotel",
+    "palmTree": "Palmera",
+    "wallet": "Billetera",
+    "banknote": "Billete",
+    "coins": "Monedas",
+    "piggyBank": "Alcancía",
+    "creditCard": "Tarjeta de crédito",
+    "receipt": "Recibo",
+    "bank": "Banco",
+    "trendingUp": "Gráfico en alza",
+    "gift": "Regalo",
+    "handCoins": "Mano con monedas",
+    "tag": "Etiqueta",
+    "heart": "Corazón",
+    "shield": "Escudo",
+    "ellipsis": "Puntos suspensivos"
+  },
+  "dialog": {
+    "cancel": "Cancelar"
   }
 }

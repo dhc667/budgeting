@@ -161,8 +161,8 @@
       "title": "Delete space",
       "explained": "A space can be deleted only while it holds no transactions other than opening balances.",
       "submit": "Delete space",
-      "confirm": "Delete {{name}}",
-      "cancel": "Cancel"
+      "confirm": "Delete",
+      "confirmTitle": "Delete {{name}}?"
     },
     "errors": {
       "saveFailed": "Couldn't save. Check your connection and try again.",
@@ -198,6 +198,20 @@
       "set": "{{actor}} set the opening balance of “{{account}}” to {{amount}}, as of {{date}}",
       "changed": "{{actor}} changed the opening balance of “{{account}}” to {{amount}}, as of {{date}}",
       "removed": "{{actor}} removed the opening balance of “{{account}}”"
+    },
+    "category": {
+      "added": "{{actor}} added the category “{{name}}”",
+      "deleted": "{{actor}} deleted the category “{{name}}”",
+      "deletedAndMoved_one": "{{actor}} deleted the category “{{name}}” and moved its transaction to “{{to}}”",
+      "deletedAndMoved_other": "{{actor}} deleted the category “{{name}}” and moved its {{count}} transactions to “{{to}}”",
+      "renamed": "{{actor}} renamed the category “{{from}}” to “{{to}}”",
+      "movedToTop": "{{actor}} moved “{{name}}” to the top level",
+      "movedUnder": "{{actor}} moved “{{name}}” under “{{parent}}”",
+      "movedUnderDeleted": "{{actor}} moved “{{name}}” under a category since deleted",
+      "madeIncome": "{{actor}} made “{{name}}” an income category",
+      "madeExpense": "{{actor}} made “{{name}}” an expense category",
+      "iconChanged": "{{actor}} changed the icon of “{{name}}”",
+      "recolored": "{{actor}} changed the color of “{{name}}”"
     }
   },
   "accounts": {
@@ -225,7 +239,6 @@
       "space": "Space",
       "currency": "Currency",
       "currencyFixed": "An account's currency can't change once it has transactions.",
-      "color": "Color",
       "openingBalance": "Opening balance",
       "openingBalanceHint": "What the account held on the date below. Use a minus sign for a debt, like a credit card's.",
       "currencyChanged": "Enter the opening balance again, in {{currency}}.",
@@ -239,23 +252,75 @@
       "submit": "Archive account",
       "stillHolds": "{{name}} still holds {{balance}}. Archived, it still counts in totals.",
       "confirm": "Archive anyway",
-      "cancel": "Cancel",
       "isArchived": "This account is archived: it's hidden from lists, but still counts in totals.",
-      "unarchive": "Unarchive"
+      "unarchive": "Unarchive",
+      "confirmTitle": "Archive {{name}}?"
     },
     "delete": {
       "title": "Delete account",
       "explained": "An account can be deleted while its opening balance is its only transaction. The opening balance is deleted with it.",
       "hasTransactions": "This account has transactions, so it can't be deleted. Archive it instead.",
       "submit": "Delete account",
-      "confirm": "Delete {{name}}",
-      "cancel": "Cancel"
+      "confirm": "Delete",
+      "confirmTitle": "Delete {{name}}?"
     },
     "errors": {
       "nameBlank": "An account's name can't be blank.",
       "amount": "Enter an amount like {{example}}.",
       "saveFailed": "Couldn't save. Check your connection and try again.",
       "deleteFailed": "Couldn't delete this account. Check your connection and try again."
+    }
+  },
+  "categories": {
+    "title": "Categories",
+    "none": "No categories yet.",
+    "add": "Add category",
+    "expenses": "Expenses",
+    "incomes": "Income",
+    "details": "Details",
+    "history": "History",
+    "notFound": "This category doesn't exist, or it's in a space you're not a member of.",
+    "under": "under {{parent}}",
+    "kind": {
+      "expense": "Expense",
+      "income": "Income"
+    },
+    "new": {
+      "title": "New category",
+      "submit": "Add category"
+    },
+    "form": {
+      "name": "Name",
+      "parent": "Parent category",
+      "noParent": "None (top level)",
+      "parentFixed": "A category with subcategories stays at the top level.",
+      "kind": "Type",
+      "kindFromParent": "A subcategory has its parent's type.",
+      "kindForSubcategories": "Its subcategories change type with it.",
+      "icon": "Icon",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "delete": {
+      "title": "Delete category",
+      "explained": "A category's transactions move to another category of the same type in this space when it's deleted.",
+      "hasSubcategories": "This category has subcategories, so it can't be deleted. Move or delete them first.",
+      "submit": "Delete category",
+      "confirmTitle": "Delete {{name}}?",
+      "confirm": "Delete",
+      "hasTransactions_one": "{{name}} has {{count}} transaction. Choose where it goes.",
+      "hasTransactions_other": "{{name}} has {{count}} transactions. Choose where they go.",
+      "moveTo": "Move to",
+      "chooseTarget": "Choose a category",
+      "nowhereToMove_one": "{{name}} has {{count}} transaction, and there's no other category of its type in this space to move it to. Add one first.",
+      "nowhereToMove_other": "{{name}} has {{count}} transactions, and there's no other category of its type in this space to move them to. Add one first."
+    },
+    "errors": {
+      "nameBlank": "A category's name can't be blank.",
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete this category. Check your connection and try again.",
+      "saveRefused": "Couldn't save this change. The categories may have changed meanwhile; reload and try again.",
+      "deleteRefused": "Couldn't delete this category. The categories may have changed meanwhile; reload and try again."
     }
   },
   "colors": {
@@ -270,7 +335,8 @@
     "indigo": "Indigo",
     "violet": "Violet",
     "pink": "Pink",
-    "slate": "Slate"
+    "slate": "Slate",
+    "label": "Color"
   },
   "spacePicker": {
     "legend": "Show spaces",
@@ -278,5 +344,72 @@
     "some_one": "{{count}} space",
     "some_other": "{{count}} spaces",
     "manage": "Manage spaces"
+  },
+  "icons": {
+    "shoppingCart": "Shopping cart",
+    "utensils": "Cutlery",
+    "coffee": "Coffee",
+    "pizza": "Pizza",
+    "wine": "Wine glass",
+    "apple": "Apple",
+    "car": "Car",
+    "bus": "Bus",
+    "train": "Train",
+    "bike": "Bicycle",
+    "fuel": "Fuel pump",
+    "plane": "Plane",
+    "house": "House",
+    "sofa": "Sofa",
+    "wrench": "Wrench",
+    "lightbulb": "Light bulb",
+    "zap": "Lightning bolt",
+    "droplet": "Drop",
+    "flame": "Flame",
+    "wifi": "Wi-Fi",
+    "smartphone": "Smartphone",
+    "heartPulse": "Heartbeat",
+    "stethoscope": "Stethoscope",
+    "pill": "Pill",
+    "dumbbell": "Dumbbell",
+    "glasses": "Glasses",
+    "shoppingBag": "Shopping bag",
+    "shirt": "Shirt",
+    "scissors": "Scissors",
+    "gem": "Gem",
+    "film": "Film",
+    "ticket": "Ticket",
+    "gamepad": "Game controller",
+    "music": "Music",
+    "tv": "TV",
+    "book": "Book",
+    "palette": "Palette",
+    "camera": "Camera",
+    "partyPopper": "Party popper",
+    "baby": "Baby",
+    "dog": "Dog",
+    "cat": "Cat",
+    "graduationCap": "Graduation cap",
+    "laptop": "Laptop",
+    "briefcase": "Briefcase",
+    "luggage": "Luggage",
+    "hotel": "Hotel",
+    "palmTree": "Palm tree",
+    "wallet": "Wallet",
+    "banknote": "Banknote",
+    "coins": "Coins",
+    "piggyBank": "Piggy bank",
+    "creditCard": "Credit card",
+    "receipt": "Receipt",
+    "bank": "Bank",
+    "trendingUp": "Rising chart",
+    "gift": "Gift",
+    "handCoins": "Hand with coins",
+    "tag": "Tag",
+    "heart": "Heart",
+    "shield": "Shield",
+    "ellipsis": "Ellipsis"
+  },
+  "dialog": {
+    "cancel": "Cancel"
   }
 }

@@ -161,8 +161,8 @@
       "title": "Excluir espaço",
       "explained": "Um espaço só pode ser excluído enquanto não tiver transações além dos saldos iniciais.",
       "submit": "Excluir espaço",
-      "confirm": "Excluir {{name}}",
-      "cancel": "Cancelar"
+      "confirm": "Excluir",
+      "confirmTitle": "Excluir {{name}}?"
     },
     "errors": {
       "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
@@ -198,6 +198,20 @@
       "set": "{{actor}} definiu o saldo inicial de “{{account}}” como {{amount}}, em {{date}}",
       "changed": "{{actor}} mudou o saldo inicial de “{{account}}” para {{amount}}, em {{date}}",
       "removed": "{{actor}} removeu o saldo inicial de “{{account}}”"
+    },
+    "category": {
+      "added": "{{actor}} adicionou a categoria “{{name}}”",
+      "deleted": "{{actor}} excluiu a categoria “{{name}}”",
+      "deletedAndMoved_one": "{{actor}} excluiu a categoria “{{name}}” e passou a movimentação dela para “{{to}}”",
+      "deletedAndMoved_other": "{{actor}} excluiu a categoria “{{name}}” e passou as {{count}} movimentações dela para “{{to}}”",
+      "renamed": "{{actor}} renomeou a categoria “{{from}}” para “{{to}}”",
+      "movedToTop": "{{actor}} moveu “{{name}}” para o nível superior",
+      "movedUnder": "{{actor}} moveu “{{name}}” para dentro de “{{parent}}”",
+      "movedUnderDeleted": "{{actor}} moveu “{{name}}” para dentro de uma categoria já excluída",
+      "madeIncome": "{{actor}} transformou “{{name}}” em uma categoria de receitas",
+      "madeExpense": "{{actor}} transformou “{{name}}” em uma categoria de despesas",
+      "iconChanged": "{{actor}} mudou o ícone de “{{name}}”",
+      "recolored": "{{actor}} mudou a cor de “{{name}}”"
     }
   },
   "accounts": {
@@ -225,7 +239,6 @@
       "space": "Espaço",
       "currency": "Moeda",
       "currencyFixed": "A moeda de uma conta não pode mudar depois que ela tem movimentações.",
-      "color": "Cor",
       "openingBalance": "Saldo inicial",
       "openingBalanceHint": "O que a conta tinha na data abaixo. Use um sinal de menos para uma dívida, como a de um cartão de crédito.",
       "currencyChanged": "Informe o saldo inicial de novo, em {{currency}}.",
@@ -239,23 +252,75 @@
       "submit": "Arquivar conta",
       "stillHolds": "{{name}} ainda tem {{balance}}. Arquivada, continua contando nos totais.",
       "confirm": "Arquivar mesmo assim",
-      "cancel": "Cancelar",
       "isArchived": "Esta conta está arquivada: não aparece nas listas, mas continua contando nos totais.",
-      "unarchive": "Desarquivar"
+      "unarchive": "Desarquivar",
+      "confirmTitle": "Arquivar {{name}}?"
     },
     "delete": {
       "title": "Excluir conta",
       "explained": "Uma conta pode ser excluída enquanto o saldo inicial for sua única movimentação. O saldo inicial é excluído junto.",
       "hasTransactions": "Esta conta tem movimentações, então não pode ser excluída. Arquive-a em vez disso.",
       "submit": "Excluir conta",
-      "confirm": "Excluir {{name}}",
-      "cancel": "Cancelar"
+      "confirm": "Excluir",
+      "confirmTitle": "Excluir {{name}}?"
     },
     "errors": {
       "nameBlank": "O nome de uma conta não pode ficar em branco.",
       "amount": "Informe um valor como {{example}}.",
       "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
       "deleteFailed": "Não foi possível excluir esta conta. Verifique sua conexão e tente de novo."
+    }
+  },
+  "categories": {
+    "title": "Categorias",
+    "none": "Ainda não há categorias.",
+    "add": "Adicionar categoria",
+    "expenses": "Despesas",
+    "incomes": "Receitas",
+    "details": "Detalhes",
+    "history": "Histórico",
+    "notFound": "Esta categoria não existe, ou está em um espaço do qual você não é membro.",
+    "under": "dentro de {{parent}}",
+    "kind": {
+      "expense": "Despesa",
+      "income": "Receita"
+    },
+    "new": {
+      "title": "Nova categoria",
+      "submit": "Adicionar categoria"
+    },
+    "form": {
+      "name": "Nome",
+      "parent": "Categoria principal",
+      "noParent": "Nenhuma (nível superior)",
+      "parentFixed": "Uma categoria com subcategorias fica no nível superior.",
+      "kind": "Tipo",
+      "kindFromParent": "Uma subcategoria tem o tipo da sua categoria principal.",
+      "kindForSubcategories": "As subcategorias mudam de tipo junto com ela.",
+      "icon": "Ícone",
+      "save": "Salvar",
+      "saved": "Salvo."
+    },
+    "delete": {
+      "title": "Excluir categoria",
+      "explained": "Ao excluir uma categoria, as movimentações dela passam para outra categoria do mesmo tipo neste espaço.",
+      "hasSubcategories": "Esta categoria tem subcategorias, então não pode ser excluída. Mova ou exclua as subcategorias primeiro.",
+      "submit": "Excluir categoria",
+      "confirmTitle": "Excluir {{name}}?",
+      "confirm": "Excluir",
+      "hasTransactions_one": "{{name}} tem {{count}} movimentação. Escolha para onde ela vai.",
+      "hasTransactions_other": "{{name}} tem {{count}} movimentações. Escolha para onde elas vão.",
+      "moveTo": "Mover para",
+      "chooseTarget": "Escolha uma categoria",
+      "nowhereToMove_one": "{{name}} tem {{count}} movimentação e não há outra categoria do mesmo tipo neste espaço para onde movê-la. Adicione uma primeiro.",
+      "nowhereToMove_other": "{{name}} tem {{count}} movimentações e não há outra categoria do mesmo tipo neste espaço para onde movê-las. Adicione uma primeiro."
+    },
+    "errors": {
+      "nameBlank": "O nome de uma categoria não pode ficar em branco.",
+      "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
+      "deleteFailed": "Não foi possível excluir esta categoria. Verifique sua conexão e tente de novo.",
+      "saveRefused": "Não foi possível salvar esta alteração. As categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo.",
+      "deleteRefused": "Não foi possível excluir esta categoria. As categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo."
     }
   },
   "colors": {
@@ -270,7 +335,8 @@
     "indigo": "Índigo",
     "violet": "Violeta",
     "pink": "Rosa",
-    "slate": "Ardósia"
+    "slate": "Ardósia",
+    "label": "Cor"
   },
   "spacePicker": {
     "legend": "Mostrar espaços",
@@ -278,5 +344,72 @@
     "some_one": "{{count}} espaço",
     "some_other": "{{count}} espaços",
     "manage": "Gerenciar espaços"
+  },
+  "icons": {
+    "shoppingCart": "Carrinho",
+    "utensils": "Talheres",
+    "coffee": "Café",
+    "pizza": "Pizza",
+    "wine": "Taça de vinho",
+    "apple": "Maçã",
+    "car": "Carro",
+    "bus": "Ônibus",
+    "train": "Trem",
+    "bike": "Bicicleta",
+    "fuel": "Bomba de combustível",
+    "plane": "Avião",
+    "house": "Casa",
+    "sofa": "Sofá",
+    "wrench": "Chave inglesa",
+    "lightbulb": "Lâmpada",
+    "zap": "Raio",
+    "droplet": "Gota",
+    "flame": "Chama",
+    "wifi": "Wi-Fi",
+    "smartphone": "Celular",
+    "heartPulse": "Batimento cardíaco",
+    "stethoscope": "Estetoscópio",
+    "pill": "Comprimido",
+    "dumbbell": "Haltere",
+    "glasses": "Óculos",
+    "shoppingBag": "Sacola de compras",
+    "shirt": "Camisa",
+    "scissors": "Tesoura",
+    "gem": "Joia",
+    "film": "Filme",
+    "ticket": "Ingresso",
+    "gamepad": "Controle de videogame",
+    "music": "Música",
+    "tv": "TV",
+    "book": "Livro",
+    "palette": "Paleta",
+    "camera": "Câmera",
+    "partyPopper": "Confete",
+    "baby": "Bebê",
+    "dog": "Cachorro",
+    "cat": "Gato",
+    "graduationCap": "Chapéu de formatura",
+    "laptop": "Notebook",
+    "briefcase": "Maleta",
+    "luggage": "Bagagem",
+    "hotel": "Hotel",
+    "palmTree": "Palmeira",
+    "wallet": "Carteira",
+    "banknote": "Cédula",
+    "coins": "Moedas",
+    "piggyBank": "Cofrinho",
+    "creditCard": "Cartão de crédito",
+    "receipt": "Recibo",
+    "bank": "Banco",
+    "trendingUp": "Gráfico em alta",
+    "gift": "Presente",
+    "handCoins": "Mão com moedas",
+    "tag": "Etiqueta",
+    "heart": "Coração",
+    "shield": "Escudo",
+    "ellipsis": "Reticências"
+  },
+  "dialog": {
+    "cancel": "Cancelar"
   }
 }

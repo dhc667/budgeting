@@ -56,7 +56,7 @@ An account in a space with more than one member; a joint pot that every member c
 _Avoid_: split, shared expense
 
 **Category**:
-A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. Every new space starts with a set of categories its members can change.
+A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. A subcategory always has its parent's kind, so moving it under a parent of the other kind, or changing its parent's kind, changes its own. Deleting a category moves its transactions to another category of the same kind in the same space. Every new space starts with a set of categories its members can change, named in the language the app was showing its creator; after that they are plain names that don't follow anyone's language.
 
 **Opening balance**:
 The transaction that records the money an account already held when it was added to the app. It is not income.
@@ -108,5 +108,5 @@ _Avoid_: pending, scheduled
 ### Oversight
 
 **Activity**:
-A space's record of every change made to its data: who made it, when, and what it was before. A deleted transaction can be restored from it.
+A space's record of every change made to its data: who made it, when, and what it was before. A deleted transaction can be restored from it. The categories a space starts with aren't in it, and deleting a category is a single change that says where its transactions went, not one per transaction moved.
 _Avoid_: audit log, history

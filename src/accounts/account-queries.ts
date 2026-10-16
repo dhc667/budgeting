@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
+import type { Color } from "../colors/colors";
 import type { Database } from "../supabase/database";
-import type { Enums } from "../supabase/database.types";
 
 export function useAccounts() {
   const supabase = useSupabase();
@@ -104,8 +104,6 @@ function detailsArgs(details: AccountDetails) {
 }
 
 export type Account = Database["public"]["Views"]["accounts"]["Row"];
-
-export type Color = Enums<"color">;
 
 export type AccountDetails = {
   name: string;
