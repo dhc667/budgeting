@@ -24,14 +24,14 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
   const entries = activity.flatMap((entry) => {
     const lines = describe(entry, phrasing);
     if (lines.length === 0) return [];
-    const at = new Date(entry.changed_at);
-    return [{ id: entry.id, lines, at, restores: restorable.has(entry.id), rowId: entry.row_id }];
+    const restorableId = restorable.has(entry.id) ? entry.row_id : undefined;
+    return [{ id: entry.id, lines, at: new Date(entry.changed_at), restorableId }];
   });
   if (entries.length === 0) return <EmptyState>{t("activity.empty")}</EmptyState>;
 
   return (
     <ol className="flex flex-col gap-3">
-      {entries.map(({ id, lines, at, restores, rowId }) => (
+      {entries.map(({ id, lines, at, restorableId }) => (
         <li key={id} className="flex flex-col">
           {lines.map((line) => (
             <span key={line}>{line}</span>
@@ -39,7 +39,7 @@ export function ActivityList({ activity }: { activity: Activity[] | undefined })
           <time dateTime={at.toISOString()} className="text-sm text-zinc-500">
             {format.date(at)} {format.time(at)}
           </time>
-          {restores && <RestoreTransaction transactionId={rowId} />}
+          {restorableId !== undefined && <RestoreTransaction transactionId={restorableId} />}
         </li>
       ))}
     </ol>

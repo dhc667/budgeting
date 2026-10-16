@@ -110,9 +110,9 @@ export function useDeleteTransaction(transactionId: string) {
   });
 }
 
-export function useRestoreTransaction() {
+export function useRestoreTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useTransactionMutation(async (transactionId: string) => {
+  return useTransactionMutation(async () => {
     const { error } = await supabase.rpc("restore_transaction", { transaction_id: transactionId });
     if (error) throw error;
   });

@@ -9,6 +9,7 @@ import {
   openApp,
   openNewTransaction,
   openSignedIn,
+  openSpaces,
   recordTransaction,
   signIn,
   uniqueName,
@@ -224,6 +225,25 @@ describe("transactions", () => {
     expect((await restored.findByRole("link", { name: /Checking/ })).textContent).toMatch(
       /\$91\.00/,
     );
+  });
+
+  it("restores a deleted transaction from its space's activity", async () => {
+    const ana = uniqueName("Ana");
+    await openSignedIn(ana);
+    await addAccount({ name: "Checking", openingBalance: "" });
+    await recordTransaction({ amount: "9", category: "Gifts", title: "Present" });
+    await user.click(await screen.findByRole("link", { name: /Present/ }));
+    await user.click(await screen.findByRole("button", { name: "Delete transaction" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));
+    await screen.findByText("No transactions yet.");
+
+    await openSpaces();
+    await user.click(await screen.findByRole("link", { name: /^Private/ }));
+    const activity = within(await screen.findByRole("region", { name: "Activity" }));
+    await user.click(await activity.findByRole("button", { name: "Restore" }));
+
+    expect(await activity.findByText(new RegExp(`^${ana} restored “Present”`))).toBeTruthy();
+    expect(activity.queryByRole("button", { name: "Restore" })).toBeNull();
   });
 
   it("refuses an amount that isn't above zero", async () => {
