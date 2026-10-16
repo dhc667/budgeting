@@ -30,8 +30,8 @@ export function describeTransactionChange(
   }
 }
 
-// Newest first, as activity lists come: a transaction's latest deletion can be restored unless
-// something later in the same list shows it back.
+// A transaction's deletion can be restored only while it is the newest entry about that
+// transaction in the list, which comes newest first.
 export function restorableDeletions(activity: Activity[]): Set<number> {
   const seen = new Set<string>();
   const restorable = new Set<number>();

@@ -7,14 +7,14 @@ import { useRestoreTransaction } from "./transaction-queries";
 
 export function RestoreTransaction({ transactionId }: { transactionId: string }) {
   const { t } = useTranslation();
-  const restoreTransaction = useRestoreTransaction();
+  const restoreTransaction = useRestoreTransaction(transactionId);
   return (
     <div className="mt-1 flex flex-col gap-1">
       <Button
         variant="secondary"
         className="self-start"
         disabled={restoreTransaction.isPending}
-        onClick={() => restoreTransaction.mutate(transactionId)}
+        onClick={() => restoreTransaction.mutate()}
       >
         {t("transactions.restore.submit")}
       </Button>
