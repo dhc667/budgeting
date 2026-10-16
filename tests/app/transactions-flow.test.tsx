@@ -38,6 +38,28 @@ describe("transactions", () => {
     expect(await recent.findByRole("link", { name: /Market/ })).toBeTruthy();
   });
 
+  it("records a refund, which gives money back to the account", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+
+    await recordTransaction({
+      type: "Refund",
+      amount: "20",
+      category: "Shopping",
+      title: "Returned shoes",
+    });
+
+    const list = within(screen.getByRole("main"));
+    expect((await list.findByRole("link", { name: /Returned shoes/ })).textContent).toMatch(
+      /\+\$20\.00/,
+    );
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await accounts.findByRole("link", { name: /Checking/ })).textContent).toMatch(
+      /\$120\.00/,
+    );
+  });
+
   it("turns an expense into a refund, which gives the money back", async () => {
     const ana = uniqueName("Ana");
     await openSignedIn(ana);

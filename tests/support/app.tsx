@@ -73,7 +73,7 @@ export async function goHome() {
 }
 
 type NewTransaction = {
-  type?: "Expense" | "Income" | "Transfer";
+  type?: "Expense" | "Refund" | "Income" | "Transfer";
   amount: string;
   // The account money leaves, or reaches for an income or refund.
   account?: string;
@@ -93,7 +93,8 @@ export async function recordTransaction({
 }: NewTransaction) {
   await openNewTransaction();
   if (title) await user.type(screen.getByLabelText("Title"), title);
-  if (type) await user.click(screen.getByRole("tab", { name: type }));
+  if (type === "Refund") await user.click(screen.getByLabelText(/Refund/));
+  else if (type) await user.click(screen.getByRole("tab", { name: type }));
   await user.type(screen.getByLabelText("Amount"), amount);
   if (account) await choose(type === "Transfer" ? "From" : "Account", account);
   if (to) await choose("To", to);
