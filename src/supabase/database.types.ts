@@ -495,6 +495,9 @@ isOneToOne: false
 "merged_snapshot":
 { Args: { "snapshots": (Json)[] }; Returns: Json
                            },
+"my_space_ids":
+{ Args: Record<PropertyKey, never>; Returns: string[]
+                           },
 "opening_balance_transaction":
 { Args: { "account": string }; Returns: string
                            },
