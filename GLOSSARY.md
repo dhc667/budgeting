@@ -49,7 +49,7 @@ A place where money is held, in a single currency, belonging to one space for go
 _Avoid_: wallet
 
 **Archived account**:
-An account hidden from lists and pickers but kept with its full history, and still counted in net worth. Accounts that have transactions other than their opening balance are archived, never deleted.
+An account hidden from lists and pickers but kept with its full history, and still counted in net worth. It takes no new transactions, though the ones it has can still be edited. Accounts that have transactions other than their opening balance are archived, never deleted.
 
 **Shared account**:
 An account in a space with more than one member; a joint pot that every member can see and use. It is not a record of who owes whom.
@@ -62,7 +62,7 @@ A classification of income or expense, belonging to one space. Each category is 
 The transaction that records the money an account already held when it was added to the app. It is not income.
 
 **Transaction**:
-A single financial event: an expense, an income, or a transfer.
+A single financial event: an expense, an income, or a transfer. It happens on a day, never a future one, and may have a title saying what it was for and a note.
 _Avoid_: entry, record
 
 **Expense**:
@@ -75,7 +75,7 @@ An expense in reverse: money coming back from an expense category into an accoun
 A transaction that moves money from a category into an account.
 
 **Transfer**:
-A transaction that moves money between two accounts, possibly in different currencies.
+A transaction that moves money between two accounts, possibly in different currencies and different spaces. Only someone who belongs to both spaces can change, delete or restore a transfer between them; anyone else sees just their side, coming from or going to another space.
 
 **Unsynced transaction**:
 A transaction recorded on a device without a connection that the instance hasn't accepted yet. It counts in that device's balances and can be changed or discarded until it is sent. One the instance refuses stays unsynced, with the reason, until it is fixed or discarded.
