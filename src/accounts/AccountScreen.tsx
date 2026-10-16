@@ -12,6 +12,7 @@ import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
+import { TransactionList } from "../transactions/TransactionList";
 import {
   type Account,
   useAccountHistory,
@@ -52,6 +53,9 @@ export function AccountScreen() {
         <p className="text-3xl font-semibold tabular-nums">
           {money(account.balance, account.currency)}
         </p>
+      </Card>
+      <Card title={t("transactions.title")}>
+        <TransactionList filter={{ kind: "account", accountId: account.id }} />
       </Card>
       <EditCard account={account} />
       <ArchiveCard account={account} />

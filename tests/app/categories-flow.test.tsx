@@ -3,10 +3,12 @@ import { cleanup, screen, within } from "@testing-library/react";
 import i18n from "i18next";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  addAccount,
   createSharedSpace,
   openApp,
   openSignedIn,
   openSpaces,
+  recordTransaction,
   uniqueName,
   user,
 } from "../support/app";
@@ -143,11 +145,10 @@ describe("categories", () => {
   it("moves a deleted category's transactions to the category chosen", async () => {
     const ana = uniqueName("Ana");
     const family = uniqueName("Family");
-    const signedIn = await openSignedIn(ana);
+    await openSignedIn(ana);
     await createSharedSpace(family, []);
-    const spaceId = await recordTransaction(signedIn, family, "Eating out");
-    reopenAt(`/spaces/${spaceId}`);
-    await user.click(await screen.findByRole("link", { name: "Eating out" }));
+    await recordInto(family, "Eating out");
+    await openCategory(family, "Eating out");
 
     await user.click(await screen.findByRole("button", { name: "Delete category" }));
     const dialog = within(screen.getByRole("dialog", { name: "Delete Eating out?" }));
@@ -173,9 +174,9 @@ describe("categories", () => {
     const groceries = await categoryIn(client, family, "Groceries");
     await addSubcategory(client, groceries, "Bakery");
     await addSubcategory(client, groceries, "Cakes");
-    const spaceId = await recordTransaction(signedIn, family, "Cakes");
-    reopenAt(`/spaces/${spaceId}`);
-    await user.click(await screen.findByRole("link", { name: "Cakes" }));
+    reopenAt("/");
+    await recordInto(family, "Groceries › Cakes");
+    await openCategory(family, "Cakes");
 
     await user.click(await screen.findByRole("button", { name: "Delete category" }));
     const dialog = within(screen.getByRole("dialog", { name: "Delete Cakes?" }));
@@ -201,7 +202,7 @@ describe("categories", () => {
     const family = uniqueName("Family");
     const signedIn = await openSignedIn(uniqueName("Ana"));
     await createSharedSpace(family, []);
-    const spaceId = await recordTransaction(signedIn, family, "Salary");
+    await recordInto(family, "Salary", "Income");
     const client = await signedInClient(signedIn);
     for (const other of ["Gifts", "Interest & investments", "Other"]) {
       const { error } = await client.rpc("delete_category", {
@@ -210,8 +211,8 @@ describe("categories", () => {
       });
       if (error) throw error;
     }
-    reopenAt(`/spaces/${spaceId}`);
-    await user.click(await screen.findByRole("link", { name: "Salary" }));
+    reopenAt("/");
+    await openCategory(family, "Salary");
 
     await user.click(await screen.findByRole("button", { name: "Delete category" }));
 
@@ -240,36 +241,10 @@ function reopenAt(path: string) {
   openApp(`http://localhost:3000/#${path}`);
 }
 
-// Into a new account, returning the space's id. Members can't record transactions until #39, so
-// the transaction itself is written as the database's owner.
-async function recordTransaction(
-  member: SignedIn,
-  spaceName: string,
-  categoryName: string,
-): Promise<string> {
-  const client = await signedInClient(member);
-  const category = await categoryIn(client, spaceName, categoryName);
-  const { data: account, error } = await client.rpc("create_account", {
-    space: category.space_id,
-    account_name: "Checking",
-    account_currency: "USD",
-    account_color: "blue",
-    opening_amount: 0,
-    opening_date: new Date().toISOString().slice(0, 10),
-  });
-  if (error) throw error;
-  await sql.begin(async (tx) => {
-    const [transaction] = await tx<{ id: string }[]>`
-      insert into transactions (date, created_by)
-      values (current_date, ${member.userId})
-      returning id`;
-    await tx`
-      insert into postings (transaction_id, ledger_account_id, currency, amount)
-      values
-        (${defined(transaction).id}, ${account}, 'USD', -500),
-        (${defined(transaction).id}, ${category.id}, 'USD', 500)`;
-  });
-  return category.space_id;
+// Into a new account in the space, through the app's own form.
+async function recordInto(spaceName: string, category: string, type?: "Income") {
+  await addAccount({ name: "Checking", space: spaceName, openingBalance: "" });
+  await recordTransaction({ type, amount: "5", account: "Checking", category });
 }
 
 async function signedInClient({ email }: SignedIn) {

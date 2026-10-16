@@ -143,6 +143,12 @@ isOneToOne: false
       foreignKeyName: "postings_transaction_id_transactions_id_fk"
       columns: ["transaction_id"]
 isOneToOne: false
+      referencedRelation: "transaction_details"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_transaction_id_transactions_id_fk"
+      columns: ["transaction_id"]
+isOneToOne: false
       referencedRelation: "transactions"
       referencedColumns: ["id"]
     }
@@ -249,14 +255,14 @@ isOneToOne: false
                   ]
                 },"transactions": {
                   Row: {
-                    "created_at": string,"created_by": string,"date": string,"id": string
+                    "created_at": string,"created_by": string,"date": string,"id": string,"note": string | null,"title": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by": string,"date": string,"id"?: string
+                    "created_at"?: string,"created_by": string,"date": string,"id"?: string,"note"?: string | null,"title"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string,"date"?: string,"id"?: string
+                    "created_at"?: string,"created_by"?: string,"date"?: string,"id"?: string,"note"?: string | null,"title"?: string | null
                   }
                   Relationships: [
                     {
@@ -334,6 +340,86 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"transaction_details": {
+                  Row: {
+                    "category_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "postings_currency_currencies_code_fk"
+      columns: ["from_currency"]
+isOneToOne: false
+      referencedRelation: "currencies"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "postings_currency_currencies_code_fk"
+      columns: ["to_currency"]
+isOneToOne: false
+      referencedRelation: "currencies"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["from_account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["to_account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["from_account_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["to_account_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["from_account_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["to_account_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "transactions_created_by_profiles_id_fk"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Functions: {
@@ -355,14 +441,23 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"add_transaction":
+{ Args: { "account": string,"amount": number,"category": string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
+                           },
 "came_with_space":
 { Args: { "category": Omit<Database["public"]['Tables']["ledger_accounts"]['Row'], Database["public"]['Tables']["ledger_accounts"]['ComputedFields']> }; Returns: boolean
+                           },
+"can_change_transaction":
+{ Args: { "transaction": string }; Returns: boolean
                            },
 "check_invite_code":
 { Args: { "event": Json }; Returns: Json
                            },
 "check_opening_date":
 { Args: { "opening_date": string }; Returns: undefined
+                           },
+"check_transaction_date":
+{ Args: { "transaction_date": string }; Returns: undefined
                            },
 "create_account":
 { Args: { "account_color": Database["public"]['Enums']["color"],"account_currency": string,"account_name": string,"opening_amount": number,"opening_date": string,"space": string }; Returns: string
@@ -376,14 +471,29 @@ isOneToOne: false
 "delete_category":
 { Args: { "category_id": string,"move_to": string }; Returns: undefined
                            },
+"delete_transaction":
+{ Args: { "transaction_id": string }; Returns: undefined
+                           },
 "is_opening_balance":
 { Args: { "transaction": string }; Returns: boolean
                            },
 "is_space_member":
 { Args: { "space": string }; Returns: boolean
                            },
+"latest_today":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"lock_changeable_transaction":
+{ Args: { "transaction": string }; Returns: undefined
+                           },
 "log_transaction":
 { Args: { "action": Database["public"]['Enums']["activity_action"],"new_snapshot": Json,"old_snapshot": Json,"space": string,"transaction": string }; Returns: undefined
+                           },
+"log_transaction_changes":
+{ Args: { "action": Database["public"]['Enums']["activity_action"],"after": Json,"before": Json,"transaction": string }; Returns: undefined
+                           },
+"merged_snapshot":
+{ Args: { "snapshots": (Json)[] }; Returns: Json
                            },
 "reorder_accounts":
 { Args: { "account_ids": (string)[] }; Returns: undefined
@@ -394,18 +504,98 @@ isOneToOne: false
 "set_opening_balance":
 { Args: { "account": Omit<Database["public"]['Tables']["ledger_accounts"]['Row'], Database["public"]['Tables']["ledger_accounts"]['ComputedFields']>,"opening_amount": number,"opening_date": string }; Returns: undefined
                            },
+"snapshots_by_space":
+{ Args: { "transaction": string }; Returns: Json
+                           },
+"spaces_touched":
+{ Args: { "transaction": string }; Returns: string[]
+                           },
+"title_suggestions":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "category_id": string | null,
+"created_at": string | null,
+"created_by": string | null,
+"date": string | null,
+"from_account_id": string | null,
+"from_amount": number | null,
+"from_currency": string | null,
+"id": string | null,
+"note": string | null,
+"one_sided": boolean | null,
+"space_ids": (string)[] | null,
+"title": string | null,
+"to_account_id": string | null,
+"to_amount": number | null,
+"to_currency": string | null,
+"type": Database["public"]['Enums']["transaction_type"] | null
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "transaction_details"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"transaction_history":
+{ Args: { "transaction_id": string }; Returns: {
+              "action": Database["public"]['Enums']["activity_action"],
+"changed_at": string,
+"changed_by": string | null,
+"id": number,
+"new": Json | null,
+"old": Json | null,
+"row_id": string,
+"space_id": string,
+"table_name": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "activity"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "transaction_snapshot":
 { Args: { "transaction": string }; Returns: Json
+                           } |
+{ Args: { "space": string,"transaction": string }; Returns: Json
+                           },
+"transaction_type":
+{ Args: { "transaction": string }; Returns: Database["public"]['Enums']["transaction_type"]
                            },
 "update_account":
 { Args: { "account_color": Database["public"]['Enums']["color"],"account_currency": string,"account_id": string,"account_name": string,"opening_amount": number,"opening_date": string }; Returns: undefined
                            },
 "update_category":
 { Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_id": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string }; Returns: undefined
+                           },
+"update_transaction":
+{ Args: { "account": string,"amount": number,"category": string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
+                           },
+"usable_account":
+{ Args: { "account": string,"used_before": (string)[] }; Returns: {
+              "archived": boolean,
+"color": Database["public"]['Enums']["color"] | null,
+"created_at": string,
+"currency": string | null,
+"icon": string | null,
+"id": string,
+"kind": Database["public"]['Enums']["ledger_account_kind"],
+"name": string | null,
+"parent_id": string | null,
+"position": number,
+"space_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "ledger_accounts"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"write_postings":
+{ Args: { "account": string,"amount": number,"category": string,"to_account": string,"to_amount": number,"transaction": string,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: undefined
                            }
           }
           Enums: {
-            "activity_action": "insert"|"update"|"delete","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period"
+            "activity_action": "insert"|"update"|"delete","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","transaction_type": "expense"|"refund"|"income"|"transfer"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -521,7 +711,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_action": ["insert", "update", "delete"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"]
+            "activity_action": ["insert", "update", "delete"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"transaction_type": ["expense", "refund", "income", "transfer"]
           }
         }
 } as const

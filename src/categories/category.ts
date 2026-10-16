@@ -16,6 +16,11 @@ export function categoryTree(
     }));
 }
 
+// A category's transactions include its subcategories'.
+export function withSubcategories(category: Category, categories: Category[]): Category[] {
+  return [category, ...categories.filter(({ parent_id }) => parent_id === category.id)];
+}
+
 // Names can repeat, so a subcategory is told apart by its parent's name.
 export function categoryLabel(category: Category, categories: Category[]): string {
   const parent = categories.find(({ id }) => id === category.parent_id);

@@ -1,11 +1,11 @@
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { type Category, useCategories } from "../categories/category-queries";
+import { useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
-import { displayNameOf, type User, useUsers } from "../profile/profile-queries";
-import { Constants, type Enums, type Json } from "../supabase/database.types";
+import { displayNameOf, useUsers } from "../profile/profile-queries";
+import { describeTransactionChange } from "../transactions/transaction-activity";
 import { EmptyState } from "../ui/Card";
+import { hasChanged, ledgerAccountKinds, type Phrasing, stringAt, valueAt } from "./activity";
 import type { Activity } from "./space-queries";
 
 export function ActivityList({ activity }: { activity: Activity[] | undefined }) {
@@ -185,71 +185,3 @@ function describeCategoryChange(
     }
   }
 }
-
-function describeTransactionChange(entry: Activity, actor: string, phrasing: Phrasing): string[] {
-  const { t, money, day } = phrasing;
-  const postings = postingsOf(entry.new ?? entry.old);
-  const account = postings.find(({ account_kind }) => account_kind === "account");
-  const isOpeningBalance = postings.some(({ account_kind }) => account_kind === "opening_balance");
-  if (!account || !isOpeningBalance) return [];
-  const details = {
-    actor,
-    account: account.account_name,
-    amount: money(account.amount, account.currency),
-    date: day(stringAt(entry.new ?? entry.old, "date") ?? ""),
-  };
-  switch (entry.action) {
-    case "insert":
-      return [t("activity.openingBalance.set", details)];
-    case "update":
-      return [t("activity.openingBalance.changed", details)];
-    case "delete":
-      return [t("activity.openingBalance.removed", details)];
-  }
-}
-
-function hasChanged(entry: Activity, key: string): boolean {
-  return JSON.stringify(valueAt(entry.old, key)) !== JSON.stringify(valueAt(entry.new, key));
-}
-
-function postingsOf(snapshot: Json): Posting[] {
-  const postings = valueAt(snapshot, "postings");
-  if (!Array.isArray(postings)) return [];
-  return postings.flatMap((posting) => {
-    const account_kind = ledgerAccountKinds.find(
-      (kind) => kind === valueAt(posting, "account_kind"),
-    );
-    const account_name = stringAt(posting, "account_name") ?? "";
-    const currency = stringAt(posting, "currency");
-    const amount = valueAt(posting, "amount");
-    if (account_kind === undefined || currency === null || typeof amount !== "number") return [];
-    return [{ account_kind, account_name, currency, amount }];
-  });
-}
-
-function stringAt(row: Json, key: string): string | null {
-  const value = valueAt(row, key);
-  return typeof value === "string" ? value : null;
-}
-
-function valueAt(row: Json, key: string): Json | undefined {
-  if (typeof row !== "object" || row === null || Array.isArray(row)) return undefined;
-  return row[key];
-}
-
-const ledgerAccountKinds = Constants.public.Enums.ledger_account_kind;
-
-type Phrasing = {
-  users: User[];
-  categories: Category[];
-  t: TFunction;
-  money: (minorUnits: number, currency: string) => string;
-  day: (day: string) => string;
-};
-
-type Posting = {
-  account_kind: Enums<"ledger_account_kind">;
-  account_name: string;
-  currency: string;
-  amount: number;
-};

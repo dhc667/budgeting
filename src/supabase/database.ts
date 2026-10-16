@@ -13,14 +13,36 @@ export type Database = Omit<Generated, "public"> & {
           kind: "expense" | "income";
         };
       };
+      transaction_details: Omit<GeneratedViews["transaction_details"], "Row"> & {
+        Row: NotNullExcept<
+          GeneratedViews["transaction_details"]["Row"],
+          TransactionSide | "title" | "note" | "type"
+        >;
+      };
     };
     Functions: Omit<
       GeneratedFunctions,
-      "create_category" | "update_category" | "delete_category"
+      | "create_category"
+      | "update_category"
+      | "delete_category"
+      | "add_transaction"
+      | "update_transaction"
+      | "title_suggestions"
     > & {
       create_category: WithNullableArgs<GeneratedFunctions["create_category"], "parent">;
       update_category: WithNullableArgs<GeneratedFunctions["update_category"], "parent">;
       delete_category: WithNullableArgs<GeneratedFunctions["delete_category"], "move_to">;
+      add_transaction: WithNullableArgs<GeneratedFunctions["add_transaction"], TransactionDetail>;
+      update_transaction: WithNullableArgs<
+        GeneratedFunctions["update_transaction"],
+        TransactionDetail
+      >;
+      title_suggestions: Omit<GeneratedFunctions["title_suggestions"], "Returns"> & {
+        Returns: NotNullExcept<
+          GeneratedFunctions["title_suggestions"]["Returns"][number],
+          TransactionSide | "note"
+        >[];
+      };
     };
   };
 };
@@ -28,6 +50,18 @@ export type Database = Omit<Generated, "public"> & {
 type GeneratedViews = Generated["public"]["Views"];
 
 type GeneratedFunctions = Generated["public"]["Functions"];
+
+// Which of these a transaction has depends on its type, and on which of its sides a member sees.
+type TransactionSide =
+  | "from_account_id"
+  | "from_amount"
+  | "from_currency"
+  | "to_account_id"
+  | "to_amount"
+  | "to_currency"
+  | "category_id";
+
+type TransactionDetail = "title" | "note" | "category" | "to_account" | "to_amount";
 
 type NotNullExcept<Row, Nullable extends keyof Row> = {
   [Column in keyof Row]: Column extends Nullable ? Row[Column] : NonNullable<Row[Column]>;

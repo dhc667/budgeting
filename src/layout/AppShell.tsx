@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 import { useProfile } from "../profile/profile-queries";
 import { SpacePicker } from "../spaces/SpacePicker";
 import { Avatar } from "../ui/Avatar";
@@ -98,30 +98,26 @@ function ProfileLink({ showName = false }: { showName?: boolean }) {
 function AddTransactionButton() {
   const { t } = useTranslation();
   return (
-    <button
-      type="button"
-      disabled
-      title={t("nav.comingSoon")}
-      className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 font-medium text-white disabled:opacity-60"
+    <Link
+      to="/transactions/new"
+      className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 font-medium text-white hover:bg-emerald-700"
     >
       <Plus className="size-5" />
       {t("nav.addTransaction")}
-    </button>
+    </Link>
   );
 }
 
 function AddTransactionFab() {
   const { t } = useTranslation();
   return (
-    <button
-      type="button"
-      disabled
-      title={t("nav.comingSoon")}
+    <Link
+      to="/transactions/new"
       aria-label={t("nav.addTransaction")}
-      className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg disabled:opacity-60 md:hidden"
+      className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex size-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 md:hidden"
     >
       <Plus className="size-7" />
-    </button>
+    </Link>
   );
 }
 

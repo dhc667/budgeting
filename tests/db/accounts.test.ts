@@ -2,7 +2,6 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   admin,
   createSpace,
-  defined,
   privateSpaceOf,
   signedInUser,
   sql,
@@ -445,18 +444,20 @@ async function activityOf(user: User, spaceId: string) {
   return data;
 }
 
-// Members can record no transaction but an opening balance, so this writes as the database's owner.
 async function transfer(from: string, to: string, amount: number) {
-  await sql.begin(async (tx) => {
-    const [transaction] = await tx<{ id: string }[]>`
-      insert into transactions (date, created_by)
-      values (current_date, ${ana.userId})
-      returning id`;
-    const id = defined(transaction).id;
-    await tx`
-      insert into postings (transaction_id, ledger_account_id, currency, amount)
-      values (${id}, ${from}, 'USD', ${-amount}), (${id}, ${to}, 'USD', ${amount})`;
+  const { error } = await ana.client.rpc("add_transaction", {
+    transaction_id: crypto.randomUUID(),
+    transaction_type: "transfer",
+    transaction_date: today(),
+    title: null,
+    note: null,
+    account: from,
+    amount,
+    category: null,
+    to_account: to,
+    to_amount: null,
   });
+  if (error) throw error;
 }
 
 function today(): string {

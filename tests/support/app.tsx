@@ -51,6 +51,67 @@ export async function createSharedSpace(name: string, memberNames: string[]) {
   await screen.findByRole("heading", { name, level: 1 });
 }
 
+type NewAccount = { name: string; openingBalance: string; space?: string };
+
+export async function addAccount({ name, openingBalance, space }: NewAccount) {
+  await openNewAccount();
+  if (space) await user.selectOptions(screen.getByLabelText("Space"), space);
+  await user.type(screen.getByLabelText("Name"), name);
+  if (openingBalance) await user.type(screen.getByLabelText("Opening balance"), openingBalance);
+  await user.click(screen.getByRole("button", { name: "Add account" }));
+  await screen.findByRole("heading", { name, level: 1 });
+}
+
+export async function openNewAccount() {
+  await goHome();
+  await user.click(await screen.findByRole("link", { name: "Add account" }));
+  await screen.findByRole("heading", { name: "New account" });
+}
+
+export async function goHome() {
+  await user.click(defined((await screen.findAllByRole("link", { name: "Home" }))[0]));
+}
+
+type NewTransaction = {
+  type?: "Expense" | "Income" | "Transfer";
+  amount: string;
+  // The account money leaves, or reaches for an income or refund.
+  account?: string;
+  category?: string;
+  to?: string;
+  title?: string;
+};
+
+// Through the app's own form, landing on the transactions list.
+export async function recordTransaction({
+  type,
+  amount,
+  account,
+  category,
+  to,
+  title,
+}: NewTransaction) {
+  await openNewTransaction();
+  if (title) await user.type(screen.getByLabelText("Title"), title);
+  if (type) await user.click(screen.getByRole("tab", { name: type }));
+  await user.type(screen.getByLabelText("Amount"), amount);
+  if (account) await choose(type === "Transfer" ? "From" : "Account", account);
+  if (to) await choose("To", to);
+  if (category) await choose("Category", category);
+  await user.click(screen.getByRole("button", { name: "Add transaction" }));
+  await screen.findByRole("heading", { name: "Transactions", level: 1 });
+}
+
+export async function openNewTransaction() {
+  await user.click(defined(screen.getAllByRole("link", { name: "Add transaction" })[0]));
+  await screen.findByRole("heading", { name: "New transaction" });
+}
+
+export async function choose(picker: string, option: string) {
+  await user.click(screen.getByRole("combobox", { name: picker }));
+  await user.click(screen.getByRole("option", { name: option }));
+}
+
 // Users pile up across test runs, and the member checklist finds them by name.
 export function uniqueName(name: string): string {
   return `${name} ${crypto.randomUUID().slice(0, 8)}`;
