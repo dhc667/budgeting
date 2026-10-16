@@ -2,6 +2,7 @@
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  addAccount,
   createSharedSpace,
   openApp,
   openSignedIn,
@@ -25,6 +26,18 @@ describe("spaces", () => {
 
     expect(await screen.findByText(/Only you can see this space/)).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Members" })).toBeNull();
+  });
+
+  it("keeps the private space's activity too", async () => {
+    const ana = uniqueName("Ana");
+    await openSignedIn(ana);
+    await addAccount({ name: "Wallet", openingBalance: "" });
+
+    await openSpaces();
+    await user.click(await screen.findByRole("link", { name: /^Private/ }));
+
+    const activity = within(await screen.findByRole("region", { name: "Activity" }));
+    expect(await activity.findByText(new RegExp(`^${ana} added .*Wallet`))).toBeTruthy();
   });
 
   it("creates a shared space with another user, who sees it with its activity", async () => {

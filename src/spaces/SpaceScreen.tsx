@@ -45,6 +45,7 @@ export function SpaceScreen() {
         <>
           <p className="text-zinc-500">{t("spaces.privateExplained")}</p>
           <CategoriesCard spaceId={space.id} />
+          <ActivityCard space={space} />
         </>
       ) : (
         <>
