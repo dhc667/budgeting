@@ -142,8 +142,10 @@ function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<voi
 function selectTransactions(supabase: AppSupabase, filter: TransactionFilter) {
   let query = supabase.from("transaction_details").select("*");
   if (filter.spaceIds) query = query.overlaps("space_ids", filter.spaceIds);
-  if (filter.accountId)
-    query = query.or(`from_account_id.eq.${filter.accountId},to_account_id.eq.${filter.accountId}`);
+  if (filter.accountIds) {
+    const ids = filter.accountIds.join(",");
+    query = query.or(`from_account_id.in.(${ids}),to_account_id.in.(${ids})`);
+  }
   if (filter.categoryIds) query = query.in("category_id", filter.categoryIds);
   if (filter.from) query = query.gte("date", filter.from);
   if (filter.to) query = query.lte("date", filter.to);
@@ -194,7 +196,7 @@ export type TransactionType = Database["public"]["Enums"]["transaction_type"];
 // Each part narrows the list further; dates are inclusive.
 export type TransactionFilter = {
   spaceIds?: string[];
-  accountId?: string;
+  accountIds?: string[];
   categoryIds?: string[];
   from?: string;
   to?: string;

@@ -363,8 +363,12 @@
       "allSpaces": "All spaces",
       "account": "Account",
       "allAccounts": "All accounts",
+      "someAccounts_one": "{{count}} account",
+      "someAccounts_other": "{{count}} accounts",
       "category": "Category",
       "allCategories": "All categories",
+      "someCategories_one": "{{count}} category",
+      "someCategories_other": "{{count}} categories",
       "from": "From",
       "to": "To"
     },

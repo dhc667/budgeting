@@ -363,8 +363,12 @@
       "allSpaces": "Todos os espaços",
       "account": "Conta",
       "allAccounts": "Todas as contas",
+      "someAccounts_one": "{{count}} conta",
+      "someAccounts_other": "{{count}} contas",
       "category": "Categoria",
       "allCategories": "Todas as categorias",
+      "someCategories_one": "{{count}} categoria",
+      "someCategories_other": "{{count}} categorias",
       "from": "De",
       "to": "Até"
     },

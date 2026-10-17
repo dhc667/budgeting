@@ -1,5 +1,6 @@
 import { SlidersHorizontal } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import type { TFunction } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Account } from "../accounts/account-queries";
 import { categoryLabel, categoryTree } from "../categories/category";
@@ -7,6 +8,7 @@ import type { Category } from "../categories/category-queries";
 import { spaceName } from "../spaces/space";
 import type { Space } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
+import { type ChecklistGroup, ChecklistField } from "../ui/ChecklistField";
 import { Field } from "../ui/Field";
 import { SelectField } from "../ui/SelectField";
 import { activeCount, type ListFilters } from "./list-filters";
@@ -56,7 +58,7 @@ export function TransactionFilters({
             <SelectField
               label={t("transactions.filters.space")}
               value={values.space}
-              onChange={(event) => change({ space: event.target.value, account: "", category: "" })}
+              onChange={(event) => change({ space: event.target.value, account: [], category: [] })}
             >
               <option value="">{t("transactions.filters.allSpaces")}</option>
               {shownSpaces.map((space) => (
@@ -66,40 +68,40 @@ export function TransactionFilters({
               ))}
             </SelectField>
           )}
-          <SelectField
+          <ChecklistField
             label={t("transactions.filters.account")}
+            summary={summary(accounts, values.account, ({ name }) => name, {
+              none: t("transactions.filters.allAccounts"),
+              several: (count) => t("transactions.filters.someAccounts", { count }),
+            })}
+            groups={bySpace(spaces, accounts, t, (inSpace) =>
+              inSpace.map(({ id, name }) => ({ id, label: name })),
+            )}
             value={values.account}
-            onChange={(event) => change({ account: event.target.value })}
-          >
-            <option value="">{t("transactions.filters.allAccounts")}</option>
-            <BySpace spaces={spaces} items={accounts}>
-              {(inSpace) =>
-                inSpace.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))
-              }
-            </BySpace>
-          </SelectField>
-          <SelectField
+            onChange={(account) => change({ account })}
+          />
+          <ChecklistField
             label={t("transactions.filters.category")}
+            summary={summary(
+              categories,
+              values.category,
+              (category) => categoryLabel(category, categories),
+              {
+                none: t("transactions.filters.allCategories"),
+                several: (count) => t("transactions.filters.someCategories", { count }),
+              },
+            )}
+            groups={bySpace(spaces, categories, t, (inSpace) =>
+              categoryTree(inSpace).flatMap(({ category, children }) =>
+                [category, ...children].map((each) => ({
+                  id: each.id,
+                  label: categoryLabel(each, inSpace),
+                })),
+              ),
+            )}
             value={values.category}
-            onChange={(event) => change({ category: event.target.value })}
-          >
-            <option value="">{t("transactions.filters.allCategories")}</option>
-            <BySpace spaces={spaces} items={categories}>
-              {(inSpace) =>
-                categoryTree(inSpace).flatMap(({ category, children }) =>
-                  [category, ...children].map((each) => (
-                    <option key={each.id} value={each.id}>
-                      {categoryLabel(each, inSpace)}
-                    </option>
-                  )),
-                )
-              }
-            </BySpace>
-          </SelectField>
+            onChange={(category) => change({ category })}
+          />
           <Field
             type="date"
             label={t("transactions.filters.from")}
@@ -120,23 +122,29 @@ export function TransactionFilters({
   );
 }
 
-type BySpaceProps<Item> = {
-  spaces: Space[];
-  items: Item[];
-  children: (inSpace: Item[]) => ReactNode;
-};
-
 // Names repeat from space to space, so with more than one in play each gets its own group.
-function BySpace<Item extends { space_id: string }>({
-  spaces,
-  items,
-  children,
-}: BySpaceProps<Item>) {
-  const { t } = useTranslation();
-  if (spaces.length === 1) return children(items);
-  return spaces.map((space) => (
-    <optgroup key={space.id} label={spaceName(space, t)}>
-      {children(items.filter(({ space_id }) => space_id === space.id))}
-    </optgroup>
-  ));
+function bySpace<Item extends { space_id: string }>(
+  spaces: Space[],
+  items: Item[],
+  t: TFunction,
+  options: (inSpace: Item[]) => ChecklistGroup["options"],
+): ChecklistGroup[] {
+  if (spaces.length === 1) return [{ options: options(items) }];
+  return spaces.map((space) => ({
+    label: spaceName(space, t),
+    options: options(items.filter(({ space_id }) => space_id === space.id)),
+  }));
+}
+
+function summary<Item extends { id: string }>(
+  items: Item[],
+  chosenIds: string[],
+  nameOf: (item: Item) => string,
+  { none, several }: { none: string; several: (count: number) => string },
+): string {
+  const chosen = items.filter(({ id }) => chosenIds.includes(id));
+  const [only] = chosen;
+  if (chosen.length === 0) return none;
+  if (chosen.length === 1 && only) return nameOf(only);
+  return several(chosen.length);
 }
