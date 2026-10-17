@@ -176,6 +176,13 @@
       "when": 1792244644564,
       "tag": "0024_exchange_rate_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792250199546,
+      "tag": "0025_transaction_search",
+      "breakpoints": true
     }
   ]
 }

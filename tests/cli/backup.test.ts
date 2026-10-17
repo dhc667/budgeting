@@ -158,6 +158,15 @@ function giveFreshProjectShape() {
     encoding: "utf8",
   });
   expect(load.status, load.stderr).toBe(0);
+  // Where Supabase installs extensions, in every project.
+  const extensions = spawnSync(
+    "psql",
+    ["--quiet", scratchUrl, "--command=create schema extensions"],
+    {
+      encoding: "utf8",
+    },
+  );
+  expect(extensions.status, extensions.stderr).toBe(0);
 }
 
 // The local auth schema carries this app's own trigger, which a fresh project doesn't have yet.

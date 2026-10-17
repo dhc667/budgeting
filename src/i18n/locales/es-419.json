@@ -348,7 +348,26 @@
     "transfer": "Transferencia",
     "anotherSpace": "Otro espacio",
     "none": "Todavía no hay movimientos.",
+    "noMatches": "Ningún movimiento coincide.",
     "showMore": "Ver más",
+    "search": {
+      "label": "Buscar",
+      "placeholder": "Título o nota"
+    },
+    "filters": {
+      "toggle": "Filtros",
+      "toggleCount_one": "Filtros ({{count}})",
+      "toggleCount_other": "Filtros ({{count}})",
+      "clear": "Quitar filtros",
+      "space": "Espacio",
+      "allSpaces": "Todos los espacios",
+      "account": "Cuenta",
+      "allAccounts": "Todas las cuentas",
+      "category": "Categoría",
+      "allCategories": "Todas las categorías",
+      "from": "Desde",
+      "to": "Hasta"
+    },
     "seeAll": "Ver todos",
     "details": "Detalles",
     "history": "Historial",

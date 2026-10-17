@@ -29,6 +29,7 @@ import {
   useTransactionHistory,
   useUpdateTransaction,
 } from "./transaction-queries";
+import { useListAddress } from "./list-filters";
 import { TransactionForm } from "./TransactionForm";
 
 export function TransactionScreen() {
@@ -38,6 +39,7 @@ export function TransactionScreen() {
   const { data: transaction } = useTransaction(transactionId);
   const { data: categories } = useCategories();
   const { data: users = [] } = useUsers();
+  const listAddress = useListAddress();
   if (transaction === undefined || !categories) return null;
   if (transaction === null) return <TransactionNotFound />;
   const label = transactionLabel(transaction, categories, t);
@@ -46,7 +48,7 @@ export function TransactionScreen() {
   return (
     <div key={transaction.id} className="flex max-w-xl flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <BackLink to="/transactions" place={t("nav.transactions")} />
+        <BackLink to={listAddress} place={t("nav.transactions")} />
         <h1 className="text-2xl font-semibold">{label}</h1>
         <p className="text-sm text-zinc-500">
           {t("transactions.addedBy", {
@@ -140,8 +142,8 @@ function DeleteCard({ transaction, label }: { transaction: Transaction; label: s
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const deleteTransaction = useDeleteTransaction(transaction.id);
-  const confirm = () =>
-    afterSuccess(deleteTransaction.mutateAsync(), () => navigate("/transactions"));
+  const listAddress = useListAddress();
+  const confirm = () => afterSuccess(deleteTransaction.mutateAsync(), () => navigate(listAddress));
 
   return (
     <Card title={t("transactions.delete.title")}>

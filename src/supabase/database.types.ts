@@ -382,7 +382,7 @@ isOneToOne: false
                   ]
                 },"transaction_details": {
                   Row: {
-                    "category_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
+                    "category_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"search_text": string | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -590,6 +590,7 @@ isOneToOne: false
 "id": string | null,
 "note": string | null,
 "one_sided": boolean | null,
+"search_text": string | null,
 "space_ids": (string)[] | null,
 "title": string | null,
 "to_account_id": string | null,
