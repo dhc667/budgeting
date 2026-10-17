@@ -61,6 +61,22 @@ as $$
   group by rates.currency;
 $$;
 --> statement-breakpoint
+-- Any client may record one, as with rates; checked_on is the database's, so a wrong one is
+-- trusted only until it's due for checking again.
+create or replace function public.record_exchange_rate_history_starts(rate_provider text, starts jsonb)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into public.exchange_rate_history_starts (provider, currency, starts_on, checked_on)
+  select rate_provider, incoming.currency, incoming.starts_on, current_date
+  from jsonb_to_recordset(starts) as incoming(currency text, starts_on date)
+  join public.currencies on currencies.code = incoming.currency
+  on conflict (provider, currency) do update
+  set starts_on = excluded.starts_on, checked_on = excluded.checked_on;
+$$;
+--> statement-breakpoint
 create or replace function public.check_display_currency()
 returns trigger
 language plpgsql
@@ -86,10 +102,11 @@ for each row
 when (new.display_currency is distinct from old.display_currency)
 execute function public.check_display_currency();
 --> statement-breakpoint
-grant select on public.exchange_rates to authenticated;
+grant select on public.exchange_rates, public.exchange_rate_history_starts to authenticated;
 --> statement-breakpoint
 grant execute on function
   public.latest_exchange_rates(),
   public.stored_exchange_rate_ranges(),
-  public.save_exchange_rates(jsonb)
+  public.save_exchange_rates(jsonb),
+  public.record_exchange_rate_history_starts(text, jsonb)
 to authenticated;

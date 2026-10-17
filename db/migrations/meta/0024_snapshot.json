@@ -1,6 +1,6 @@
 {
-  "id": "c0a689cc-3b0e-4e64-ba85-561980104d27",
-  "prevId": "d31f5fcd-9da0-459c-a0a5-dc3239a98712",
+  "id": "1a055b4b-6f67-4b9e-9513-e99f9d03099a",
+  "prevId": "ce5b670f-2b64-4082-a2e2-7e117ec46709",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -198,6 +198,75 @@
       "policies": {
         "users see every currency": {
           "name": "users see every currency",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.exchange_rate_history_starts": {
+      "name": "exchange_rate_history_starts",
+      "schema": "",
+      "columns": {
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starts_on": {
+          "name": "starts_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_on": {
+          "name": "checked_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "exchange_rate_history_starts_currency_currencies_code_fk": {
+          "name": "exchange_rate_history_starts_currency_currencies_code_fk",
+          "tableFrom": "exchange_rate_history_starts",
+          "columnsFrom": [
+            "currency"
+          ],
+          "tableTo": "currencies",
+          "columnsTo": [
+            "code"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "exchange_rate_history_starts_provider_currency_pk": {
+          "name": "exchange_rate_history_starts_provider_currency_pk",
+          "columns": [
+            "provider",
+            "currency"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "users see where every provider's history starts": {
+          "name": "users see where every provider's history starts",
           "as": "PERMISSIVE",
           "for": "SELECT",
           "to": [
