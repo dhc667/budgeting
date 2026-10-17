@@ -10,11 +10,13 @@ export async function importIntoPrivateSpace(
   sql: Sql,
   email: string,
   file: ImportFile,
+  { replaceCategories = false } = {},
 ): Promise<ImportedAccount[]> {
   return sql.begin(async (tx) => {
     const userId = await actAs(tx, email);
     const spaceId = await privateSpaceOf(tx, userId);
     await refuseExistingAccounts(tx, spaceId, file.accounts);
+    if (replaceCategories) await deleteCategories(tx, spaceId);
     const categoryIds = await addCategories(tx, spaceId, file.categories);
     const accountIds = await addAccounts(tx, spaceId, file.accounts);
     await addTransactions(tx, file.transactions, accountIds, categoryIds);
@@ -47,6 +49,27 @@ async function refuseExistingAccounts(tx: TransactionSql, spaceId: string, accou
     throw new ImportError(
       `The private space already has ${existing.map((a) => a.name).join(", ")}. Was this file imported before?`,
     );
+  }
+}
+
+// Only categories nothing is in: delete_category would need somewhere to move transactions to.
+async function deleteCategories(tx: TransactionSql, spaceId: string) {
+  const inUse = await tx<{ label: string }[]>`
+    select concat_ws(' › ', parent.name, category.name) as label
+    from public.categories as category
+    left join public.categories as parent on parent.id = category.parent_id
+    where category.space_id = ${spaceId} and category.transaction_count > 0
+    order by category.kind, label`;
+  if (inUse.length > 0) {
+    throw new ImportError(
+      `The categories ${inUse.map((c) => c.label).join(", ")} have transactions, so they can't be replaced.`,
+    );
+  }
+  for (const level of [tx`parent_id is not null`, tx`parent_id is null`]) {
+    await tx`
+      select public.delete_category(id, null)
+      from public.categories
+      where space_id = ${spaceId} and ${level}`;
   }
 }
 
