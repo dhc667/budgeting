@@ -1,38 +1,35 @@
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { localToday } from "../format/days";
 import { useMoney } from "../money/use-money";
 import { afterSuccess } from "../query-client";
-import { ActivityList } from "../spaces/ActivityList";
 import { spaceName } from "../spaces/space";
 import { useSpaces } from "../spaces/space-queries";
 import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
-import { Card, EmptyState } from "../ui/Card";
+import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
-import { TransactionList } from "../transactions/TransactionList";
 import {
   type Account,
-  useAccountHistory,
-  useAccounts,
   useArchiveAccount,
   useDeleteAccount,
   useUpdateAccount,
 } from "./account-queries";
 import { AccountForm } from "./AccountForm";
+import { AccountNotFound } from "./AccountSubscreen";
+import { useRoutedAccount } from "./routed-account";
 import { ColorDot } from "../colors/ColorDot";
 
 export function AccountScreen() {
   const { t } = useTranslation();
   const money = useMoney();
-  const { accountId } = useParams();
-  const { data: accounts } = useAccounts();
+  const account = useRoutedAccount();
   const { data: spaces = [] } = useSpaces();
-  if (!accounts) return null;
-  const account = accounts.find(({ id }) => id === accountId);
-  if (!account) return <AccountNotFound />;
+  if (account === undefined) return null;
+  if (account === null) return <AccountNotFound />;
   const space = spaces.find(({ id }) => id === account.space_id);
 
   // Keyed so that another account's screen starts with fresh forms rather than this one's.
@@ -54,26 +51,29 @@ export function AccountScreen() {
           {money(account.balance, account.currency)}
         </p>
       </Card>
-      <Card title={t("transactions.title")}>
-        <TransactionList filter={{ kind: "account", accountId: account.id }} />
-      </Card>
+      <nav
+        aria-label={account.name}
+        className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900"
+      >
+        <ScreenLink to={`/accounts/${account.id}/transactions`} label={t("transactions.title")} />
+        <ScreenLink to={`/accounts/${account.id}/history`} label={t("accounts.history")} />
+      </nav>
       <EditCard account={account} />
       <ArchiveCard account={account} />
       <DeleteCard account={account} />
-      <HistoryCard account={account} />
     </div>
   );
 }
 
-function AccountNotFound() {
-  const { t } = useTranslation();
+function ScreenLink({ to, label }: { to: string; label: string }) {
   return (
-    <div className="flex max-w-xl flex-col gap-6">
-      <EmptyState>{t("accounts.notFound")}</EmptyState>
-      <Link to="/" className="font-medium text-emerald-700 dark:text-emerald-400">
-        {t("accounts.backHome")}
-      </Link>
-    </div>
+    <Link
+      to={to}
+      className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 py-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800"
+    >
+      {label}
+      <ChevronRight aria-hidden className="size-5 text-zinc-400" />
+    </Link>
   );
 }
 
@@ -192,16 +192,6 @@ function DeleteCard({ account }: { account: Account }) {
       >
         {deleteAccount.error && <ErrorText>{t("accounts.errors.deleteFailed")}</ErrorText>}
       </ConfirmDialog>
-    </Card>
-  );
-}
-
-function HistoryCard({ account }: { account: Account }) {
-  const { t } = useTranslation();
-  const { data: history } = useAccountHistory(account.id);
-  return (
-    <Card title={t("accounts.history")}>
-      <ActivityList activity={history} />
     </Card>
   );
 }

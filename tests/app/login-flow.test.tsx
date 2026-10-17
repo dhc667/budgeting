@@ -131,6 +131,7 @@ describe("profile", () => {
   it("explains a display currency refused because its rate went stale meanwhile", async () => {
     const card = within(await screen.findByRole("region", { name: "About you" }));
     await sql`update exchange_rates set date = current_date - 30 where currency = ${goingStale}`;
+    await card.findByRole("option", { name: new RegExp(goingStale) });
 
     await user.selectOptions(card.getByLabelText("Display currency"), goingStale);
     await user.click(card.getByRole("button", { name: "Save" }));

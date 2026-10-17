@@ -52,7 +52,8 @@ describe("categories", () => {
     await user.click(formats.getByRole("button", { name: "Save" }));
 
     await user.click(await screen.findByRole("link", { name: "Administrar espacios" }));
-    const form = within(await screen.findByRole("region", { name: "Nuevo espacio compartido" }));
+    await user.click(await screen.findByRole("link", { name: "Nuevo espacio" }));
+    const form = within(await screen.findByRole("region", { name: "Detalles" }));
     await user.type(form.getByLabelText("Nombre"), family);
     await user.click(form.getByRole("button", { name: "Crear espacio" }));
 

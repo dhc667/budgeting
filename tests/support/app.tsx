@@ -43,12 +43,18 @@ export async function openSpaces() {
 }
 
 export async function createSharedSpace(name: string, memberNames: string[]) {
-  await openSpaces();
-  const form = within(await screen.findByRole("region", { name: "New shared space" }));
+  await openNewSpace();
+  const form = within(await screen.findByRole("region", { name: "Details" }));
   await user.type(form.getByLabelText("Name"), name);
   for (const member of memberNames) await user.click(await form.findByLabelText(member));
   await user.click(form.getByRole("button", { name: "Create space" }));
   await screen.findByRole("heading", { name, level: 1 });
+}
+
+export async function openNewSpace() {
+  await openSpaces();
+  await user.click(await screen.findByRole("link", { name: "New space" }));
+  await screen.findByRole("heading", { name: "New shared space", level: 1 });
 }
 
 type NewAccount = { name: string; openingBalance: string; space?: string; currency?: string };

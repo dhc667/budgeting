@@ -215,11 +215,11 @@ describe("transactions", () => {
     await goHome();
     const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
     await user.click(await accounts.findByRole("link", { name: /Checking/ }));
-    const history = within(await screen.findByRole("region", { name: "History" }));
-    await user.click(await history.findByRole("button", { name: "Restore" }));
+    await user.click(await screen.findByRole("link", { name: "History" }));
+    await user.click(await screen.findByRole("button", { name: "Restore" }));
 
-    expect(await history.findByText(new RegExp(`^${ana} restored “Present”`))).toBeTruthy();
-    expect(history.queryByRole("button", { name: "Restore" })).toBeNull();
+    expect(await screen.findByText(new RegExp(`^${ana} restored “Present”`))).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Restore" })).toBeNull();
     await goHome();
     const restored = within(await screen.findByRole("region", { name: "Accounts" }));
     expect((await restored.findByRole("link", { name: /Checking/ })).textContent).toMatch(
