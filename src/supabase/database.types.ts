@@ -213,6 +213,86 @@ isOneToOne: false
       referencedColumns: ["code"]
     }
                   ]
+                },"recurring_transactions": {
+                  Row: {
+                    "account_id": string,"amount": number,"category_id": string | null,"created_at": string,"created_by": string,"done": number,"ends_on": string | null,"every": number,"id": string,"note": string | null,"paused": boolean,"space_id": string,"starts_on": string,"times": number | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"amount": number,"category_id"?: string | null,"created_at"?: string,"created_by": string,"done"?: number,"ends_on"?: string | null,"every": number,"id"?: string,"note"?: string | null,"paused"?: boolean,"space_id": string,"starts_on": string,"times"?: number | null,"title"?: string | null,"to_account_id"?: string | null,"to_amount"?: number | null,"type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"]
+                  }
+                  Update: {
+                    "account_id"?: string,"amount"?: number,"category_id"?: string | null,"created_at"?: string,"created_by"?: string,"done"?: number,"ends_on"?: string | null,"every"?: number,"id"?: string,"note"?: string | null,"paused"?: boolean,"space_id"?: string,"starts_on"?: string,"times"?: number | null,"title"?: string | null,"to_account_id"?: string | null,"to_amount"?: number | null,"type"?: Database["public"]['Enums']["transaction_type"],"unit"?: Database["public"]['Enums']["repeat_unit"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recurring_transactions_account_id_ledger_accounts_id_fk"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_account_id_ledger_accounts_id_fk"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_account_id_ledger_accounts_id_fk"
+      columns: ["account_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_category_id_ledger_accounts_id_fk"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_category_id_ledger_accounts_id_fk"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_category_id_ledger_accounts_id_fk"
+      columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_created_by_profiles_id_fk"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_space_id_spaces_id_fk"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "spaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_to_account_id_ledger_accounts_id_fk"
+      columns: ["to_account_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_to_account_id_ledger_accounts_id_fk"
+      columns: ["to_account_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recurring_transactions_to_account_id_ledger_accounts_id_fk"
+      columns: ["to_account_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"space_members": {
                   Row: {
                     "created_at": string,"id": string,"space_id": string,"user_id": string
@@ -505,11 +585,17 @@ isOneToOne: false
 "create_category":
 { Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string,"space": string }; Returns: string
                            },
+"create_recurring_transaction":
+{ Args: { "account": string,"amount": number,"category": string,"ends_on": string,"every": number,"note": string,"record_first": boolean,"starts_on": string,"times": number,"title": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"] }; Returns: string
+                           },
 "create_space":
 { Args: { "member_ids": (string)[],"space_name": string,"starter_language"?: Database["public"]['Enums']["language"] }; Returns: string
                            },
 "delete_category":
 { Args: { "category_id": string,"move_to": string }; Returns: undefined
+                           },
+"delete_recurring_transaction":
+{ Args: { "recurring_transaction_id": string }; Returns: undefined
                            },
 "delete_transaction":
 { Args: { "transaction_id": string }; Returns: undefined
@@ -531,6 +617,90 @@ isOneToOne: false
 "lock_changeable_transaction":
 { Args: { "transaction": string }; Returns: undefined
                            },
+"lock_due":
+{ Args: { "occurrence": number,"recurring_transaction": string }; Returns: {
+              "account_id": string,
+"amount": number,
+"category_id": string | null,
+"created_at": string,
+"created_by": string,
+"done": number,
+"ends_on": string | null,
+"every": number,
+"id": string,
+"note": string | null,
+"paused": boolean,
+"space_id": string,
+"starts_on": string,
+"times": number | null,
+"title": string | null,
+"to_account_id": string | null,
+"to_amount": number | null,
+"type": Database["public"]['Enums']["transaction_type"],
+"unit": Database["public"]['Enums']["repeat_unit"]
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "recurring_transactions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"lock_rule":
+{ Args: { "recurring_transaction": string }; Returns: {
+              "account_id": string,
+"amount": number,
+"category_id": string | null,
+"created_at": string,
+"created_by": string,
+"done": number,
+"ends_on": string | null,
+"every": number,
+"id": string,
+"note": string | null,
+"paused": boolean,
+"space_id": string,
+"starts_on": string,
+"times": number | null,
+"title": string | null,
+"to_account_id": string | null,
+"to_amount": number | null,
+"type": Database["public"]['Enums']["transaction_type"],
+"unit": Database["public"]['Enums']["repeat_unit"]
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "recurring_transactions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"lock_upcoming":
+{ Args: { "occurrence": number,"recurring_transaction": string }; Returns: {
+              "account_id": string,
+"amount": number,
+"category_id": string | null,
+"created_at": string,
+"created_by": string,
+"done": number,
+"ends_on": string | null,
+"every": number,
+"id": string,
+"note": string | null,
+"paused": boolean,
+"space_id": string,
+"starts_on": string,
+"times": number | null,
+"title": string | null,
+"to_account_id": string | null,
+"to_amount": number | null,
+"type": Database["public"]['Enums']["transaction_type"],
+"unit": Database["public"]['Enums']["repeat_unit"]
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "recurring_transactions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "log_transaction":
 { Args: { "action": Database["public"]['Enums']["activity_action"],"new_snapshot": Json,"old_snapshot": Json,"space": string,"transaction": string }; Returns: undefined
                            },
@@ -540,15 +710,42 @@ isOneToOne: false
 "merged_snapshot":
 { Args: { "snapshots": (Json)[] }; Returns: Json
                            },
+"move_on":
+{ Args: { "how": Json,"rule": Omit<Database["public"]['Tables']["recurring_transactions"]['Row'], Database["public"]['Tables']["recurring_transactions"]['ComputedFields']> }; Returns: undefined
+                           },
 "my_space_ids":
 { Args: Record<PropertyKey, never>; Returns: string[]
                            },
 "opening_balance_transaction":
 { Args: { "account": string }; Returns: string
                            },
+"pause_recurring_transaction":
+{ Args: { "recurring_transaction_id": string }; Returns: undefined
+                           },
 "record_exchange_rate_history_starts":
 { Args: { "rate_provider": string,"starts": Json }; Returns: undefined
                            },
+"record_recurring_transaction":
+{ Args: { "amount": number,"occurrence": number,"recurring_transaction_id": string,"to_amount": number,"transaction_date": string }; Returns: undefined
+                           },
+"recurring_transaction_history":
+{ Args: { "recurring_transaction_id": string }; Returns: {
+              "action": Database["public"]['Enums']["activity_action"],
+"changed_at": string,
+"changed_by": string | null,
+"id": number,
+"new": Json | null,
+"old": Json | null,
+"row_id": string,
+"space_id": string,
+"table_name": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "activity"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "reorder_accounts":
 { Args: { "account_ids": (string)[] }; Returns: undefined
                            },
@@ -558,6 +755,9 @@ isOneToOne: false
 "restored_ledger_account":
 { Args: { "posting": Json }; Returns: string
                            },
+"resume_recurring_transaction":
+{ Args: { "next_occurrence": number,"recurring_transaction_id": string,"seen_done": number }; Returns: undefined
+                           },
 "save_exchange_rates":
 { Args: { "rates": Json }; Returns: undefined
                            },
@@ -566,6 +766,9 @@ isOneToOne: false
                            },
 "set_opening_balance":
 { Args: { "account": Omit<Database["public"]['Tables']["ledger_accounts"]['Row'], Database["public"]['Tables']["ledger_accounts"]['ComputedFields']>,"opening_amount": number,"opening_date": string }; Returns: undefined
+                           },
+"skip_recurring_transaction":
+{ Args: { "occurrence": number,"recurring_transaction_id": string }; Returns: undefined
                            },
 "snapshots_by_space":
 { Args: { "transaction": string }; Returns: Json
@@ -622,6 +825,11 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"transaction_sides":
+{ Args: { "account": string,"amount": number,"category": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: {
+              "side_account": string,"side_amount": number,"side_currency": string
+            }[]
+                           },
 "transaction_snapshot":
 { Args: { "transaction": string }; Returns: Json
                            } |
@@ -635,6 +843,9 @@ isOneToOne: false
                            },
 "update_category":
 { Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_id": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string }; Returns: undefined
+                           },
+"update_recurring_transaction":
+{ Args: { "account": string,"amount": number,"category": string,"ends_on": string,"every": number,"note": string,"recurring_transaction_id": string,"restart": boolean,"seen_done": number,"starts_on": string,"times": number,"title": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"] }; Returns: undefined
                            },
 "update_transaction":
 { Args: { "account": string,"amount": number,"category": string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
@@ -664,7 +875,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "activity_action": "insert"|"update"|"delete"|"restore","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","transaction_type": "expense"|"refund"|"income"|"transfer"
+            "activity_action": "insert"|"update"|"delete"|"restore","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","repeat_unit": "day"|"week"|"month"|"year","transaction_type": "expense"|"refund"|"income"|"transfer"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -780,7 +991,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_action": ["insert", "update", "delete", "restore"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"transaction_type": ["expense", "refund", "income", "transfer"]
+            "activity_action": ["insert", "update", "delete", "restore"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"repeat_unit": ["day", "week", "month", "year"],"transaction_type": ["expense", "refund", "income", "transfer"]
           }
         }
 } as const

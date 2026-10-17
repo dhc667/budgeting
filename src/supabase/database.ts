@@ -28,6 +28,9 @@ export type Database = Omit<Generated, "public"> & {
       | "add_transaction"
       | "update_transaction"
       | "title_suggestions"
+      | "create_recurring_transaction"
+      | "update_recurring_transaction"
+      | "record_recurring_transaction"
     > & {
       create_category: WithNullableArgs<GeneratedFunctions["create_category"], "parent">;
       update_category: WithNullableArgs<GeneratedFunctions["update_category"], "parent">;
@@ -36,6 +39,18 @@ export type Database = Omit<Generated, "public"> & {
       update_transaction: WithNullableArgs<
         GeneratedFunctions["update_transaction"],
         TransactionDetail
+      >;
+      create_recurring_transaction: WithNullableArgs<
+        GeneratedFunctions["create_recurring_transaction"],
+        TransactionDetail | ScheduleEnd
+      >;
+      update_recurring_transaction: WithNullableArgs<
+        GeneratedFunctions["update_recurring_transaction"],
+        TransactionDetail | ScheduleEnd
+      >;
+      record_recurring_transaction: WithNullableArgs<
+        GeneratedFunctions["record_recurring_transaction"],
+        "to_amount"
       >;
       title_suggestions: Omit<GeneratedFunctions["title_suggestions"], "Returns"> & {
         Returns: NotNullExcept<
@@ -62,6 +77,8 @@ type TransactionSide =
   | "category_id";
 
 type TransactionDetail = "title" | "note" | "category" | "to_account" | "to_amount";
+
+type ScheduleEnd = "ends_on" | "times";
 
 type NotNullExcept<Row, Nullable extends keyof Row> = {
   [Column in keyof Row]: Column extends Nullable ? Row[Column] : NonNullable<Row[Column]>;

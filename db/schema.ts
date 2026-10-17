@@ -408,6 +408,72 @@ export const postings = pgTable(
   ],
 );
 
+export const repeatUnit = pgEnum("repeat_unit", ["day", "week", "month", "year"]);
+
+// Written only by Postgres functions. Its upcoming transaction isn't stored: the app works out when
+// it is due from the schedule and `done` (ADR 0009), so only the next one can ever exist.
+export const recurringTransactions = pgTable(
+  "recurring_transactions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    // The space of the account the money leaves or reaches, where the rule's activity is logged.
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    type: transactionType().notNull(),
+    title: text(),
+    note: text(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => ledgerAccounts.id, { onDelete: "cascade" }),
+    amount: bigint({ mode: "number" }).notNull(),
+    categoryId: uuid("category_id").references(() => ledgerAccounts.id),
+    toAccountId: uuid("to_account_id").references(() => ledgerAccounts.id, {
+      onDelete: "cascade",
+    }),
+    toAmount: bigint("to_amount", { mode: "number" }),
+    startsOn: date("starts_on").notNull(),
+    every: integer().notNull(),
+    unit: repeatUnit().notNull(),
+    endsOn: date("ends_on"),
+    times: integer(),
+    // How many of its occurrences were recorded or skipped.
+    done: integer().notNull().default(0),
+    paused: boolean().notNull().default(false),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("title_not_blank", sql`trim(${t.title}) <> ''`),
+    check("note_not_blank", sql`trim(${t.note}) <> ''`),
+    check("amount_positive", sql`${t.amount} > 0`),
+    check("to_amount_positive", sql`${t.toAmount} > 0`),
+    check(
+      "category_or_to_account",
+      sql`(${t.type} = 'transfer') = (${t.toAccountId} is not null and ${t.categoryId} is null)`,
+    ),
+    check("every_positive", sql`${t.every} > 0`),
+    check("times_positive", sql`${t.times} > 0`),
+    check("ends_on_or_after_start", sql`${t.endsOn} >= ${t.startsOn}`),
+    check("one_end", sql`${t.endsOn} is null or ${t.times} is null`),
+    check("done_not_negative", sql`${t.done} >= 0`),
+    index("recurring_transactions_space_id_idx").on(t.spaceId),
+    index("recurring_transactions_account_id_idx").on(t.accountId),
+    index("recurring_transactions_category_id_idx").on(t.categoryId),
+    index("recurring_transactions_to_account_id_idx").on(t.toAccountId),
+    index("recurring_transactions_created_by_idx").on(t.createdBy),
+    // A transfer from another space only shows to those who could record it, as it would then
+    // touch an account they can't see.
+    pgPolicy("members of every space a rule touches see it", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${inMySpaces(t.spaceId)} and (${t.toAccountId} is null or exists (select 1 from public.ledger_accounts where ledger_accounts.id = ${t.toAccountId}))`,
+    }),
+  ],
+);
+
 // Rather than `in (select …)`: Postgres then expects the few spaces a user is in, not a thousand
 // rows, and reads only theirs through the space_id index instead of scanning the whole table.
 function inMySpaces(spaceId: AnyPgColumn) {

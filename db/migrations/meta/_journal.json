@@ -190,6 +190,20 @@
       "when": 1792258308119,
       "tag": "0026_starter_names_by_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792261326038,
+      "tag": "0027_recurring_transactions",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792261326524,
+      "tag": "0028_recurring_transaction_rules",
+      "breakpoints": true
     }
   ]
 }
