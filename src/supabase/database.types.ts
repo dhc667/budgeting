@@ -691,6 +691,9 @@ isOneToOne: false
 "create_space":
 { Args: { "member_ids": (string)[],"space_name": string,"starter_language"?: Database["public"]['Enums']["language"] }; Returns: string
                            },
+"current_version":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "delete_category":
 { Args: { "category_id": string,"move_to": string }; Returns: undefined
                            },
