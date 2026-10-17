@@ -609,6 +609,12 @@
       "submit": "Excluir transação recorrente",
       "confirmTitle": "Excluir “{{label}}”?",
       "confirm": "Excluir"
+    },
+    "upcomingDays": {
+      "label": "Mostrar no início",
+      "dueOnly": "O que já vence",
+      "within_one": "O que vence em {{count}} dia",
+      "within_other": "O que vence em {{count}} dias"
     }
   }
 }

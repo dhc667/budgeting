@@ -115,10 +115,13 @@ export const profiles = pgTable(
     language: language(),
     numberFormat: numberFormat("number_format"),
     dateFormat: dateFormat("date_format"),
+    // How many days ahead of today the dashboard shows upcoming transactions, besides overdue ones.
+    upcomingDays: smallint("upcoming_days").notNull().default(7),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     check("display_name_not_blank", sql`trim(${t.displayName}) <> ''`),
+    check("upcoming_days_within_a_year", sql`${t.upcomingDays} between 0 and 365`),
     pgPolicy("users see everyone in the instance", {
       for: "select",
       to: authenticatedRole,

@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD COLUMN "upcoming_days" smallint DEFAULT 7 NOT NULL;--> statement-breakpoint
+ALTER TABLE "profiles" ADD CONSTRAINT "upcoming_days_within_a_year" CHECK ("profiles"."upcoming_days" between 0 and 365);

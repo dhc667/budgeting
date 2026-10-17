@@ -4,12 +4,12 @@ import type { Transaction } from "../transactions/transaction-queries";
 import { type RecurringTransaction, scheduleOf, type Upcoming } from "./recurring-queries";
 import { nextDueDate, type Schedule } from "./schedule";
 
-// Those due by `today`, oldest first. A paused rule has none.
-export function dueUpcoming(rules: RecurringTransaction[], today: string): Upcoming[] {
+// Those due on or before `lastDay`, oldest first. A paused rule has none.
+export function upcomingBy(rules: RecurringTransaction[], lastDay: string): Upcoming[] {
   return rules
     .flatMap((rule) => {
       const due = rule.paused ? null : nextDueDate(scheduleOf(rule), rule.done);
-      return due !== null && due <= today ? [{ rule, occurrence: rule.done, due }] : [];
+      return due !== null && due <= lastDay ? [{ rule, occurrence: rule.done, due }] : [];
     })
     .sort((a, b) => a.due.localeCompare(b.due));
 }
