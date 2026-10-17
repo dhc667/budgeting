@@ -1,11 +1,21 @@
--- The id of the writing Postgres transaction, not the 32-bit one, which wraps.
+-- The id of the writing Postgres transaction, not the 32-bit one, which wraps. Only the trigger
+-- functions call it, and they are security definer, so nobody is granted it.
+create or replace function public.current_version()
+returns bigint
+language sql
+set search_path = ''
+as $$
+  select pg_current_xact_id()::text::bigint;
+$$;
+--> statement-breakpoint
 create or replace function public.set_version()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 begin
-  new.version := pg_current_xact_id()::text::bigint;
+  new.version := public.current_version();
   return new;
 end;
 $$;
@@ -20,18 +30,14 @@ security definer
 set search_path = ''
 as $$
 begin
-  if tg_op <> 'INSERT' then
-    update public.transactions set version = pg_current_xact_id()::text::bigint where id = old.transaction_id;
-  end if;
-  if tg_op <> 'DELETE' then
-    update public.transactions set version = pg_current_xact_id()::text::bigint where id = new.transaction_id;
-  end if;
+  update public.transactions
+  set version = public.current_version()
+  where id in (old.transaction_id, new.transaction_id);
   return null;
 end;
 $$;
 --> statement-breakpoint
--- Arguments: the columns that make up the row's key. Security definer because users can't write
--- deleted_rows.
+-- Security definer because users can't write deleted_rows.
 create or replace function public.record_deletion()
 returns trigger
 language plpgsql
@@ -43,7 +49,7 @@ begin
   select
     tg_table_name,
     jsonb_object_agg(key_column, to_jsonb(old) -> key_column),
-    pg_current_xact_id()::text::bigint
+    public.current_version()
   from unnest(tg_argv) as key_column;
   return null;
 end;
@@ -51,33 +57,35 @@ $$;
 --> statement-breakpoint
 do $$
 declare
-  keyed text;
+  synced record;
 begin
-  foreach keyed in array array[
-    'currencies code',
-    'exchange_rates date currency',
-    'exchange_rate_history_starts provider currency',
-    'profiles id',
-    'spaces id',
-    'space_members id',
-    'activity id',
-    'ledger_accounts id',
-    'transactions id',
-    'postings id',
-    'recurring_transactions id',
-    'budgets id',
-    'budget_exclusions budget_id transaction_id'
-  ] loop
+  for synced in
+    select * from (values
+      ('currencies', array['code']),
+      ('exchange_rates', array['date', 'currency']),
+      ('exchange_rate_history_starts', array['provider', 'currency']),
+      ('profiles', array['id']),
+      ('spaces', array['id']),
+      ('space_members', array['id']),
+      ('activity', array['id']),
+      ('ledger_accounts', array['id']),
+      ('transactions', array['id']),
+      ('postings', array['id']),
+      ('recurring_transactions', array['id']),
+      ('budgets', array['id']),
+      ('budget_exclusions', array['budget_id', 'transaction_id'])
+    ) as t(table_name, key_columns)
+  loop
     execute format(
       'create trigger set_version before insert or update on public.%I
        for each row execute function public.set_version()',
-      split_part(keyed, ' ', 1)
+      synced.table_name
     );
     execute format(
       'create trigger record_deletion after delete on public.%I
        for each row execute function public.record_deletion(%s)',
-      split_part(keyed, ' ', 1),
-      (select string_agg(quote_literal(key_column), ', ') from unnest(string_to_array(keyed, ' ')) with ordinality as k(key_column, n) where n > 1)
+      synced.table_name,
+      (select string_agg(quote_literal(key_column), ', ') from unnest(synced.key_columns) as key_column)
     );
   end loop;
 end;
@@ -92,6 +100,9 @@ grant select on public.deleted_rows to authenticated;
 -- One snapshot, so the version and everything sent with it agree. Stable for that reason: a stable
 -- function's queries all see the snapshot of the query calling it. Not security definer, so Row
 -- Level Security filters it as it does any other read.
+--
+-- A key can be in both `deleted` and `rows`: a restored transaction keeps its id. `rows` holds what
+-- exists at the snapshot, so a device applies `deleted` first, then `rows`.
 create or replace function public.changes_since(since bigint)
 returns jsonb
 language plpgsql
@@ -103,17 +114,18 @@ declare
   -- Past anything handed out, as after a restore to an earlier point: start over.
   starting_over boolean := since > pg_snapshot_xmax(snapshot)::text::bigint;
   from_version bigint := case when starting_over then 0 else since end;
-  synced_tables text[] := array[
-    'currencies', 'exchange_rates', 'exchange_rate_history_starts', 'profiles', 'spaces',
-    'space_members', 'activity', 'ledger_accounts', 'transactions', 'postings',
-    'recurring_transactions', 'budgets', 'budget_exclusions'
-  ];
   synced_table text;
   found_rows jsonb;
   changed jsonb := '{}';
 begin
   -- At or above, not above: the Postgres transaction at the watermark may still have been running.
-  foreach synced_table in array synced_tables loop
+  for synced_table in
+    select class.relname
+    from pg_catalog.pg_trigger as trigger
+    join pg_catalog.pg_class as class on class.oid = trigger.tgrelid
+    join pg_catalog.pg_namespace as namespace on namespace.oid = class.relnamespace
+    where namespace.nspname = 'public' and trigger.tgfoid = 'public.set_version'::regproc
+  loop
     execute format(
       'select coalesce(jsonb_agg(to_jsonb(t)), ''[]'') from public.%I as t where t.version >= $1',
       synced_table
@@ -139,9 +151,7 @@ end;
 $$;
 grant execute on function public.changes_since(bigint) to authenticated;
 --> statement-breakpoint
--- From here on, everything that writes the activity record leaves `version` out of what it keeps
--- and compares: it moves on every write, so it would make a no-op look like a change and put
--- noise in every snapshot.
+-- `version` moves on every write, so keeping it would make a no-op look like a change.
 create or replace function public.log_activity()
 returns trigger
 language plpgsql

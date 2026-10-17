@@ -112,7 +112,12 @@ describe("a later pull", () => {
     const id = await addExpense(ana, 2_500);
     const { version } = await pull(ben);
 
-    await sql`update postings set amount = amount where transaction_id = ${id}`;
+    const eatingOut = await categoryIn(ana, familyId, "Eating out");
+    const { error } = await ana.client.rpc("delete_category", {
+      category_id: groceries,
+      move_to: eatingOut,
+    });
+    expect(error).toBeNull();
 
     const pulled = await pull(ben, version);
     expect(pulled.rows.transactions.map((row) => row.id)).toEqual([id]);
@@ -138,6 +143,45 @@ describe("a later pull", () => {
       ]),
     );
     expect(postingIds).toHaveLength(2);
+  });
+
+  it("returns a restored transaction in rows, as well as among the deletions", async () => {
+    const id = await addExpense(ana, 2_500);
+    const { version } = await pull(ben);
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    const pulled = await pull(ben, version);
+    expect(pulled.rows.transactions.map((row) => row.id)).toEqual([id]);
+    expect(pulled.deleted).toContainEqual({ table: "transactions", key: { id } });
+  });
+
+  it("returns a removed budget exclusion as a deletion keyed by both its columns", async () => {
+    const budget = await createBudget(ana, [groceries]);
+    const id = await addExpense(ana, 2_500);
+    await setExclusions(ana, id, [budget]);
+    const { version } = await pull(ben);
+
+    await setExclusions(ana, id, []);
+
+    const pulled = await pull(ben, version);
+    expect(pulled.rows.budget_exclusions).toEqual([]);
+    expect(pulled.deleted).toContainEqual({
+      table: "budget_exclusions",
+      key: { budget_id: budget, transaction_id: id },
+    });
+  });
+
+  it("lets a member of another space read the key of a deletion", async () => {
+    const id = await addExpense(ana, 2_500);
+    const { version } = await pull(carla);
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const pulled = await pull(carla, version);
+
+    expect(pulled.deleted).toContainEqual({ table: "transactions", key: { id } });
   });
 
   it("lists a space the user joined", async () => {
@@ -185,24 +229,72 @@ describe("the activity record", () => {
     const history = await historyOf(ben, id);
 
     expect(history.map(({ action }) => action)).toEqual(["update", "insert"]);
-    expect(JSON.stringify(history.map(({ old, new: next }) => [old, next]))).not.toContain(
-      "version",
-    );
+    expectNoVersion(history);
   });
 
-  it("logs no entry for a change that leaves an account as it was, and none with a version in it", async () => {
+  it("logs no entry for a change that leaves an account as it was", async () => {
     await ana.client.from("ledger_accounts").update({ archived: true }).eq("id", checking);
-    await sql`update ledger_accounts set archived = archived where id = ${checking}`;
+    await ana.client.from("ledger_accounts").update({ archived: true }).eq("id", checking);
 
-    const { data } = await ben.client
-      .from("activity")
-      .select("action, old, new")
-      .eq("space_id", familyId)
-      .eq("table_name", "ledger_accounts")
-      .order("id");
+    const entries = await activityOf(ben, "ledger_accounts");
 
-    expect(data?.map(({ action }) => action)).toEqual(["insert", "update"]);
-    expect(JSON.stringify(data)).not.toContain("version");
+    expect(entries.map(({ action }) => action)).toEqual(["insert", "update"]);
+  });
+
+  it("keeps versions out of an account's activity", async () => {
+    await ana.client.from("ledger_accounts").update({ archived: true }).eq("id", checking);
+
+    expectNoVersion(await activityOf(ben, "ledger_accounts"));
+  });
+
+  it("keeps versions out of a deleted category's activity", async () => {
+    const eatingOut = await categoryIn(ana, familyId, "Eating out");
+    await addExpense(ana, 2_500);
+    await ana.client.rpc("delete_category", { category_id: groceries, move_to: eatingOut });
+
+    const entries = await activityOf(ben, "ledger_accounts");
+
+    expect(entries.map(({ action }) => action)).toContain("delete");
+    expectNoVersion(entries);
+  });
+
+  it("keeps versions out of a budget's activity when its exclusions change", async () => {
+    const budget = await createBudget(ana, [groceries]);
+    const id = await addExpense(ana, 2_500);
+    await setExclusions(ana, id, [budget]);
+
+    const entries = await activityOf(ben, "budgets");
+
+    expect(entries.map(({ action }) => action)).toEqual(["insert", "update"]);
+    expectNoVersion(entries);
+  });
+
+  it("keeps versions out of a recurring transaction's activity when one is recorded or skipped", async () => {
+    const rule = await createRule(ana);
+    for (const occurrence of [0, 1]) {
+      const call =
+        occurrence === 0
+          ? ana.client.rpc("record_recurring_transaction", {
+              recurring_transaction_id: rule,
+              occurrence,
+              transaction_date: today(),
+              amount: 5_000,
+              to_amount: null,
+            })
+          : ana.client.rpc("skip_recurring_transaction", {
+              recurring_transaction_id: rule,
+              occurrence,
+            });
+      const { error } = await call;
+      expect(error).toBeNull();
+    }
+
+    const entries = await activityOf(ben, "recurring_transactions");
+
+    expect(
+      entries.filter(({ new: next }) => hasKey(next, "recorded") || hasKey(next, "skipped")),
+    ).toHaveLength(2);
+    expectNoVersion(entries);
   });
 });
 
@@ -272,4 +364,75 @@ async function categoryIn(user: User, spaceId: string, name: string): Promise<st
     .single();
   if (error) throw error;
   return data.id;
+}
+
+async function activityOf(user: User, table: string) {
+  const { data, error } = await user.client
+    .from("activity")
+    .select("action, old, new")
+    .eq("space_id", familyId)
+    .eq("table_name", table)
+    .order("id");
+  if (error) throw error;
+  return data;
+}
+
+function expectNoVersion(entries: { old: unknown; new: unknown }[]) {
+  expect(entries.length).toBeGreaterThan(0);
+  for (const { old, new: next } of entries) {
+    expect(old ?? {}).not.toHaveProperty("version");
+    expect(next ?? {}).not.toHaveProperty("version");
+  }
+}
+
+function hasKey(snapshot: unknown, key: string): boolean {
+  return typeof snapshot === "object" && snapshot !== null && key in snapshot;
+}
+
+async function createBudget(user: User, categoryIds: string[]): Promise<string> {
+  const { data, error } = await user.client
+    .from("budgets")
+    .insert({
+      space_id: familyId,
+      name: "Food",
+      currency: "USD",
+      amount: 40_000,
+      starts_on: "2026-01-01",
+      every: 1,
+      unit: "month",
+      category_ids: categoryIds,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+async function setExclusions(user: User, transactionId: string, budgetIds: string[]) {
+  const { error } = await user.client.rpc("set_budget_exclusions", {
+    transaction_id: transactionId,
+    budget_ids: budgetIds,
+  });
+  if (error) throw error;
+}
+
+async function createRule(user: User): Promise<string> {
+  const { data, error } = await user.client.rpc("create_recurring_transaction", {
+    transaction_type: "expense",
+    title: null,
+    note: null,
+    account: checking,
+    amount: 5_000,
+    category: groceries,
+    to_account: null,
+    to_amount: null,
+    starts_on: "2026-01-31",
+    every: 1,
+    unit: "month",
+    ends_on: null,
+    times: null,
+    record_first: false,
+  });
+  if (error) throw error;
+  return data;
 }
