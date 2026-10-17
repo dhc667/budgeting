@@ -218,6 +218,20 @@
       "when": 1792263321256,
       "tag": "0030_profile_upcoming_days_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792265058451,
+      "tag": "0031_budgets",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792265093204,
+      "tag": "0032_budget_rules",
+      "breakpoints": true
     }
   ]
 }

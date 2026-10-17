@@ -31,6 +31,64 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"budget_exclusions": {
+                  Row: {
+                    "budget_id": string,"transaction_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "budget_id": string,"transaction_id": string
+                  }
+                  Update: {
+                    "budget_id"?: string,"transaction_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "budget_exclusions_budget_id_budgets_id_fk"
+      columns: ["budget_id"]
+isOneToOne: false
+      referencedRelation: "budgets"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_exclusions_transaction_id_transactions_id_fk"
+      columns: ["transaction_id"]
+isOneToOne: false
+      referencedRelation: "transaction_details"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_exclusions_transaction_id_transactions_id_fk"
+      columns: ["transaction_id"]
+isOneToOne: false
+      referencedRelation: "transactions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"budgets": {
+                  Row: {
+                    "account_ids": (string)[] | null,"amount": number,"carry_overspent": boolean,"carry_unspent": boolean,"category_ids": (string)[] | null,"created_at": string,"currency": string,"ends_on": string | null,"every": number | null,"id": string,"name": string,"space_id": string,"starts_on": string,"unit": Database["public"]['Enums']["repeat_unit"] | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_ids"?: (string)[] | null,"amount": number,"carry_overspent"?: boolean,"carry_unspent"?: boolean,"category_ids"?: (string)[] | null,"created_at"?: string,"currency": string,"ends_on"?: string | null,"every"?: number | null,"id"?: string,"name": string,"space_id": string,"starts_on": string,"unit"?: Database["public"]['Enums']["repeat_unit"] | null
+                  }
+                  Update: {
+                    "account_ids"?: (string)[] | null,"amount"?: number,"carry_overspent"?: boolean,"carry_unspent"?: boolean,"category_ids"?: (string)[] | null,"created_at"?: string,"currency"?: string,"ends_on"?: string | null,"every"?: number | null,"id"?: string,"name"?: string,"space_id"?: string,"starts_on"?: string,"unit"?: Database["public"]['Enums']["repeat_unit"] | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "budgets_currency_currencies_code_fk"
+      columns: ["currency"]
+isOneToOne: false
+      referencedRelation: "currencies"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "budgets_space_id_spaces_id_fk"
+      columns: ["space_id"]
+isOneToOne: false
+      referencedRelation: "spaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"currencies": {
                   Row: {
                     "code": string,"decimals": number,"rates_by_hand": boolean
@@ -564,6 +622,29 @@ isOneToOne: false
 "add_transaction":
 { Args: { "account": string,"amount": number,"category": string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
                            },
+"budget_history":
+{ Args: { "budget_id": string }; Returns: {
+              "action": Database["public"]['Enums']["activity_action"],
+"changed_at": string,
+"changed_by": string | null,
+"id": number,
+"new": Json | null,
+"old": Json | null,
+"row_id": string,
+"space_id": string,
+"table_name": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "activity"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"budget_spending":
+{ Args: { "budget_id": string }; Returns: {
+              "amount": number,"currency": string,"spent_on": string
+            }[]
+                           },
 "came_with_space":
 { Args: { "category": Omit<Database["public"]['Tables']["ledger_accounts"]['Row'], Database["public"]['Tables']["ledger_accounts"]['ComputedFields']> }; Returns: boolean
                            },
@@ -763,6 +844,9 @@ isOneToOne: false
                            },
 "schema_version":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"set_budget_exclusions":
+{ Args: { "budget_ids": (string)[],"transaction_id": string }; Returns: undefined
                            },
 "set_opening_balance":
 { Args: { "account": Omit<Database["public"]['Tables']["ledger_accounts"]['Row'], Database["public"]['Tables']["ledger_accounts"]['ComputedFields']>,"opening_amount": number,"opening_date": string }; Returns: undefined
