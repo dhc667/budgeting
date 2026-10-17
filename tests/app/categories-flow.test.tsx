@@ -17,6 +17,7 @@ import {
   defined,
   inviteLink,
   password,
+  signedInAs,
   sql,
   uniqueEmail,
 } from "../support/local-instance";
@@ -170,7 +171,7 @@ describe("categories", () => {
     const family = uniqueName("Family");
     const signedIn = await openSignedIn(uniqueName("Ana"));
     await createSharedSpace(family, []);
-    const client = await signedInClient(signedIn);
+    const client = await signedInAs(signedIn.email);
     const groceries = await categoryIn(client, family, "Groceries");
     await addSubcategory(client, groceries, "Bakery");
     await addSubcategory(client, groceries, "Cakes");
@@ -203,7 +204,7 @@ describe("categories", () => {
     const signedIn = await openSignedIn(uniqueName("Ana"));
     await createSharedSpace(family, []);
     await recordInto(family, "Salary", "Income");
-    const client = await signedInClient(signedIn);
+    const client = await signedInAs(signedIn.email);
     for (const other of ["Gifts", "Interest & investments", "Other"]) {
       const { error } = await client.rpc("delete_category", {
         category_id: (await categoryIn(client, family, other, "income")).id,
@@ -247,13 +248,6 @@ async function recordInto(spaceName: string, category: string, type?: "Income") 
   await recordTransaction({ type, amount: "5", account: "Checking", category });
 }
 
-async function signedInClient({ email }: SignedIn) {
-  const client = anonClient();
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return client;
-}
-
 // The kind tells apart starter categories that share a name, like the two "Gifts".
 async function categoryIn(
   client: Client,
@@ -289,8 +283,6 @@ async function addSubcategory(client: Client, parent: Category, name: string) {
   });
   if (error) throw error;
 }
-
-type SignedIn = Awaited<ReturnType<typeof openSignedIn>>;
 
 type Client = ReturnType<typeof anonClient>;
 
