@@ -1,37 +1,36 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import { afterSuccess } from "../query-client";
-import { ActivityList } from "../spaces/ActivityList";
 import { spaceName } from "../spaces/space";
 import { useSpaces } from "../spaces/space-queries";
 import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
-import { Card, EmptyState } from "../ui/Card";
+import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
+import { ScreenLink, ScreenLinks } from "../ui/ScreenLinks";
 import { isRaisedException } from "../supabase/errors";
 import { SelectField } from "../ui/SelectField";
-import { TransactionList } from "../transactions/TransactionList";
-import { categoryLabel, categoryTree, kindName, withSubcategories } from "./category";
+import { categoryLabel, categoryTree, kindName } from "./category";
 import {
   type Category,
   useCategories,
-  useCategoryHistory,
   useDeleteCategory,
   useUpdateCategory,
 } from "./category-queries";
 import { CategoryForm } from "./CategoryForm";
 import { CategoryIcon } from "./CategoryIcon";
+import { CategoryNotFound } from "./CategorySubscreen";
+import { useRoutedCategory } from "./routed-category";
 
 export function CategoryScreen() {
   const { t } = useTranslation();
-  const { categoryId } = useParams();
-  const { data: categories } = useCategories();
+  const category = useRoutedCategory();
+  const { data: categories = [] } = useCategories();
   const { data: spaces = [] } = useSpaces();
-  if (!categories) return null;
-  const category = categories.find(({ id }) => id === categoryId);
-  if (!category) return <CategoryNotFound />;
+  if (category === undefined) return null;
+  if (category === null) return <CategoryNotFound />;
   const space = spaces.find(({ id }) => id === category.space_id);
   const parent = categories.find(({ id }) => id === category.parent_id);
 
@@ -49,29 +48,15 @@ export function CategoryScreen() {
           {parent && ` · ${t("categories.under", { parent: parent.name })}`}
         </p>
       </header>
-      <Card title={t("transactions.title")}>
-        <TransactionList
-          filter={{
-            kind: "categories",
-            categoryIds: withSubcategories(category, categories).map(({ id }) => id),
-          }}
+      <ScreenLinks label={category.name}>
+        <ScreenLink
+          to={`/categories/${category.id}/transactions`}
+          label={t("transactions.title")}
         />
-      </Card>
+        <ScreenLink to={`/categories/${category.id}/history`} label={t("categories.history")} />
+      </ScreenLinks>
       <EditCard category={category} />
       <DeleteCard category={category} categories={categories} />
-      <HistoryCard category={category} />
-    </div>
-  );
-}
-
-function CategoryNotFound() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex max-w-xl flex-col gap-6">
-      <EmptyState>{t("categories.notFound")}</EmptyState>
-      <Link to="/spaces" className="font-medium text-emerald-700 dark:text-emerald-400">
-        {t("spaces.backToSpaces")}
-      </Link>
     </div>
   );
 }
@@ -199,15 +184,5 @@ function DeleteDialog({ category, categories, open, onClose }: DeleteDialogProps
         </ErrorText>
       )}
     </ConfirmDialog>
-  );
-}
-
-function HistoryCard({ category }: { category: Category }) {
-  const { t } = useTranslation();
-  const { data: history } = useCategoryHistory(category.id);
-  return (
-    <Card title={t("categories.history")}>
-      <ActivityList activity={history} />
-    </Card>
   );
 }

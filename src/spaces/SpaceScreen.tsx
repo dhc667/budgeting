@@ -13,8 +13,8 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
+import { ScreenLink, ScreenLinks } from "../ui/ScreenLinks";
 import { SelectField } from "../ui/SelectField";
-import { ActivityList } from "./ActivityList";
 import { isPrivate, nameErrorMessage, spaceName } from "./space";
 import {
   type Space,
@@ -22,7 +22,6 @@ import {
   useDeleteSpace,
   useRemoveMember,
   useRenameSpace,
-  useSpaceActivity,
   useSpaces,
 } from "./space-queries";
 
@@ -45,14 +44,14 @@ export function SpaceScreen() {
         <>
           <p className="text-zinc-500">{t("spaces.privateExplained")}</p>
           <CategoriesCard spaceId={space.id} />
-          <ActivityCard space={space} />
+          <ActivityLink space={space} />
         </>
       ) : (
         <>
           <RenameForm space={space} />
           <MembersCard space={space} />
           <CategoriesCard spaceId={space.id} />
-          <ActivityCard space={space} />
+          <ActivityLink space={space} />
           <DeleteCard space={space} />
         </>
       )}
@@ -171,13 +170,12 @@ function AddMemberForm({ space }: { space: Space }) {
   );
 }
 
-function ActivityCard({ space }: { space: Space }) {
+function ActivityLink({ space }: { space: Space }) {
   const { t } = useTranslation();
-  const { data: activity } = useSpaceActivity(space.id);
   return (
-    <Card title={t("activity.title")}>
-      <ActivityList activity={activity} />
-    </Card>
+    <ScreenLinks label={spaceName(space, t)}>
+      <ScreenLink to={`/spaces/${space.id}/activity`} label={t("activity.title")} />
+    </ScreenLinks>
   );
 }
 

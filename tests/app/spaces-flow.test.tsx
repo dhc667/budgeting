@@ -37,8 +37,10 @@ describe("spaces", () => {
     await openSpaces();
     await user.click(await screen.findByRole("link", { name: /^Private/ }));
 
-    const activity = within(await screen.findByRole("region", { name: "Activity" }));
-    expect(await activity.findByText(new RegExp(`^${ana} added .*Wallet`))).toBeTruthy();
+    await user.click(await screen.findByRole("link", { name: "Activity" }));
+
+    expect(await screen.findByRole("heading", { name: "Activity", level: 1 })).toBeTruthy();
+    expect(await screen.findByText(new RegExp(`^${ana} added .*Wallet`))).toBeTruthy();
   });
 
   it("creates a shared space with another user, who sees it with its activity", async () => {
@@ -57,9 +59,9 @@ describe("spaces", () => {
 
     const members = within(await screen.findByRole("region", { name: "Members" }));
     expect(await members.findByText(ana)).toBeTruthy();
-    const activity = within(screen.getByRole("region", { name: "Activity" }));
-    expect(await activity.findByText(`${ana} created the space`)).toBeTruthy();
-    expect(activity.getByText(`${ana} added ${benName}`)).toBeTruthy();
+    await user.click(screen.getByRole("link", { name: "Activity" }));
+    expect(await screen.findByText(`${ana} created the space`)).toBeTruthy();
+    expect(screen.getByText(`${ana} added ${benName}`)).toBeTruthy();
   });
 
   it("refuses a blank name", async () => {
@@ -85,9 +87,9 @@ describe("spaces", () => {
     openApp("http://localhost:3000/#/spaces");
     await user.click(await screen.findByRole("link", { name: /^Family/ }));
 
-    const activity = within(await screen.findByRole("region", { name: "Activity" }));
-    expect(await activity.findByText(`${ana} added a deleted user`)).toBeTruthy();
-    expect(activity.getByText("A member's account was deleted")).toBeTruthy();
+    await user.click(await screen.findByRole("link", { name: "Activity" }));
+    expect(await screen.findByText(`${ana} added a deleted user`)).toBeTruthy();
+    expect(screen.getByText("A member's account was deleted")).toBeTruthy();
   });
 
   it("renames a space and records it in the activity", async () => {
@@ -101,9 +103,9 @@ describe("spaces", () => {
     await user.click(nameCard.getByRole("button", { name: "Rename" }));
 
     expect(await screen.findByRole("heading", { name: "Home", level: 1 })).toBeTruthy();
-    const activity = within(screen.getByRole("region", { name: "Activity" }));
+    await user.click(screen.getByRole("link", { name: "Activity" }));
     expect(
-      await activity.findByText(`${ana} renamed the space from “Family” to “Home”`),
+      await screen.findByText(`${ana} renamed the space from “Family” to “Home”`),
     ).toBeTruthy();
   });
 
