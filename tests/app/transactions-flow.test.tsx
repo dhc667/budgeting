@@ -191,7 +191,7 @@ describe("transactions", () => {
   it("deletes a transaction once confirmed, and returns to the list", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "" });
-    await recordTransaction({ amount: "9", category: "Gifts", title: "Mistake" });
+    await recordTransaction({ amount: "9", category: "Gifts given", title: "Mistake" });
 
     await user.click(await screen.findByRole("link", { name: /Mistake/ }));
     await user.click(await screen.findByRole("button", { name: "Delete transaction" }));
@@ -206,7 +206,7 @@ describe("transactions", () => {
     const ana = uniqueName("Ana");
     await openSignedIn(ana);
     await addAccount({ name: "Checking", openingBalance: "100" });
-    await recordTransaction({ amount: "9", category: "Gifts", title: "Present" });
+    await recordTransaction({ amount: "9", category: "Gifts given", title: "Present" });
     await user.click(await screen.findByRole("link", { name: /Present/ }));
     await user.click(await screen.findByRole("button", { name: "Delete transaction" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));
@@ -231,7 +231,7 @@ describe("transactions", () => {
     const ana = uniqueName("Ana");
     await openSignedIn(ana);
     await addAccount({ name: "Checking", openingBalance: "" });
-    await recordTransaction({ amount: "9", category: "Gifts", title: "Present" });
+    await recordTransaction({ amount: "9", category: "Gifts given", title: "Present" });
     await user.click(await screen.findByRole("link", { name: /Present/ }));
     await user.click(await screen.findByRole("button", { name: "Delete transaction" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));

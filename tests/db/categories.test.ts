@@ -34,14 +34,14 @@ describe("starter categories", () => {
         "Educación",
         "Entretenimiento",
         "Hogar",
-        "Otros",
-        "Regalos",
+        "Otros gastos",
+        "Regalos dados",
         "Salud",
         "Supermercado",
         "Transporte",
         "Viajes",
       ],
-      income: ["Intereses e inversiones", "Otros", "Regalos", "Sueldo"],
+      income: ["Intereses e inversiones", "Otros ingresos", "Regalos recibidos", "Sueldo"],
     });
     expect(categories.every(({ parent_id }) => parent_id === null)).toBe(true);
     expect(categories.find(({ name }) => name === "Supermercado")).toMatchObject({
@@ -58,8 +58,8 @@ describe("starter categories", () => {
 
     expect(namesByKind(categories).income).toEqual([
       "Juros e investimentos",
-      "Outros",
-      "Presentes",
+      "Outras receitas",
+      "Presentes recebidos",
       "Salário",
     ]);
   });
@@ -82,9 +82,9 @@ describe("starter categories", () => {
     const categories = await categoriesOf(ana, (await privateSpaceOf(ana)).id);
 
     expect(namesByKind(categories).income).toEqual([
-      "Gifts",
+      "Gifts received",
       "Interest & investments",
-      "Other",
+      "Other income",
       "Salary",
     ]);
   });

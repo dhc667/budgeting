@@ -141,7 +141,7 @@ describe("categories", () => {
     reopenAt("/");
     await addAccount({ name: "Checking", space: family, openingBalance: "" });
     await recordTransaction({ amount: "5", category: "Groceries › Cakes", title: "Birthday" });
-    await recordTransaction({ amount: "7", category: "Gifts", title: "Present" });
+    await recordTransaction({ amount: "7", category: "Gifts given", title: "Present" });
     await openCategory(family, "Groceries");
     expect(screen.queryByRole("link", { name: /Birthday/ })).toBeNull();
 
@@ -231,9 +231,9 @@ describe("categories", () => {
     await createSharedSpace(family, []);
     await recordInto(family, "Salary", "Income");
     const client = await signedInAs(signedIn.email);
-    for (const other of ["Gifts", "Interest & investments", "Other"]) {
+    for (const other of ["Gifts received", "Interest & investments", "Other income"]) {
       const { error } = await client.rpc("delete_category", {
-        category_id: (await categoryIn(client, family, other, "income")).id,
+        category_id: (await categoryIn(client, family, other)).id,
         move_to: null,
       });
       if (error) throw error;
@@ -274,26 +274,19 @@ async function recordInto(spaceName: string, category: string, type?: "Income") 
   await recordTransaction({ type, amount: "5", account: "Checking", category });
 }
 
-// The kind tells apart starter categories that share a name, like the two "Gifts".
-async function categoryIn(
-  client: Client,
-  spaceName: string,
-  categoryName: string,
-  kind?: "expense" | "income",
-) {
+async function categoryIn(client: Client, spaceName: string, categoryName: string) {
   const { data: space, error: spaceError } = await client
     .from("spaces")
     .select("id")
     .eq("name", spaceName)
     .single();
   if (spaceError) throw spaceError;
-  let query = client
+  const { data, error } = await client
     .from("categories")
     .select("id, space_id")
     .eq("space_id", space.id)
-    .eq("name", categoryName);
-  if (kind) query = query.eq("kind", kind);
-  const { data, error } = await query.single();
+    .eq("name", categoryName)
+    .single();
   if (error) throw error;
   return data;
 }
