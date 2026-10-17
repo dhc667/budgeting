@@ -143,8 +143,10 @@
     "saved": "Guardado.",
     "notFound": "Este espacio no existe, o no eres miembro.",
     "backToSpaces": "Volver a tus espacios",
+    "add": "Nuevo espacio",
     "new": {
       "title": "Nuevo espacio compartido",
+      "details": "Detalles",
       "members": "Miembros",
       "submit": "Crear espacio"
     },

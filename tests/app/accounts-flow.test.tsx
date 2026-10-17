@@ -8,6 +8,7 @@ import {
   openApp,
   openNewAccount,
   openSignedIn,
+  recordTransaction,
   uniqueName,
   user,
 } from "../support/app";
@@ -53,12 +54,40 @@ describe("accounts", () => {
 
     expect(await details.findByText("Saved.")).toBeTruthy();
     expect(balanceShown()).toMatch(/-\$25\.10/);
-    const history = within(screen.getByRole("region", { name: "History" }));
+    await user.click(screen.getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("heading", { name: "History", level: 1 })).toBeTruthy();
     expect(
-      await history.findByText(
+      await screen.findByText(
         new RegExp(`^${ana} changed the opening balance of “Checking” to -\\$25\\.10`),
       ),
     ).toBeTruthy();
+  });
+
+  it("lists an account's transactions on a screen of their own, and leads back to the account", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "" });
+    await addAccount({ name: "Checking", openingBalance: "" });
+    await recordTransaction({ amount: "9", account: "Cash", category: "Gifts", title: "Present" });
+    await recordTransaction({
+      amount: "4",
+      account: "Checking",
+      category: "Groceries",
+      title: "Milk",
+    });
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    await user.click(await accounts.findByRole("link", { name: /Checking/ }));
+    await screen.findByRole("heading", { name: "Checking", level: 1 });
+    expect(screen.queryByRole("link", { name: /Milk/ })).toBeNull();
+
+    const account = within(screen.getByRole("navigation", { name: "Checking" }));
+    await user.click(account.getByRole("link", { name: "Transactions" }));
+
+    expect(await screen.findByRole("heading", { name: "Transactions", level: 1 })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: /Milk/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Present/ })).toBeNull();
+    await user.click(screen.getByRole("link", { name: "Back to Checking" }));
+    expect(await screen.findByRole("heading", { name: "Checking", level: 1 })).toBeTruthy();
   });
 
   it("asks for the opening balance again when the currency changes", async () => {

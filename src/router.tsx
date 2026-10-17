@@ -1,5 +1,7 @@
 import { createHashRouter } from "react-router";
+import { AccountHistoryScreen } from "./accounts/AccountHistoryScreen";
 import { AccountScreen } from "./accounts/AccountScreen";
+import { AccountTransactionsScreen } from "./accounts/AccountTransactionsScreen";
 import { NewAccountScreen } from "./accounts/NewAccountScreen";
 import { RequireSession, SessionGate } from "./auth/SessionGate";
 import { SignInScreen } from "./auth/SignInScreen";
@@ -14,6 +16,7 @@ import { AppShell } from "./layout/AppShell";
 import { ProfileScreen } from "./profile/ProfileScreen";
 import { ComingSoonScreen } from "./screens/ComingSoonScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
+import { NewSpaceScreen } from "./spaces/NewSpaceScreen";
 import { SpaceScreen } from "./spaces/SpaceScreen";
 import { SpacesScreen } from "./spaces/SpacesScreen";
 import { NewTransactionScreen } from "./transactions/NewTransactionScreen";
@@ -55,6 +58,7 @@ export function createAppRouter() {
                         },
                         { path: "profile", element: <ProfileScreen /> },
                         { path: "spaces", element: <SpacesScreen /> },
+                        { path: "spaces/new", element: <NewSpaceScreen /> },
                         { path: "spaces/:spaceId", element: <SpaceScreen /> },
                         {
                           path: "spaces/:spaceId/categories/new",
@@ -63,6 +67,11 @@ export function createAppRouter() {
                         { path: "categories/:categoryId", element: <CategoryScreen /> },
                         { path: "accounts/new", element: <NewAccountScreen /> },
                         { path: "accounts/:accountId", element: <AccountScreen /> },
+                        {
+                          path: "accounts/:accountId/transactions",
+                          element: <AccountTransactionsScreen />,
+                        },
+                        { path: "accounts/:accountId/history", element: <AccountHistoryScreen /> },
                       ],
                     },
                   ],

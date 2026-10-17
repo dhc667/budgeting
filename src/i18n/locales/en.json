@@ -143,8 +143,10 @@
     "saved": "Saved.",
     "notFound": "This space doesn't exist, or you're not a member of it.",
     "backToSpaces": "Back to your spaces",
+    "add": "New space",
     "new": {
       "title": "New shared space",
+      "details": "Details",
       "members": "Members",
       "submit": "Create space"
     },

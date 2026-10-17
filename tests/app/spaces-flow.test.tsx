@@ -5,6 +5,7 @@ import {
   addAccount,
   createSharedSpace,
   openApp,
+  openNewSpace,
   openSignedIn,
   openSpaces,
   signIn,
@@ -55,7 +56,7 @@ describe("spaces", () => {
     await user.click(await screen.findByRole("link", { name: /^Family/ }));
 
     const members = within(await screen.findByRole("region", { name: "Members" }));
-    expect(members.getByText(ana)).toBeTruthy();
+    expect(await members.findByText(ana)).toBeTruthy();
     const activity = within(screen.getByRole("region", { name: "Activity" }));
     expect(await activity.findByText(`${ana} created the space`)).toBeTruthy();
     expect(activity.getByText(`${ana} added ${benName}`)).toBeTruthy();
@@ -63,9 +64,9 @@ describe("spaces", () => {
 
   it("refuses a blank name", async () => {
     await openSignedIn(uniqueName("Ana"));
-    await openSpaces();
+    await openNewSpace();
 
-    const form = within(await screen.findByRole("region", { name: "New shared space" }));
+    const form = within(await screen.findByRole("region", { name: "Details" }));
     await user.type(form.getByLabelText("Name"), "   ");
     await user.click(form.getByRole("button", { name: "Create space" }));
 
