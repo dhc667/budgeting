@@ -477,6 +477,93 @@ export const recurringTransactions = pgTable(
   ],
 );
 
+// Repeating when it has `every` and `unit`, from `starts_on` on; otherwise from `starts_on` to `ends_on`.
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    currency: text()
+      .notNull()
+      .references(() => currencies.code),
+    // Each period's, before carry-over, in minor units of `currency`.
+    amount: bigint({ mode: "number" }).notNull(),
+    startsOn: date("starts_on").notNull(),
+    endsOn: date("ends_on"),
+    every: integer(),
+    unit: repeatUnit(),
+    carryUnspent: boolean("carry_unspent").notNull().default(false),
+    carryOverspent: boolean("carry_overspent").notNull().default(false),
+    // Null means every one in the space, including those added later. Ids, not foreign keys, so a
+    // change is one row in the budget's history: deleting a category or account rewrites them.
+    categoryIds: uuid("category_ids").array(),
+    accountIds: uuid("account_ids").array(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("name_not_blank", sql`trim(${t.name}) <> ''`),
+    check("amount_positive", sql`${t.amount} > 0`),
+    check("every_positive", sql`${t.every} > 0`),
+    check(
+      "repeating_or_fixed",
+      sql`(${t.every} is not null and ${t.unit} is not null and ${t.endsOn} is null) or (${t.every} is null and ${t.unit} is null and ${t.endsOn} is not null)`,
+    ),
+    check("ends_on_or_after_start", sql`${t.endsOn} >= ${t.startsOn}`),
+    check(
+      "carry_over_only_when_repeating",
+      sql`${t.every} is not null or not (${t.carryUnspent} or ${t.carryOverspent})`,
+    ),
+    index("budgets_space_id_idx").on(t.spaceId),
+    pgPolicy("members see their spaces' budgets", {
+      for: "select",
+      to: authenticatedRole,
+      using: inMySpaces(t.spaceId),
+    }),
+    pgPolicy("members add budgets", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: inMySpaces(t.spaceId),
+    }),
+    pgPolicy("members edit their spaces' budgets", {
+      for: "update",
+      to: authenticatedRole,
+      using: inMySpaces(t.spaceId),
+      withCheck: inMySpaces(t.spaceId),
+    }),
+    pgPolicy("members delete their spaces' budgets", {
+      for: "delete",
+      to: authenticatedRole,
+      using: inMySpaces(t.spaceId),
+    }),
+  ],
+);
+
+// Transactions a budget leaves out though they fall within it. Written only by
+// `set_budget_exclusions`.
+export const budgetExclusions = pgTable(
+  "budget_exclusions",
+  {
+    budgetId: uuid("budget_id")
+      .notNull()
+      .references(() => budgets.id, { onDelete: "cascade" }),
+    transactionId: uuid("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.budgetId, t.transactionId] }),
+    index("budget_exclusions_transaction_id_idx").on(t.transactionId),
+    pgPolicy("members see what their spaces' budgets leave out", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.budgets where budgets.id = ${t.budgetId})`,
+    }),
+  ],
+);
+
 // Rather than `in (select …)`: Postgres then expects the few spaces a user is in, not a thousand
 // rows, and reads only theirs through the space_id index instead of scanning the whole table.
 function inMySpaces(spaceId: AnyPgColumn) {
