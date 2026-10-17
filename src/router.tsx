@@ -6,6 +6,9 @@ import { NewAccountScreen } from "./accounts/NewAccountScreen";
 import { RequireSession, SessionGate } from "./auth/SessionGate";
 import { SignInScreen } from "./auth/SignInScreen";
 import { SignUpScreen } from "./auth/SignUpScreen";
+import { BudgetScreen } from "./budgets/BudgetScreen";
+import { BudgetsScreen } from "./budgets/BudgetsScreen";
+import { NewBudgetScreen } from "./budgets/NewBudgetScreen";
 import { CategoryHistoryScreen } from "./categories/CategoryHistoryScreen";
 import { CategoryScreen } from "./categories/CategoryScreen";
 import { CategoryTransactionsScreen } from "./categories/CategoryTransactionsScreen";
@@ -55,10 +58,9 @@ export function createAppRouter() {
                         { path: "transactions/:transactionId", element: <TransactionScreen /> },
                         { path: "recurring", element: <RecurringScreen /> },
                         { path: "recurring/:ruleId", element: <RecurringTransactionScreen /> },
-                        {
-                          path: "budgets",
-                          element: <ComingSoonScreen title={(t) => t("nav.budgets")} />,
-                        },
+                        { path: "budgets", element: <BudgetsScreen /> },
+                        { path: "budgets/new", element: <NewBudgetScreen /> },
+                        { path: "budgets/:budgetId", element: <BudgetScreen /> },
                         {
                           path: "reports",
                           element: <ComingSoonScreen title={(t) => t("nav.reports")} />,

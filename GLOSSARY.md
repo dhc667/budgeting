@@ -94,11 +94,18 @@ The sum of the balances of every account in the spaces a user belongs to, in the
 ### Planning
 
 **Budget**:
-A spending limit for one space, in one currency, over a fixed date range or a repeating period that starts on a day the budget chooses, covering chosen expense categories and accounts. It tracks net spending: what went into its categories minus refunds.
+A spending limit for one space, in one currency, covering chosen expense categories and accounts, or every one in its space, including those added later. It runs between two dates, or repeats every so many days, weeks, months or years from a day it chooses. It tracks net spending: what went into its categories minus refunds. A transaction can be left out of any budget it would count in.
+
+**Budget period**:
+One stretch of a budget: the whole of one between two dates, or one repetition of a repeating one. Every period has the budget's limit, plus any carry-over; changing the limit changes it for past periods too.
 
 **Carry-over**:
-Adjusting a budget's next-period limit by how the previous period ended. Each budget enables it separately for unspent money (raising the next limit) and for overspending (lowering it).
+Adjusting a budget period's limit by how the one before ended, carry-over included, so that it keeps adding up. Each budget enables it separately for unspent money (raising the next limit) and for overspending (lowering it, below zero if need be).
 _Avoid_: rollover
+
+**Daily allowance**:
+What can be spent on each day left of the current budget period, today included, to end it having spent exactly its limit.
+_Avoid_: daily budget
 
 **Recurring transaction**:
 A rule that produces an upcoming transaction on a schedule.

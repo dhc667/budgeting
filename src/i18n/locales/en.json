@@ -82,8 +82,9 @@
     "accounts": "Accounts",
     "upcoming": "Upcoming",
     "budgets": "Budgets",
-    "budgetsPlaceholder": "Budget progress goes here.",
-    "recent": "Recent transactions"
+    "recent": "Recent transactions",
+    "allBudgets": "All budgets",
+    "showBudget": "Show {{name}}"
   },
   "profile": {
     "title": "Profile",
@@ -242,6 +243,15 @@
       "resumed": "{{actor}} resumed the recurring transaction “{{label}}”",
       "recorded": "{{actor}} recorded “{{label}}” due {{date}}",
       "skipped": "{{actor}} skipped “{{label}}” due {{date}}"
+    },
+    "budget": {
+      "created": "{{actor}} created the budget “{{name}}”",
+      "deleted": "{{actor}} deleted the budget “{{name}}”",
+      "renamed": "{{actor}} renamed the budget “{{from}}” to “{{name}}”",
+      "limitChanged": "{{actor}} changed the limit of “{{name}}” from {{from}} to {{to}}",
+      "changed": "{{actor}} changed the budget “{{name}}”",
+      "excluded": "{{actor}} left “{{transaction}}” of {{date}} out of the budget “{{name}}”",
+      "included": "{{actor}} counted “{{transaction}}” of {{date}} in the budget “{{name}}” again"
     }
   },
   "accounts": {
@@ -416,7 +426,11 @@
       "pastTitles": "Past titles",
       "note": "Note",
       "save": "Save",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "leftOutOf": "Leave out of budgets",
+      "countedInAll": "Counted in all its budgets",
+      "leftOutOfSome_one": "Left out of {{count}} budget",
+      "leftOutOfSome_other": "Left out of {{count}} budgets"
     },
     "oneSided": {
       "toAnotherSpace": "From “{{account}}” to another space",
@@ -615,6 +629,79 @@
       "dueOnly": "What's due",
       "within_one": "Due within {{count}} day",
       "within_other": "Due within {{count}} days"
+    }
+  },
+  "budgets": {
+    "title": "Budgets",
+    "add": "New budget",
+    "none": "No budgets yet. A budget limits what goes into some categories each week, month or year, or between two dates.",
+    "noneShown": "The spaces shown have no budgets.",
+    "ofLimit": "of {{limit}}",
+    "period": "{{start}} – {{end}}",
+    "unconverted": "Not counted, no exchange rate for its day: {{currencies}}",
+    "startsOn": "Starts {{date}}",
+    "perDay_one": "You can spend {{amount}} today, the last day",
+    "perDay_other": "You can spend {{amount}} a day for {{count}} more days",
+    "over_one": "{{amount}} over, on the last day",
+    "over_other": "{{amount}} over, with {{count}} more days",
+    "endedUnder": "Ended {{amount}} under",
+    "endedOver": "Ended {{amount}} over",
+    "fixed": "Between two dates",
+    "standing": "This period",
+    "pastPeriods": "Past periods",
+    "spentOfLimit": "{{spent}} of {{limit}}",
+    "endedUnderShort": "Under",
+    "endedOverShort": "Over",
+    "details": "Details",
+    "notFound": "This budget doesn't exist, or isn't in your spaces.",
+    "backToList": "Back to budgets",
+    "new": {
+      "title": "New budget",
+      "submit": "Add budget"
+    },
+    "form": {
+      "space": "Space",
+      "name": "Name",
+      "currency": "Currency",
+      "amount": "Limit",
+      "amountHint": "For each period, before carry-over.",
+      "length": "Runs",
+      "repeating": "Again and again",
+      "fixed": "Between two dates",
+      "every": "Every",
+      "unit": "Period",
+      "startsOn": "Starts on",
+      "startsOnHint": "Each period starts on this day.",
+      "endsOn": "Ends on",
+      "categories": "Categories",
+      "allCategories": "All expense categories",
+      "someCategories_one": "{{count}} category",
+      "someCategories_other": "{{count}} categories",
+      "accounts": "Accounts",
+      "allAccounts": "All accounts",
+      "someAccounts_one": "{{count}} account",
+      "someAccounts_other": "{{count}} accounts",
+      "carryOver": "Carry-over",
+      "carryUnspent": "Carry unspent money over",
+      "carryUnspentHint": "What's left raises the next period's limit.",
+      "carryOverspent": "Carry overspending over",
+      "carryOverspentHint": "Going over lowers the next period's limit.",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "delete": {
+      "title": "Delete",
+      "explained": "Its transactions stay as they are.",
+      "submit": "Delete budget",
+      "confirmTitle": "Delete “{{name}}”?",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "loadFailed": "Couldn't load budgets. Check your connection and try again.",
+      "amount": "Enter a limit above zero, like {{example}}.",
+      "nameBlank": "Give the budget a name.",
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete it. Check your connection and try again."
     }
   }
 }

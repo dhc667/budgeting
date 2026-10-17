@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAccountOption } from "../accounts/account-options";
 import { type Account, useAccounts } from "../accounts/account-queries";
+import { type Budget, useBudgets } from "../budgets/budget-queries";
+import { budgetsCounting } from "../budgets/coverage";
 import { categoryOptions } from "../categories/category-options";
 import { type Category, type CategoryKind, useCategories } from "../categories/category-queries";
 import { localToday } from "../format/days";
@@ -19,7 +21,8 @@ import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { submitWithButton, textField } from "../ui/forms";
-import { Picker } from "../ui/Picker";
+import { ChecklistField } from "../ui/ChecklistField";
+import { Picker, type PickerOption } from "../ui/Picker";
 import { TitleField } from "./TitleField";
 import { draftOf } from "./transaction";
 import {
@@ -41,7 +44,9 @@ type TransactionFormProps = {
 type Saving =
   | {
       kind: "transaction";
-      onSave: (draft: TransactionDraft) => void;
+      // The budgets it was left out of, among those it counts toward.
+      excludedBudgetIds: string[];
+      onSave: (draft: TransactionDraft, excludedBudgetIds: string[]) => void;
       // Offers to repeat it instead. Its date is then where the schedule starts, and may be ahead.
       onRepeat?: (draft: TransactionDraft, schedule: Schedule, recordFirst: boolean) => void;
     }
@@ -59,12 +64,19 @@ export function TransactionForm(props: TransactionFormProps) {
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const { data: spaces } = useSpaces();
-  if (!profile || !currencies || !accounts || !categories || !spaces) return null;
+  const { data: budgets } = useBudgets();
+  if (!profile || !currencies || !accounts || !categories || !spaces || !budgets) return null;
   const offered = accounts.filter(
     ({ id, archived }) => !archived || props.keptAccountIds.includes(id),
   );
   return (
-    <LoadedTransactionForm {...props} accounts={offered} categories={categories} spaces={spaces} />
+    <LoadedTransactionForm
+      {...props}
+      accounts={offered}
+      categories={categories}
+      spaces={spaces}
+      budgets={budgets}
+    />
   );
 }
 
@@ -72,6 +84,7 @@ type LoadedProps = TransactionFormProps & {
   accounts: Account[];
   categories: Category[];
   spaces: Space[];
+  budgets: Budget[];
 };
 
 function LoadedTransactionForm({
@@ -82,6 +95,7 @@ function LoadedTransactionForm({
   accounts,
   categories,
   spaces,
+  budgets,
 }: LoadedProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -110,6 +124,9 @@ function LoadedTransactionForm({
   const [date, setDate] = useState(initial.date);
   const isRule = saving.kind === "rule";
   const [repeating, setRepeating] = useState(isRule);
+  const [excludedBudgetIds, setExcludedBudgetIds] = useState(
+    saving.kind === "transaction" ? saving.excludedBudgetIds : [],
+  );
   const [problem, setProblem] = useState<Problem | null>(null);
 
   const type: TransactionType = tab === "expense" && refund ? "refund" : tab;
@@ -123,6 +140,11 @@ function LoadedTransactionForm({
     offeredCategories.find(({ id }) => id === pickedCategoryId) ??
     suggestedCategory(title, titles, offeredCategories);
   const exchanged = toAccount !== undefined && toAccount.currency !== account?.currency;
+  // Rules record transactions later, so they leave nothing out of budgets.
+  const countedIn =
+    tab === "expense" && !repeating && account && category
+      ? budgetsCounting(budgets, { account, category, date })
+      : [];
 
   const chooseAccount = (id: string) => {
     const chosen = accounts.find((candidate) => candidate.id === id);
@@ -180,7 +202,10 @@ function LoadedTransactionForm({
       case "transaction":
         if (repeating && saving.onRepeat)
           return saving.onRepeat(draft, scheduleFrom(form, date), button === "record");
-        return saving.onSave(draft);
+        return saving.onSave(
+          draft,
+          excludedBudgetIds.filter((id) => countedIn.some((budget) => budget.id === id)),
+        );
     }
   };
 
@@ -272,6 +297,16 @@ function LoadedTransactionForm({
       />
       {repeating && (
         <ScheduleFields initial={saving.kind === "rule" ? saving.schedule : null} startsOn={date} />
+      )}
+      {countedIn.length > 0 && (
+        <ChecklistField
+          label={t("transactions.form.leftOutOf")}
+          groups={[{ heading: null, options: countedIn.map(budgetOption) }]}
+          value={excludedBudgetIds}
+          onChange={setExcludedBudgetIds}
+          none={t("transactions.form.countedInAll")}
+          several={(count) => t("transactions.form.leftOutOfSome", { count })}
+        />
       )}
       <Field
         label={t("transactions.form.note")}
@@ -379,6 +414,14 @@ function CategoryPicker({ categories, value, onChange }: CategoryPickerProps) {
       placeholder={t("transactions.form.chooseCategory")}
     />
   );
+}
+
+function budgetOption(budget: Budget): PickerOption {
+  return {
+    id: budget.id,
+    label: budget.name,
+    content: <span className="flex-1 truncate">{budget.name}</span>,
+  };
 }
 
 // The latest category this user gave the same title, among those the form offers.

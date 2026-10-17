@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 import type { Account } from "../accounts/account-queries";
 import type { Transaction } from "../transactions/transaction-queries";
 import { type RecurringTransaction, scheduleOf, type Upcoming } from "./recurring-queries";
-import { nextDueDate, type Schedule } from "./schedule";
+import { nextDueDate, type Repeat, type Schedule } from "./schedule";
 
 // Those due on or before `lastDay`, oldest first. A paused rule has none.
 export function upcomingBy(rules: RecurringTransaction[], lastDay: string): Upcoming[] {
@@ -36,7 +36,7 @@ export function wasRescheduled(shown: Schedule, edited: Schedule): boolean {
   );
 }
 
-export function scheduleName({ every, unit }: Schedule, t: TFunction): string {
+export function scheduleName({ every, unit }: Repeat, t: TFunction): string {
   switch (unit) {
     case "day":
       return t("recurring.every.day", { count: every });
@@ -46,6 +46,19 @@ export function scheduleName({ every, unit }: Schedule, t: TFunction): string {
       return t("recurring.every.month", { count: every });
     case "year":
       return t("recurring.every.year", { count: every });
+  }
+}
+
+export function unitName(unit: Repeat["unit"], t: TFunction): string {
+  switch (unit) {
+    case "day":
+      return t("recurring.unit.day");
+    case "week":
+      return t("recurring.unit.week");
+    case "month":
+      return t("recurring.unit.month");
+    case "year":
+      return t("recurring.unit.year");
   }
 }
 

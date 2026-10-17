@@ -5,6 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { setBudgetExclusions } from "../budgets/budget-queries";
 import { useSupabase } from "../instance/instance-context";
 import type { Activity } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
@@ -87,26 +88,34 @@ export function useTitleSuggestions() {
   });
 }
 
+// Leaving it out of budgets is a second request: a retry after it failed finds the transaction
+// already added, and adds nothing twice.
 export function useAddTransaction() {
   const supabase = useSupabase();
-  return useTransactionMutation(async ({ id, ...draft }: TransactionDraft & { id: string }) => {
-    const { error } = await supabase.rpc("add_transaction", {
-      transaction_id: id,
-      ...draftArgs(draft),
-    });
-    if (error) throw error;
-  });
+  return useTransactionMutation(
+    async ({ id, excludedBudgetIds, ...draft }: TransactionDraft & Exclusions & { id: string }) => {
+      const { error } = await supabase.rpc("add_transaction", {
+        transaction_id: id,
+        ...draftArgs(draft),
+      });
+      if (error) throw error;
+      if (excludedBudgetIds.length > 0) await setBudgetExclusions(supabase, id, excludedBudgetIds);
+    },
+  );
 }
 
 export function useUpdateTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useTransactionMutation(async (draft: TransactionDraft) => {
-    const { error } = await supabase.rpc("update_transaction", {
-      transaction_id: transactionId,
-      ...draftArgs(draft),
-    });
-    if (error) throw error;
-  });
+  return useTransactionMutation(
+    async ({ excludedBudgetIds, ...draft }: TransactionDraft & Exclusions) => {
+      const { error } = await supabase.rpc("update_transaction", {
+        transaction_id: transactionId,
+        ...draftArgs(draft),
+      });
+      if (error) throw error;
+      await setBudgetExclusions(supabase, transactionId, excludedBudgetIds);
+    },
+  );
 }
 
 export function useDeleteTransaction(transactionId: string) {
@@ -125,14 +134,14 @@ export function useRestoreTransaction(transactionId: string) {
   });
 }
 
-// A transaction moves balances, counts in its category, and shows in its spaces' activity.
+// A transaction moves balances, counts in its category and budgets, and shows in its spaces' activity.
 function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
     onSuccess: () =>
       Promise.all(
-        ["transactions", "accounts", "categories", "spaces"].map((key) =>
+        ["transactions", "accounts", "categories", "budgets", "spaces"].map((key) =>
           queryClient.invalidateQueries({ queryKey: [key] }),
         ),
       ),
@@ -188,6 +197,8 @@ function draftArgs(draft: TransactionDraft) {
 }
 
 const pageSize = 50;
+
+type Exclusions = { excludedBudgetIds: string[] };
 
 export type Transaction = Database["public"]["Views"]["transaction_details"]["Row"];
 

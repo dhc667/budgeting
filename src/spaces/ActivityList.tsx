@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { describeBudgetChange } from "../budgets/budget-activity";
 import { useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
@@ -60,6 +61,8 @@ function describe(entry: Activity, phrasing: Phrasing): string[] {
       return describeTransactionChange(entry, actor, phrasing);
     case "recurring_transactions":
       return describeRecurringChange(entry, actor, phrasing);
+    case "budgets":
+      return describeBudgetChange(entry, actor, phrasing);
     default:
       return [];
   }

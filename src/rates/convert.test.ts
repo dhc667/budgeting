@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { convert, type LatestRates } from "./convert";
+import { convert, convertOn, type LatestRates, type RateHistory } from "./convert";
 
 const usd = { code: "USD", decimals: 2 };
 const jpy = { code: "JPY", decimals: 0 };
@@ -71,6 +71,39 @@ describe("convert", () => {
       staleRates: [{ currency: "KWD", date: "2026-10-01" }],
     });
     expect(convert(1000, usd, eur, rates)).toMatchObject({ staleRates: [] });
+  });
+});
+
+describe("convertOn", () => {
+  const history: RateHistory = new Map([
+    [
+      "EUR",
+      [
+        { date: "2026-03-02", rate: 0.8 },
+        { date: "2026-03-03", rate: 0.9 },
+        { date: "2026-03-06", rate: 1 },
+      ],
+    ],
+  ]);
+
+  it("uses the rate of the day itself", () => {
+    expect(convertOn(1000, usd, eur, "2026-03-03", history)).toEqual({
+      kind: "converted",
+      minorUnits: 900,
+      staleRates: [],
+    });
+  });
+
+  it("uses the latest rate before a day that has none", () => {
+    expect(convertOn(1000, usd, eur, "2026-03-05", history)).toMatchObject({ minorUnits: 900 });
+    expect(convertOn(1000, usd, eur, "2026-12-31", history)).toMatchObject({ minorUnits: 1000 });
+  });
+
+  it("reports no rate for a day before the first one", () => {
+    expect(convertOn(1000, usd, eur, "2026-03-01", history)).toEqual({
+      kind: "no-rate",
+      currency: "EUR",
+    });
   });
 });
 

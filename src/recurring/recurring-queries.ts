@@ -127,7 +127,7 @@ function useRecurringMutation<Input>(mutationFn: (input: Input) => Promise<void>
     mutationFn,
     onSuccess: () =>
       Promise.all(
-        ["recurring", "transactions", "accounts", "categories", "spaces"].map((key) =>
+        ["recurring", "transactions", "accounts", "categories", "budgets", "spaces"].map((key) =>
           queryClient.invalidateQueries({ queryKey: [key] }),
         ),
       ),

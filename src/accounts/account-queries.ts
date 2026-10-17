@@ -81,7 +81,7 @@ export function useReorderAccounts() {
   });
 }
 
-// Account changes show up in their space's activity too.
+// Account changes show up in their space's activity too, and budgets forget deleted ones.
 function useAccountMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -89,6 +89,7 @@ function useAccountMutation<Input, Output>(mutationFn: (input: Input) => Promise
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+        queryClient.invalidateQueries({ queryKey: ["budgets"] }),
         queryClient.invalidateQueries({ queryKey: ["spaces"] }),
       ]),
   });

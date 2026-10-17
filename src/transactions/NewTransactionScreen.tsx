@@ -50,9 +50,10 @@ export function NewTransactionScreen() {
             }}
             saving={{
               kind: "transaction",
-              onSave: (draft) =>
+              excludedBudgetIds: [],
+              onSave: (draft, excludedBudgetIds) =>
                 addTransaction.mutate(
-                  { ...draft, id },
+                  { ...draft, id, excludedBudgetIds },
                   {
                     onSuccess: () => {
                       remember(draft.accountId);
