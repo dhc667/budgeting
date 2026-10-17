@@ -75,7 +75,8 @@
       "evening": "Buenas noches, {{name}}"
     },
     "netWorth": "Patrimonio neto",
-    "netWorthPlaceholder": "Aquí irá el gráfico del patrimonio neto de todos los tiempos.",
+    "netWorthNoRate": "No se cuentan, aún no hay tipo de cambio:",
+    "netWorthStale": "El tipo de cambio de {{currency}} es del {{date}}.",
     "accounts": "Cuentas",
     "upcoming": "Próximos",
     "upcomingPlaceholder": "Aquí irán los movimientos recurrentes pendientes de pago.",
@@ -95,7 +96,7 @@
       "title": "Sobre ti",
       "name": "Nombre",
       "displayCurrency": "Moneda de visualización",
-      "displayCurrencyHint": "Los totales en varias monedas se muestran en esta."
+      "displayCurrencyHint": "Los totales en varias monedas se muestran en esta. Solo se ofrecen monedas con tipos de cambio recientes."
     },
     "formats": {
       "title": "Idioma y formatos",

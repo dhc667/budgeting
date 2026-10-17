@@ -8,6 +8,7 @@ import { dateFormats, formatDate, formatAmount, numberFormats } from "../format/
 import { deviceLanguage, languageNames, languages } from "../i18n/languages";
 import { useInstance, useSupabase } from "../instance/instance-context";
 import { CurrencySelect } from "../money/CurrencySelect";
+import { useLatestRates } from "../rates/rate-queries";
 import { signOutHere } from "../supabase/client";
 import { isCheckViolation } from "../supabase/errors";
 import { Button } from "../ui/Button";
@@ -38,6 +39,9 @@ export function ProfileScreen() {
 function AboutForm({ profile }: { profile: Profile }) {
   const { t } = useTranslation();
   const updateProfile = useUpdateProfile();
+  const { data: rates } = useLatestRates();
+  const offered = new Set(["USD", profile.display_currency]);
+  rates?.forEach(({ currency, stale }) => !stale && offered.add(currency));
   const save = (form: FormData) =>
     updateProfile.mutate({
       display_name: textField(form, "displayName").trim(),
@@ -58,6 +62,7 @@ function AboutForm({ profile }: { profile: Profile }) {
           label={t("profile.about.displayCurrency")}
           hint={t("profile.about.displayCurrencyHint")}
           name="displayCurrency"
+          only={offered}
           defaultValue={profile.display_currency}
         />
         <SaveControls mutation={updateProfile} />

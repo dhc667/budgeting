@@ -51,11 +51,12 @@ export async function createSharedSpace(name: string, memberNames: string[]) {
   await screen.findByRole("heading", { name, level: 1 });
 }
 
-type NewAccount = { name: string; openingBalance: string; space?: string };
+type NewAccount = { name: string; openingBalance: string; space?: string; currency?: string };
 
-export async function addAccount({ name, openingBalance, space }: NewAccount) {
+export async function addAccount({ name, openingBalance, space, currency }: NewAccount) {
   await openNewAccount();
   if (space) await user.selectOptions(screen.getByLabelText("Space"), space);
+  if (currency) await user.selectOptions(screen.getByLabelText("Currency"), currency);
   await user.type(screen.getByLabelText("Name"), name);
   if (openingBalance) await user.type(screen.getByLabelText("Opening balance"), openingBalance);
   await user.click(screen.getByRole("button", { name: "Add account" }));

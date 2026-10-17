@@ -8,6 +8,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgPolicy,
   pgTable,
@@ -27,9 +28,34 @@ export const currencies = pgTable(
   {
     code: text().primaryKey(),
     decimals: smallint().notNull(),
+    // The owner loads this currency's exchange rates; the app never saves any for it.
+    ratesByHand: boolean("rates_by_hand").notNull().default(false),
   },
   () => [
     pgPolicy("users see every currency", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+  ],
+);
+
+// Units of a currency per 1 USD, saved by `save_exchange_rates`. USD is the base and has no rows.
+// Weekends and holidays have none either: a date's rate is the latest one on or before it.
+export const exchangeRates = pgTable(
+  "exchange_rates",
+  {
+    date: date().notNull(),
+    currency: text()
+      .notNull()
+      .references(() => currencies.code),
+    rate: numeric({ mode: "number" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.date, t.currency] }),
+    check("rate_positive", sql`${t.rate} > 0`),
+    index("exchange_rates_currency_date_idx").on(t.currency, t.date.desc()),
+    pgPolicy("users see every exchange rate", {
       for: "select",
       to: authenticatedRole,
       using: sql`true`,

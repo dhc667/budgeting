@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, screen, within } from "@testing-library/react";
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildConnectLink } from "../../src/instance/connect-link";
 import {
   admin,
@@ -15,9 +15,27 @@ import {
 } from "../support/local-instance";
 import { openApp, openSignedIn, signIn, user } from "../support/app";
 
+// The provider is unreachable: the display currency list comes from the rates the instance holds.
+vi.mock("../../src/rates/rates-provider", () => ({
+  fetchLatestRates: () => Promise.reject(new Error("offline")),
+  fetchRatesBetween: () => Promise.reject(new Error("offline")),
+}));
+
+let seededRate = false;
+
+beforeAll(async () => {
+  const inserted =
+    await sql`insert into exchange_rates (date, currency, rate) values (current_date, 'EUR', 0.9) on conflict do nothing returning 1`;
+  seededRate = inserted.length > 0;
+});
+
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
-afterAll(() => sql.end());
+afterAll(async () => {
+  if (seededRate)
+    await sql`delete from exchange_rates where date = current_date and currency = 'EUR'`;
+  await sql.end();
+});
 
 describe("joining with an invite", () => {
   it("creates the account and opens the dashboard", async () => {

@@ -85,6 +85,9 @@ _Avoid_: pending, queued, offline transaction
 A user's chosen currency for viewing totals across accounts in different currencies.
 _Avoid_: base currency, home currency
 
+**Exchange rate**:
+How many units of a currency one US dollar buys, stored for each day it was published and shared by the whole instance. A date's rate is the latest one on or before it, so weekends and holidays have none of their own. A currency's latest rate is stale when it is more than 7 days older than the newest rate of any currency; a stale rate is still used, but is shown with its date. A display currency must have a rate that isn't stale. The instance owner can load a currency's rates by hand, and the app then never saves any for it.
+
 **Net worth**:
 The sum of the balances of every account in the spaces a user belongs to, in their display currency. A shared account counts in full for each of its members.
 
