@@ -60,6 +60,41 @@ describe("importing a file into a user's private space", () => {
     expect(categories).toContain("expense/Food/Lunches");
   });
 
+  it("replaces the space's categories with the file's when asked", async () => {
+    const { email } = await existingUser("Importer");
+
+    const run = importFile(email, sampleFile(), ["--replace-categories"]);
+
+    expect(run.stderr).toBe("");
+    expect((await signedInAs(email).then(categoryNames)).sort()).toEqual([
+      "expense/Food",
+      "expense/Food/Lunches",
+      "expense/Transport",
+      "income/Salary",
+    ]);
+  });
+
+  it("won't replace categories that transactions are already in", async () => {
+    const { email } = await existingUser("Importer");
+    importFile(email, sampleFile());
+    const before = await signedInAs(email).then(categoryNames);
+    const file = sampleFile();
+
+    const run = importFile(
+      email,
+      {
+        ...file,
+        accounts: file.accounts.map((a) => ({ ...a, name: `New ${a.name}` })),
+        transactions: [],
+      },
+      ["--replace-categories"],
+    );
+
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain("Food › Lunches, Transport, Salary have transactions");
+    expect(await signedInAs(email).then(categoryNames)).toEqual(before);
+  });
+
   it("refuses a file that doesn't match the format, saying where", async () => {
     const { email } = await existingUser("Importer");
     const file = sampleFile();
@@ -195,12 +230,12 @@ function sampleFile() {
   };
 }
 
-function importFile(email: string, contents: unknown) {
+function importFile(email: string, contents: unknown, options: string[] = []) {
   const path = join(mkdtempSync(join(tmpdir(), "import-")), "import.json");
   writeFileSync(path, JSON.stringify(contents));
   return spawnSync(
     "node",
-    ["cli/instance.ts", "import", email, path, "--env", ".env.instance.local"],
+    ["cli/instance.ts", "import", email, path, "--env", ".env.instance.local", ...options],
     { encoding: "utf8" },
   );
 }

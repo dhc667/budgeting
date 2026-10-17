@@ -28,7 +28,9 @@ Commands:
   backup                      Save the database to backup-<date>.sql in the current folder
   restore <file>              Load a backup into a fresh project, then migrate
   import <email> <file>       Add the accounts, categories and transactions in a JSON file to a
-                              user's private space (the format is in cli/import.ts)
+    [--replace-categories]    user's private space (the format is in cli/import.ts); with the
+                              option, its categories first replace the space's, which no
+                              transaction may be in yet
   load-rates <file>           Replace a currency's exchange rates with the ones in a JSON file;
                               the app stops fetching that currency's (the format is in cli/rates.ts)
 
@@ -36,7 +38,7 @@ Options:
   --env <file>                Instance settings (default: .env.instance; see .env.instance.example)
 `;
 
-type Options = { args: string[]; expiresInHours: number; env: Env };
+type Options = { args: string[]; expiresInHours: number; replaceCategories: boolean; env: Env };
 
 type Env = NodeJS.Dict<string>;
 
@@ -59,6 +61,7 @@ async function main() {
     options: {
       env: { type: "string", default: ".env.instance" },
       expires: { type: "string", default: "24" },
+      "replace-categories": { type: "boolean", default: false },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -73,7 +76,7 @@ async function main() {
   const expiresInHours = Number(values.expires);
   if (!(expiresInHours > 0)) fail("--expires must be a positive number of hours.");
 
-  await command({ args, expiresInHours, env });
+  await command({ args, expiresInHours, replaceCategories: values["replace-categories"], env });
 }
 
 // Only the file counts: process.loadEnvFile would let variables already exported in the shell win,
@@ -177,13 +180,13 @@ async function restore(options: Options) {
   await migrateDatabase(options);
 }
 
-async function importTransactions({ args: [email, file], env }: Options) {
+async function importTransactions({ args: [email, file], replaceCategories, env }: Options) {
   if (!email || !file) fail("Usage: pnpm run instance import <email> <file>");
   const data = readJsonFile(file, importFile, "the import format");
 
   const client = postgres(requireEnv(env, "DATABASE_URL"), { max: 1, onnotice: () => {} });
   try {
-    const accounts = await importIntoPrivateSpace(client, email, data);
+    const accounts = await importIntoPrivateSpace(client, email, data, { replaceCategories });
     console.log(`Imported ${data.transactions.length} transactions. Balances now:`);
     for (const { name, currency, balance, decimals } of accounts) {
       console.log(`  ${name}: ${(balance / 10 ** decimals).toFixed(decimals)} ${currency}`);
