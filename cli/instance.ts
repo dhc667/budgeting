@@ -185,7 +185,7 @@ async function importTransactions({ args: [email, file], env }: Options) {
     }
   } catch (error) {
     if (error instanceof ImportError) fail(error.message);
-    fail(`Nothing was imported: ${error instanceof Error ? error.message : String(error)}`);
+    fail(`Nothing was imported: ${messageOf(error)}`);
   } finally {
     await client.end();
   }
@@ -197,7 +197,7 @@ function readImportFile(file: string): ImportFile {
   try {
     json = JSON.parse(readFileSync(file, "utf8"));
   } catch (error) {
-    return fail(`${file} is not valid JSON: ${error instanceof Error ? error.message : ""}`);
+    return fail(`${file} is not valid JSON: ${messageOf(error)}`);
   }
   try {
     return parseImport(json);
@@ -323,6 +323,10 @@ function withoutPgVariables(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 function describeError(error: unknown): string {
   if (error instanceof Error && "code" in error) return String(error.code);
+  return messageOf(error);
+}
+
+function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 

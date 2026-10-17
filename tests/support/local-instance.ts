@@ -56,6 +56,13 @@ export async function signedInUser(displayName: string, language?: Language) {
   return { client, userId: defined(data.user).id };
 }
 
+export async function signedInAs(email: string) {
+  const client = anonClient();
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return client;
+}
+
 export async function privateSpaceOf(user: SignedInUser) {
   const { data, error } = await user.client
     .from("spaces")

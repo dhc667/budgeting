@@ -55,7 +55,7 @@ async function refuseExistingAccounts(tx: TransactionSql, spaceId: string, accou
   }
 }
 
-// A category the space already has, by kind and name, is used as it is.
+// A category the space already has, by kind, name and parent, is used as it is.
 async function addCategories(
   tx: TransactionSql,
   spaceId: string,
@@ -115,9 +115,10 @@ async function addTransactions(
   accountIds: Map<string, string>,
   categoryIds: Map<string, string>,
 ) {
-  const rows = transactions.map((t) => ({
+  const rows = transactions.map((t, position) => ({
     id: randomUUID(),
     recorded_at: t.recordedAt ?? null,
+    position,
     ...transactionArgs(t, accountIds, categoryIds),
   }));
 
@@ -131,12 +132,13 @@ async function addTransactions(
         amount bigint, category uuid, to_account uuid, to_amount bigint
       )
     ) as added`;
-  // add_transaction stamps them all with this database transaction's start: without the time each
-  // was recorded, a day's transactions would come out in random order.
+  // add_transaction stamps them all with this database transaction's start, which would leave a
+  // day's transactions in random order. A microsecond apart is enough to keep the file's.
   await tx`
-    update public.transactions set created_at = r.recorded_at
-    from jsonb_to_recordset(${tx.json(rows)}::jsonb) as r(id uuid, recorded_at timestamptz)
-    where transactions.id = r.id and r.recorded_at is not null`;
+    update public.transactions
+    set created_at = coalesce(r.recorded_at, now() + r.position * interval '1 microsecond')
+    from jsonb_to_recordset(${tx.json(rows)}::jsonb) as r(id uuid, recorded_at timestamptz, position integer)
+    where transactions.id = r.id`;
 }
 
 function transactionArgs(
@@ -238,7 +240,8 @@ const account = z.strictObject({
 
 const common = {
   date: day,
-  // When it was recorded, which orders a day's transactions.
+  // When it was recorded, which orders a day's transactions. Without it, they keep the order the
+  // file lists them in, earliest first.
   recordedAt: z.iso.datetime({ offset: true }).optional(),
   title: text,
   note: text,
@@ -257,7 +260,7 @@ const transaction = z.discriminatedUnion("type", [
     ...common,
     type: z.literal("transfer"),
     toAccount: z.string(),
-    // Only between currencies: within one, the amount sent is the amount received.
+    // Within one currency, the amount sent is the amount received.
     toAmount: minorUnits.optional(),
   }),
 ]);
@@ -274,12 +277,26 @@ const importFile = z
     if (accounts.size !== file.accounts.length) {
       context.addIssue({ code: "custom", path: ["accounts"], message: "Account names repeat" });
     }
-    const categories = new Set(
-      file.categories.flatMap((c) => [
+    const categories = new Set<string>();
+    const addCategory = (path: (string | number)[], key: string, name: string) => {
+      if (categories.has(key))
+        context.addIssue({ code: "custom", path, message: `${name} repeats` });
+      categories.add(key);
+    };
+    file.categories.forEach((c, i) => {
+      addCategory(
+        ["categories", i],
         categoryKey(c.kind, c.name),
-        ...c.subcategories.map((s) => categoryKey(c.kind, c.name, s.name)),
-      ]),
-    );
+        `The ${c.kind} category ${c.name}`,
+      );
+      c.subcategories.forEach((s, j) => {
+        addCategory(
+          ["categories", i, "subcategories", j],
+          categoryKey(c.kind, c.name, s.name),
+          `${c.name} › ${s.name}`,
+        );
+      });
+    });
 
     file.transactions.forEach((t, i) => {
       const issue = (message: string) =>
@@ -302,6 +319,14 @@ const importFile = z
           if (t.toAccount === t.account) issue("A transfer needs two different accounts");
           if (from && to && from.currency !== to.currency && t.toAmount === undefined) {
             issue("A transfer between currencies needs toAmount");
+          }
+          if (
+            from &&
+            to &&
+            from.currency === to.currency &&
+            (t.toAmount ?? t.amount) !== t.amount
+          ) {
+            issue("A transfer within one currency receives what it sends: toAmount isn't amount");
           }
           break;
         }
