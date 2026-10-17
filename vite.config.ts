@@ -39,6 +39,7 @@ export default defineConfig({
           fileParallelism: false,
           testTimeout: 20_000,
           globalSetup: ["tests/support/empty-local-instance.ts"],
+          setupFiles: ["fake-indexeddb/auto"],
         },
       },
     ],

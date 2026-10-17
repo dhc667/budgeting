@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router";
-import { signOutHere } from "../supabase/client";
+import { useSignOut } from "../sync/sign-out";
 import { Button } from "../ui/Button";
 import { CenteredMessage } from "../ui/CenteredMessage";
 import { type ConnectRequest, type Instance, parseConnectParams } from "./connect-link";
@@ -46,11 +46,12 @@ function Connect({ request }: { request: ConnectRequest }) {
 // Once connected to the new instance, ConnectScreen renders Connect, which carries on to sign-in.
 function ConfirmSwitch({ current, request }: { current: Instance; request: ConnectRequest }) {
   const { t } = useTranslation();
-  const { supabase, connect } = useInstance();
+  const { connect } = useInstance();
+  const signOut = useSignOut();
   const navigate = useNavigate();
   const switchInstance = useMutation({
     async mutationFn() {
-      if (supabase) await signOutHere(supabase);
+      await signOut();
       connect(request.instance);
     },
   });

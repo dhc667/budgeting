@@ -3,7 +3,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation } from "react-router";
 import { shownLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
-import { signOutHere } from "../supabase/client";
+import { useSignOut } from "../sync/sign-out";
 import { signUpErrorMessage } from "./auth-errors";
 import { AuthLayout } from "./AuthLayout";
 import { useSession } from "./session";
@@ -86,13 +86,13 @@ export function SignUpScreen() {
 
 function AlreadySignedIn({ email = "" }: { email: string | undefined }) {
   const { t } = useTranslation();
-  const supabase = useSupabase();
+  const signOut = useSignOut();
   return (
     <AuthLayout title={t("auth.alreadySignedIn.title")}>
       <p className="text-zinc-600 dark:text-zinc-400">
         {t("auth.alreadySignedIn.body", { email })}
       </p>
-      <Button onClick={() => void signOutHere(supabase)}>{t("auth.signOut")}</Button>
+      <Button onClick={() => void signOut()}>{t("auth.signOut")}</Button>
       <Link to="/" replace className="text-sm text-zinc-500 underline">
         {t("auth.alreadySignedIn.keepUsing", { email })}
       </Link>

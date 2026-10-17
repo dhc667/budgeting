@@ -9,6 +9,8 @@ import { useProfile } from "../profile/profile-queries";
 import { createQueryClient } from "../query-client";
 import { useSyncExchangeRates } from "../rates/rates-sync";
 import { isNoRows } from "../supabase/errors";
+import { LocalCopyProvider } from "../sync/LocalCopyProvider";
+import { useSignOut } from "../sync/sign-out";
 import { SessionContext, useSession } from "./session";
 
 export function SessionGate() {
@@ -34,13 +36,15 @@ export function RequireSession() {
   if (!session) return <Navigate to="/sign-in" replace />;
   return (
     <UserQueryCache key={session.user.id}>
-      <SignOutDeletedUser>
-        <UserLanguage>
-          <SyncExchangeRates>
-            <Outlet />
-          </SyncExchangeRates>
-        </UserLanguage>
-      </SignOutDeletedUser>
+      <LocalCopyProvider>
+        <SignOutDeletedUser>
+          <UserLanguage>
+            <SyncExchangeRates>
+              <Outlet />
+            </SyncExchangeRates>
+          </UserLanguage>
+        </SignOutDeletedUser>
+      </LocalCopyProvider>
     </UserQueryCache>
   );
 }
@@ -55,13 +59,13 @@ function UserQueryCache({ children }: { children: ReactNode }) {
 // A user deleted while signed in keeps a valid access token until it expires, with no profile to
 // show; signing out is the only way forward.
 function SignOutDeletedUser({ children }: { children: ReactNode }) {
-  const supabase = useSupabase();
+  const signOut = useSignOut();
   const { error } = useProfile();
   const userDeleted = error !== null && isNoRows(error);
 
   useEffect(() => {
-    if (userDeleted) void supabase.auth.signOut({ scope: "local" });
-  }, [supabase, userDeleted]);
+    if (userDeleted) void signOut();
+  }, [signOut, userDeleted]);
 
   return children;
 }
