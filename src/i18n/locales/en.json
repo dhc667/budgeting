@@ -52,7 +52,9 @@
       "title": "Create your account",
       "name": "Your name",
       "submit": "Create account",
-      "inviteOnce": "Your invite works once. If you already have an account, <signIn>sign in</signIn> instead."
+      "inviteOnce": "Your invite works once. If you already have an account, <signIn>sign in</signIn> instead.",
+      "repeatPassword": "Repeat password",
+      "mismatch": "The passwords don't match."
     },
     "alreadySignedIn": {
       "title": "You're already signed in",

@@ -64,6 +64,18 @@ describe("joining with an invite", () => {
 
     expect((await screen.findByRole("alert")).textContent).toMatch(/already used/);
   });
+
+  it("refuses a password confirmation that doesn't match, leaving the invite unused", async () => {
+    openApp(await inviteLink());
+
+    await signUpAs("Ana", { repeated: "a different password" });
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/don't match/);
+    await user.clear(screen.getByLabelText("Repeat password"));
+    await user.type(screen.getByLabelText("Repeat password"), password);
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("heading", { name: /, Ana$/ })).toBeTruthy();
+  });
 });
 
 describe("signing in", () => {
@@ -336,9 +348,10 @@ async function chooseFormats(choices: { language?: string; numbers?: string }) {
   await screen.findByText(/^(Saved|Guardado|Salvo)\.$/);
 }
 
-async function signUpAs(name: string) {
+async function signUpAs(name: string, { repeated = password } = {}) {
   await user.type(await screen.findByLabelText("Your name"), name);
   await user.type(screen.getByLabelText("Email"), uniqueEmail());
   await user.type(screen.getByLabelText("Password"), password);
+  await user.type(screen.getByLabelText("Repeat password"), repeated);
   await user.click(screen.getByRole("button", { name: "Create account" }));
 }

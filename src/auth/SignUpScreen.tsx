@@ -19,9 +19,11 @@ export function SignUpScreen() {
   const inviteCode = inviteCodeIn(useLocation().state);
   const signUp = useMutation({
     async mutationFn(form: FormData) {
+      const password = textField(form, "password");
+      if (password !== textField(form, "confirmation")) throw new Error(t("auth.signUp.mismatch"));
       const { error } = await supabase.auth.signUp({
         email: textField(form, "email"),
-        password: textField(form, "password"),
+        password,
         options: {
           data: {
             invite_code: inviteCode,
@@ -58,6 +60,13 @@ export function SignUpScreen() {
           type="password"
           autoComplete="new-password"
           minLength={8}
+          required
+        />
+        <Field
+          label={t("auth.signUp.repeatPassword")}
+          name="confirmation"
+          type="password"
+          autoComplete="new-password"
           required
         />
         {signUp.error && <ErrorText>{signUpErrorMessage(signUp.error, t)}</ErrorText>}

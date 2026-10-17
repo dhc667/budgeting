@@ -52,7 +52,9 @@
       "title": "Crea tu cuenta",
       "name": "Tu nombre",
       "submit": "Crear cuenta",
-      "inviteOnce": "Tu invitación funciona una sola vez. Si ya tienes una cuenta, <signIn>inicia sesión</signIn>."
+      "inviteOnce": "Tu invitación funciona una sola vez. Si ya tienes una cuenta, <signIn>inicia sesión</signIn>.",
+      "repeatPassword": "Repite la contraseña",
+      "mismatch": "Las contraseñas no coinciden."
     },
     "alreadySignedIn": {
       "title": "Ya iniciaste sesión",
