@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SessionContext } from "../../src/auth/session";
 import { InstanceContext } from "../../src/instance/instance-context";
 import { LocalCopyProvider } from "../../src/sync/LocalCopyProvider";
-import { useLocalCopy, useRequestPull } from "../../src/sync/local-copy-context";
+import { copyQueryKey, useLocalCopy, useRequestPull } from "../../src/sync/local-copy-context";
 import { today } from "../support/dates";
 import {
   createSpace,
@@ -70,7 +70,7 @@ describe("the local copy provider", () => {
     let fetches = 0;
     await mount(ben, () => {
       useQuery({
-        queryKey: ["probe"],
+        queryKey: copyQueryKey("probe"),
         queryFn: () => ++fetches,
       });
     });
@@ -82,6 +82,23 @@ describe("the local copy provider", () => {
     await act(() => pullNow());
 
     await waitFor(() => expect(fetches).toBeGreaterThan(before));
+  });
+});
+
+describe("what a change of the copy refetches", () => {
+  it("leaves queries outside the copy alone", async () => {
+    let fetches = 0;
+    await mount(ben, () => {
+      useQuery({ queryKey: ["elsewhere"], queryFn: () => ++fetches });
+    });
+    await screen.findByText("Family");
+    await waitFor(() => expect(fetches).toBe(1));
+
+    await addAccount("Savings");
+    await act(() => pullNow());
+    await screen.findByText("Savings");
+
+    expect(fetches).toBe(1);
   });
 });
 

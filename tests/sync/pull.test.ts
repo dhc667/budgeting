@@ -1,8 +1,10 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Changes, type LocalCopy, type SyncedTable, syncedTables } from "../../src/sync/copy";
+import { type Changes, type LocalCopy, type SyncedTable } from "../../src/sync/copy";
+import { changesFrom, copyName } from "../../src/sync/copy-source";
 import { signOutAndDeleteCopy } from "../../src/sync/sign-out";
-import { openCopyStore } from "../../src/sync/store";
-import { changesFrom, copyName, createCopySync } from "../../src/sync/sync";
+import { deleteCopy, openCopyStore } from "../../src/sync/store";
+import { createCopySync } from "../../src/sync/sync";
+import { signOutHere } from "../../src/supabase/client";
 import {
   createSpace,
   instance,
@@ -104,9 +106,12 @@ describe("pulling the local copy", () => {
     await addAccount(ana, familyId, "Savings");
 
     const reopened = deviceOf(ben);
-    await reopened.sync.load();
+    reopened.failing = true;
+    await reopened.sync.pull();
     expect(namesIn(reopened.copy(), "spaces")).toContain("Family");
     expect(namesIn(reopened.copy(), "ledger_accounts")).not.toContain("Savings");
+    reopened.failing = false;
+    reopened.fetchedSince.length = 0;
     await reopened.sync.pull();
 
     expect(namesIn(reopened.copy(), "ledger_accounts")).toContain("Savings");
@@ -120,7 +125,8 @@ describe("pulling the local copy", () => {
     first.sync.close();
 
     const other = deviceOf(ana);
-    await other.sync.load();
+    other.failing = true;
+    await other.sync.pull();
 
     expect(other.published).toEqual([]);
   });
@@ -131,9 +137,11 @@ describe("pulling the local copy", () => {
     old.sync.close();
 
     const current = deviceOf(ben);
-    await current.sync.load();
-
+    current.failing = true;
+    await current.sync.pull();
     expect(current.published).toEqual([]);
+    current.failing = false;
+    current.fetchedSince.length = 0;
     await current.sync.pull();
     expect(current.fetchedSince).toEqual([0]);
   });
@@ -187,6 +195,7 @@ describe("pulling the local copy", () => {
     expect(namesIn(device.copy(), "ledger_accounts")).toContain("Savings");
   });
 
+  // Pins the module's contract that pulls never overlap, through the injected fetchChanges.
   it("runs one pull at a time, and one more after it however often it is asked", async () => {
     const device = deviceOf(ben);
     await device.sync.pull();
@@ -224,8 +233,50 @@ describe("pulling the local copy", () => {
     await signOutAndDeleteCopy(ben.client, instance);
 
     const after = deviceOf(ben);
-    await after.sync.load();
+    after.failing = true;
+    await after.sync.pull();
     expect(after.published).toEqual([]);
+  });
+
+  it("deletes the copy of a user whose session already expired", async () => {
+    const first = deviceOf(ben);
+    await first.sync.pull();
+    first.sync.close();
+    await signOutHere(ben.client);
+
+    await signOutAndDeleteCopy(ben.client, instance, ben.userId);
+
+    const after = deviceOf(ben);
+    after.failing = true;
+    await after.sync.pull();
+    expect(after.published).toEqual([]);
+  });
+
+  it("does not bring the copy back once closed, even with a pull waiting", async () => {
+    const entered = deferred();
+    const release = deferred();
+    const real = changesFrom(ben.client);
+    const name = copyName(instance, ben.userId);
+    const sync = createCopySync({
+      name,
+      schemaVersion,
+      publish: () => undefined,
+      async fetchChanges(since) {
+        entered.resolve();
+        await release.promise;
+        return real(since);
+      },
+    });
+    const pulls = [sync.pull(), sync.pull()];
+    await entered.promise;
+
+    sync.close();
+    await deleteCopy(name);
+    release.resolve();
+    await Promise.all(pulls);
+
+    const databases = await indexedDB.databases();
+    expect(databases.map((database) => database.name)).not.toContain(name);
   });
 });
 
@@ -234,9 +285,11 @@ const schemaVersion = 3;
 function deviceOf(user: User, version = schemaVersion) {
   const real = changesFrom(user.client);
   let running = 0;
+  const published: (LocalCopy | null)[] = [];
+  const fetchedSince: number[] = [];
   const device = {
-    published: [] as (LocalCopy | null)[],
-    fetchedSince: [] as number[],
+    published,
+    fetchedSince,
     failing: false,
     maxConcurrent: 0,
     copy() {
@@ -273,10 +326,7 @@ function withStaleCurrency(copy: LocalCopy): LocalCopy {
 // Arranges a copy a device saved earlier, which a pull alone can't produce.
 async function saveDirectly(user: User, copy: LocalCopy) {
   const store = await openCopyStore(copyName(instance, user.userId));
-  const written = syncedTables.flatMap((table) =>
-    [...copy.rows[table]].map(([key, row]) => ({ table, key, row })),
-  );
-  await store.save(copy, { startedOver: true, removed: [], written });
+  await store.save(copy, { startedOver: true, removed: [], written: copy.rows });
   store.close();
 }
 
@@ -335,4 +385,12 @@ async function addExpense(user: User, amount: number): Promise<string> {
   });
   if (error) throw error;
   return id;
+}
+
+function deferred() {
+  let resolve = () => {};
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
 }
