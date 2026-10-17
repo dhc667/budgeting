@@ -348,7 +348,26 @@
     "transfer": "Transferência",
     "anotherSpace": "Outro espaço",
     "none": "Nenhuma transação ainda.",
+    "noMatches": "Nenhuma transação corresponde.",
     "showMore": "Mostrar mais",
+    "search": {
+      "label": "Buscar",
+      "placeholder": "Título ou nota"
+    },
+    "filters": {
+      "toggle": "Filtros",
+      "toggleCount_one": "Filtros ({{count}})",
+      "toggleCount_other": "Filtros ({{count}})",
+      "clear": "Limpar filtros",
+      "space": "Espaço",
+      "allSpaces": "Todos os espaços",
+      "account": "Conta",
+      "allAccounts": "Todas as contas",
+      "category": "Categoria",
+      "allCategories": "Todas as categorias",
+      "from": "De",
+      "to": "Até"
+    },
     "seeAll": "Ver todas",
     "details": "Detalhes",
     "history": "Histórico",

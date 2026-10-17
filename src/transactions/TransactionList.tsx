@@ -1,6 +1,6 @@
 import { ArrowLeftRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { CategoryIcon } from "../categories/CategoryIcon";
 import { type Category, useCategories } from "../categories/category-queries";
@@ -12,23 +12,29 @@ import { useSpaces } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
+import { openedFrom } from "./list-filters";
 import { type ShownAmount, shownAmount, signedAmount, transactionLabel } from "./transaction";
 import { type Transaction, type TransactionFilter, useTransactions } from "./transaction-queries";
 
-export function TransactionList({ filter }: { filter: TransactionFilter }) {
+type TransactionListProps = { filter: TransactionFilter; empty?: string };
+
+export function TransactionList({ filter, empty }: TransactionListProps) {
   const { t } = useTranslation();
-  const { data, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useTransactions(filter);
+  const { data, error, hasNextPage, fetchNextPage, isFetchingNextPage, isPlaceholderData } =
+    useTransactions(filter);
   if (error) return <ErrorText>{t("transactions.errors.loadFailed")}</ErrorText>;
   if (!data) return null;
   const transactions = data.pages.flat();
 
   return (
     <div className="flex flex-col gap-3">
-      <TransactionGroups transactions={transactions} accountId={seenFrom(filter)} />
+      {/* Seen from one account, a transfer shows whether it left or reached it. */}
+      <TransactionGroups transactions={transactions} accountId={filter.accountId} empty={empty} />
       {hasNextPage && (
+        // The pages shown may still be those of the filter before, until this one's first arrives.
         <Button
           variant="secondary"
-          disabled={isFetchingNextPage}
+          disabled={isFetchingNextPage || isPlaceholderData}
           onClick={() => void fetchNextPage()}
           className="self-start"
         >
@@ -39,15 +45,15 @@ export function TransactionList({ filter }: { filter: TransactionFilter }) {
   );
 }
 
-type TransactionGroupsProps = { transactions: Transaction[]; accountId?: string };
+type TransactionGroupsProps = { transactions: Transaction[]; accountId?: string; empty?: string };
 
-export function TransactionGroups({ transactions, accountId }: TransactionGroupsProps) {
+export function TransactionGroups({ transactions, accountId, empty }: TransactionGroupsProps) {
   const { t } = useTranslation();
   const format = useFormat();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   if (!accounts || !categories) return null;
-  if (transactions.length === 0) return <EmptyState>{t("transactions.none")}</EmptyState>;
+  if (transactions.length === 0) return <EmptyState>{empty ?? t("transactions.none")}</EmptyState>;
 
   return (
     <div className="flex flex-col gap-3">
@@ -84,6 +90,7 @@ type TransactionRowProps = {
 function TransactionRow({ transaction, accounts, categories, accountId }: TransactionRowProps) {
   const { data: users = [] } = useUsers();
   const { data: spaces = [] } = useSpaces();
+  const location = useLocation();
   const shared = spaces.some(
     (space) => transaction.space_ids.includes(space.id) && !isPrivate(space),
   );
@@ -91,6 +98,7 @@ function TransactionRow({ transaction, accounts, categories, accountId }: Transa
   return (
     <Link
       to={`/transactions/${transaction.id}`}
+      state={openedFrom(location)}
       className="flex min-h-14 items-center gap-3 rounded-lg px-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
     >
       <TransactionSummary
@@ -157,17 +165,6 @@ export function TransactionSummary({
       </span>
     </>
   );
-}
-
-// Seen from one account, a transfer shows whether it left or reached it.
-function seenFrom(filter: TransactionFilter): string | undefined {
-  switch (filter.kind) {
-    case "account":
-      return filter.accountId;
-    case "spaces":
-    case "categories":
-      return undefined;
-  }
 }
 
 function plusSign(direction: ShownAmount["direction"]): string {

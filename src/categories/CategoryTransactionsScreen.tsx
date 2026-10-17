@@ -18,7 +18,6 @@ function CategoryTransactions({ category }: { category: Category }) {
   return (
     <TransactionList
       filter={{
-        kind: "categories",
         categoryIds: withSubcategories(category, categories).map(({ id }) => id),
       }}
     />

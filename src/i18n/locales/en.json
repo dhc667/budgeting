@@ -348,7 +348,26 @@
     "transfer": "Transfer",
     "anotherSpace": "Another space",
     "none": "No transactions yet.",
+    "noMatches": "No transactions match.",
     "showMore": "Show more",
+    "search": {
+      "label": "Search",
+      "placeholder": "Title or note"
+    },
+    "filters": {
+      "toggle": "Filters",
+      "toggleCount_one": "Filters ({{count}})",
+      "toggleCount_other": "Filters ({{count}})",
+      "clear": "Clear filters",
+      "space": "Space",
+      "allSpaces": "All spaces",
+      "account": "Account",
+      "allAccounts": "All accounts",
+      "category": "Category",
+      "allCategories": "All categories",
+      "from": "From",
+      "to": "To"
+    },
     "seeAll": "See all",
     "details": "Details",
     "history": "History",

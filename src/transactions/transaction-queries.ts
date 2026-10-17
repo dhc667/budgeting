@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
 import type { Activity } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
@@ -19,6 +25,7 @@ export function useTransactions(filter: TransactionFilter) {
     },
     getNextPageParam: (lastPage, pages) =>
       lastPage.length < pageSize ? undefined : pages.length * pageSize,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -30,7 +37,7 @@ export function useRecentTransactions(spaceIds: string[] | undefined, count: num
     enabled: spaceIds !== undefined,
     async queryFn(): Promise<Transaction[]> {
       const { data, error } = await newestFirst(
-        selectTransactions(supabase, { kind: "spaces", spaceIds: spaceIds ?? [] }),
+        selectTransactions(supabase, { spaceIds: spaceIds ?? [] }),
       ).limit(count);
       if (error) throw error;
       return data;
@@ -133,17 +140,26 @@ function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<voi
 }
 
 function selectTransactions(supabase: AppSupabase, filter: TransactionFilter) {
-  const query = supabase.from("transaction_details").select("*");
-  switch (filter.kind) {
-    case "spaces":
-      return query.overlaps("space_ids", filter.spaceIds);
-    case "account":
-      return query.or(
-        `from_account_id.eq.${filter.accountId},to_account_id.eq.${filter.accountId}`,
-      );
-    case "categories":
-      return query.in("category_id", filter.categoryIds);
-  }
+  let query = supabase.from("transaction_details").select("*");
+  if (filter.spaceIds) query = query.overlaps("space_ids", filter.spaceIds);
+  if (filter.accountId)
+    query = query.or(`from_account_id.eq.${filter.accountId},to_account_id.eq.${filter.accountId}`);
+  if (filter.categoryIds) query = query.in("category_id", filter.categoryIds);
+  if (filter.from) query = query.gte("date", filter.from);
+  if (filter.to) query = query.lte("date", filter.to);
+  if (filter.search) query = query.ilike("search_text", containing(filter.search));
+  return query;
+}
+
+// Without accents, as the view stores what searches match against, and with the wildcards the
+// user typed taken literally.
+function containing(search: string): string {
+  const plain = search
+    .trim()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[\\%_]/g, "\\$&");
+  return `%${plain}%`;
 }
 
 function newestFirst(query: ReturnType<typeof selectTransactions>) {
@@ -175,10 +191,15 @@ export type Transaction = Database["public"]["Views"]["transaction_details"]["Ro
 
 export type TransactionType = Database["public"]["Enums"]["transaction_type"];
 
-export type TransactionFilter =
-  | { kind: "spaces"; spaceIds: string[] }
-  | { kind: "account"; accountId: string }
-  | { kind: "categories"; categoryIds: string[] };
+// Each part narrows the list further; dates are inclusive.
+export type TransactionFilter = {
+  spaceIds?: string[];
+  accountId?: string;
+  categoryIds?: string[];
+  from?: string;
+  to?: string;
+  search?: string;
+};
 
 // Amounts in minor units of the account they leave or reach, always above zero.
 export type TransactionDraft = {
