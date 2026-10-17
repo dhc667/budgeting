@@ -81,7 +81,6 @@
     "netWorthStale": "El tipo de cambio de {{currency}} es del {{date}}.",
     "accounts": "Cuentas",
     "upcoming": "Próximos",
-    "upcomingPlaceholder": "Aquí irán los movimientos recurrentes pendientes de pago.",
     "budgets": "Presupuestos",
     "budgetsPlaceholder": "Aquí irá el progreso de los presupuestos.",
     "recent": "Movimientos recientes"
@@ -234,6 +233,15 @@
       "transferExchanged": "una transferencia de {{amount}} de “{{from}}” a “{{to}}”, recibida como {{received}}, el {{date}}",
       "transferToOtherSpace": "una transferencia de {{amount}} de “{{from}}” a otro espacio, el {{date}}",
       "transferFromOtherSpace": "una transferencia de {{amount}} a “{{to}}” desde otro espacio, el {{date}}"
+    },
+    "recurring": {
+      "created": "{{actor}} creó el movimiento recurrente “{{label}}”",
+      "changed": "{{actor}} cambió el movimiento recurrente “{{label}}”",
+      "deleted": "{{actor}} eliminó el movimiento recurrente “{{label}}”",
+      "paused": "{{actor}} pausó el movimiento recurrente “{{label}}”",
+      "resumed": "{{actor}} reanudó el movimiento recurrente “{{label}}”",
+      "recorded": "{{actor}} registró “{{label}}” del {{date}}",
+      "skipped": "{{actor}} omitió “{{label}}” del {{date}}"
     }
   },
   "accounts": {
@@ -530,5 +538,77 @@
   },
   "dialog": {
     "cancel": "Cancelar"
+  },
+  "recurring": {
+    "title": "Movimientos recurrentes",
+    "link": "Recurrentes",
+    "none": "Todavía no hay movimientos recurrentes. Elige Repetir al agregar un movimiento.",
+    "paused": "En pausa",
+    "ended": "Terminado",
+    "next": "Próximo: {{date}}",
+    "every": {
+      "day_one": "Cada día",
+      "day_other": "Cada {{count}} días",
+      "week_one": "Cada semana",
+      "week_other": "Cada {{count}} semanas",
+      "month_one": "Cada mes",
+      "month_other": "Cada {{count}} meses",
+      "year_one": "Cada año",
+      "year_other": "Cada {{count}} años"
+    },
+    "unit": {
+      "day": "Días",
+      "week": "Semanas",
+      "month": "Meses",
+      "year": "Años"
+    },
+    "form": {
+      "repeat": "Repetir",
+      "repeatHint": "Que vuelva a ocurrir según un calendario.",
+      "startsOn": "Empieza el",
+      "every": "Cada",
+      "unit": "Período",
+      "ends": "Termina",
+      "endsNever": "Nunca",
+      "endsOnDate": "En una fecha",
+      "endsOn": "Fecha de fin",
+      "endsAfter": "Después de una cantidad de veces",
+      "times": "Veces",
+      "saveAndRepeat": "Guardar y repetir",
+      "repeatFromThen": "Repetir desde esa fecha",
+      "nextDue": "Próximo vencimiento"
+    },
+    "errors": {
+      "loadFailed": "No se pudieron cargar los movimientos recurrentes. Revisa tu conexión e inténtalo de nuevo.",
+      "recordFailed": "No se pudo registrar. Puede que ya lo hayan registrado u omitido, o que se haya cortado tu conexión.",
+      "skipFailed": "No se pudo omitir. Puede que ya lo hayan registrado u omitido, o que se haya cortado tu conexión.",
+      "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "due": "Vence el {{date}}",
+    "skip": "Omitir",
+    "record": {
+      "title": "Registrar “{{label}}”",
+      "submit": "Registrar"
+    },
+    "notFound": "Este movimiento recurrente no existe o no está en tus espacios.",
+    "backToList": "Volver a los movimientos recurrentes",
+    "pause": {
+      "title": "Pausar",
+      "explained": "Mientras está en pausa, no vence nada.",
+      "submit": "Pausar"
+    },
+    "resume": {
+      "title": "En pausa",
+      "explained": "Al reanudarlo se omiten los que habrían vencido mientras tanto.",
+      "submit": "Reanudar"
+    },
+    "delete": {
+      "title": "Eliminar",
+      "explained": "Los movimientos que registró quedan como están.",
+      "submit": "Eliminar movimiento recurrente",
+      "confirmTitle": "¿Eliminar “{{label}}”?",
+      "confirm": "Eliminar"
+    }
   }
 }

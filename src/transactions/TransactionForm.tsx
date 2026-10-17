@@ -9,13 +9,16 @@ import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
+import type { Schedule } from "../recurring/schedule";
+import { scheduleFrom } from "../recurring/schedule-form";
+import { ScheduleFields } from "../recurring/ScheduleFields";
 import { bySpace } from "../spaces/by-space";
 import { type Space, useSpaces } from "../spaces/space-queries";
 import { isRaisedException } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
-import { submitWith, textField } from "../ui/forms";
+import { submitWithButton, textField } from "../ui/forms";
 import { Picker } from "../ui/Picker";
 import { TitleField } from "./TitleField";
 import { draftOf } from "./transaction";
@@ -32,8 +35,22 @@ type TransactionFormProps = {
   keptAccountIds: string[];
   submitLabel: string;
   mutation: { isPending: boolean; isSuccess: boolean; error: Error | null };
-  onSave: (draft: TransactionDraft) => void;
+  saving: Saving;
 };
+
+type Saving =
+  | {
+      kind: "transaction";
+      onSave: (draft: TransactionDraft) => void;
+      // Offers to repeat it instead. Its date is then where the schedule starts, and may be ahead.
+      onRepeat?: (draft: TransactionDraft, schedule: Schedule, recordFirst: boolean) => void;
+    }
+  // A recurring transaction's, whose date is when the next one is due.
+  | {
+      kind: "rule";
+      schedule: Schedule;
+      onSave: (draft: TransactionDraft, schedule: Schedule) => void;
+    };
 
 // Amounts are typed in the user's number format, so the form waits for the profile that says which.
 export function TransactionForm(props: TransactionFormProps) {
@@ -61,7 +78,7 @@ function LoadedTransactionForm({
   initial,
   submitLabel,
   mutation,
-  onSave,
+  saving,
   accounts,
   categories,
   spaces,
@@ -90,6 +107,9 @@ function LoadedTransactionForm({
   const [toAmount, setToAmount] = useState(() =>
     typedAmount(initial.toAmount, initial.toAccountId),
   );
+  const [date, setDate] = useState(initial.date);
+  const isRule = saving.kind === "rule";
+  const [repeating, setRepeating] = useState(isRule);
   const [problem, setProblem] = useState<Problem | null>(null);
 
   const type: TransactionType = tab === "expense" && refund ? "refund" : tab;
@@ -129,7 +149,7 @@ function LoadedTransactionForm({
     setToAmount(typedAmount(draft.toAmount, draft.toAccountId));
   };
 
-  const save = (form: FormData) => {
+  const save = (form: FormData, button: string | null) => {
     if (!account) return;
     const sent = format.parseAmount(amount, decimalsOf(account.id));
     const received = exchanged ? format.parseAmount(toAmount, decimalsOf(toAccount.id)) : null;
@@ -143,9 +163,9 @@ function LoadedTransactionForm({
     });
     setProblem(found);
     if (found || sent === null) return;
-    onSave({
+    const draft = {
       type,
-      date: textField(form, "date"),
+      date,
       title: title.trim(),
       note: textField(form, "note").trim(),
       accountId: account.id,
@@ -153,11 +173,19 @@ function LoadedTransactionForm({
       categoryId: category?.id ?? null,
       toAccountId: toAccount?.id ?? null,
       toAmount: received,
-    });
+    };
+    switch (saving.kind) {
+      case "rule":
+        return saving.onSave(draft, scheduleFrom(form, date));
+      case "transaction":
+        if (repeating && saving.onRepeat)
+          return saving.onRepeat(draft, scheduleFrom(form, date), button === "record");
+        return saving.onSave(draft);
+    }
   };
 
   return (
-    <form onSubmit={submitWith(save)} className="flex flex-col gap-4">
+    <form onSubmit={submitWithButton(save)} className="flex flex-col gap-4">
       <TitleField value={title} onChange={setTitle} suggestions={titles} onPick={pick} />
       <TypeTabs value={tab} onChange={setTab} />
       {tab === "expense" && (
@@ -219,14 +247,32 @@ function LoadedTransactionForm({
           placeholder={format.amount(0, decimalsOf(toAccount.id))}
         />
       )}
+      {saving.kind === "transaction" && saving.onRepeat && (
+        <label className="flex min-h-11 items-center gap-3">
+          <input
+            type="checkbox"
+            checked={repeating}
+            onChange={(event) => setRepeating(event.target.checked)}
+            className="size-5"
+          />
+          <span className="flex flex-col">
+            {t("recurring.form.repeat")}
+            <span className="text-xs text-zinc-500">{t("recurring.form.repeatHint")}</span>
+          </span>
+        </label>
+      )}
       <Field
-        label={t("transactions.form.date")}
+        label={dateLabel(isRule, repeating, t)}
         name="date"
         type="date"
-        defaultValue={initial.date}
-        max={localToday()}
+        value={date}
+        onChange={(event) => setDate(event.target.value)}
+        max={repeating ? undefined : localToday()}
         required
       />
+      {repeating && (
+        <ScheduleFields initial={saving.kind === "rule" ? saving.schedule : null} startsOn={date} />
+      )}
       <Field
         label={t("transactions.form.note")}
         name="note"
@@ -242,9 +288,29 @@ function LoadedTransactionForm({
       {mutation.isSuccess && (
         <p className="text-sm text-emerald-600">{t("transactions.form.saved")}</p>
       )}
-      <Button type="submit" disabled={mutation.isPending || !account} className="self-start">
-        {submitLabel}
-      </Button>
+      {repeating && !isRule ? (
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="submit"
+            value="record"
+            disabled={mutation.isPending || !account || date > localToday()}
+          >
+            {t("recurring.form.saveAndRepeat")}
+          </Button>
+          <Button
+            type="submit"
+            variant="secondary"
+            value="later"
+            disabled={mutation.isPending || !account}
+          >
+            {t("recurring.form.repeatFromThen")}
+          </Button>
+        </div>
+      ) : (
+        <Button type="submit" disabled={mutation.isPending || !account} className="self-start">
+          {submitLabel}
+        </Button>
+      )}
     </form>
   );
 }
@@ -368,6 +434,11 @@ function problemMessage(problem: Problem, t: TFunction, example: string): string
 function saveErrorMessage(error: Error, t: TFunction): string {
   if (isRaisedException(error)) return t("transactions.errors.saveRefused");
   return t("transactions.errors.saveFailed");
+}
+
+function dateLabel(isRule: boolean, repeating: boolean, t: TFunction): string {
+  if (isRule) return t("recurring.form.nextDue");
+  return repeating ? t("recurring.form.startsOn") : t("transactions.form.date");
 }
 
 function tabOf(type: TransactionType): Tab {

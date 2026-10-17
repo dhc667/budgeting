@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextDueDate, type Schedule } from "./schedule";
+import { firstDueFrom, nextDueDate, type Schedule } from "./schedule";
 
 function schedule(overrides: Partial<Schedule>): Schedule {
   return {
@@ -58,5 +58,18 @@ describe("the next due date", () => {
 
     expect(nextDueDate(untilMarch, 2)).toBe("2026-03-15");
     expect(nextDueDate(untilMarch, 3)).toBeNull();
+  });
+});
+
+describe("the first one due from a day on", () => {
+  it("leaves out those that fell before it, counting from the ones done", () => {
+    expect(firstDueFrom(schedule({}), 1, "2026-05-01")).toBe(4);
+    expect(firstDueFrom(schedule({}), 1, "2026-05-15")).toBe(4);
+    expect(firstDueFrom(schedule({}), 6, "2026-05-01")).toBe(6);
+  });
+
+  it("is none once the rule ends before that day", () => {
+    expect(firstDueFrom(schedule({ times: 3 }), 1, "2026-05-01")).toBeNull();
+    expect(firstDueFrom(schedule({ endsOn: "2026-04-30" }), 1, "2026-05-01")).toBeNull();
   });
 });

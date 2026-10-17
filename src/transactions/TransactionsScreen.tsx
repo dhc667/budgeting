@@ -1,4 +1,4 @@
-import { Plus, Search } from "lucide-react";
+import { Plus, Repeat, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { useAccounts } from "../accounts/account-queries";
@@ -24,13 +24,22 @@ export function TransactionsScreen() {
     <div className="flex max-w-3xl flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t("nav.transactions")}</h1>
-        <Link
-          to="/transactions/new"
-          className="flex h-11 items-center gap-2 font-medium text-emerald-700 dark:text-emerald-400"
-        >
-          <Plus className="size-5" />
-          {t("nav.addTransaction")}
-        </Link>
+        <div className="flex flex-wrap gap-4">
+          <Link
+            to="/recurring"
+            className="flex h-11 items-center gap-2 font-medium text-emerald-700 dark:text-emerald-400"
+          >
+            <Repeat className="size-5" />
+            {t("recurring.link")}
+          </Link>
+          <Link
+            to="/transactions/new"
+            className="flex h-11 items-center gap-2 font-medium text-emerald-700 dark:text-emerald-400"
+          >
+            <Plus className="size-5" />
+            {t("nav.addTransaction")}
+          </Link>
+        </div>
       </header>
       <div className="flex flex-col gap-3">
         <div className="relative">

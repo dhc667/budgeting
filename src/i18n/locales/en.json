@@ -81,7 +81,6 @@
     "netWorthStale": "{{currency}} exchange rate is from {{date}}.",
     "accounts": "Accounts",
     "upcoming": "Upcoming",
-    "upcomingPlaceholder": "Recurring transactions waiting to be paid go here.",
     "budgets": "Budgets",
     "budgetsPlaceholder": "Budget progress goes here.",
     "recent": "Recent transactions"
@@ -234,6 +233,15 @@
       "transferExchanged": "a transfer of {{amount}} from “{{from}}” to “{{to}}”, received as {{received}}, on {{date}}",
       "transferToOtherSpace": "a transfer of {{amount}} from “{{from}}” to another space, on {{date}}",
       "transferFromOtherSpace": "a transfer of {{amount}} into “{{to}}” from another space, on {{date}}"
+    },
+    "recurring": {
+      "created": "{{actor}} created the recurring transaction “{{label}}”",
+      "changed": "{{actor}} changed the recurring transaction “{{label}}”",
+      "deleted": "{{actor}} deleted the recurring transaction “{{label}}”",
+      "paused": "{{actor}} paused the recurring transaction “{{label}}”",
+      "resumed": "{{actor}} resumed the recurring transaction “{{label}}”",
+      "recorded": "{{actor}} recorded “{{label}}” due {{date}}",
+      "skipped": "{{actor}} skipped “{{label}}” due {{date}}"
     }
   },
   "accounts": {
@@ -530,5 +538,77 @@
   },
   "dialog": {
     "cancel": "Cancel"
+  },
+  "recurring": {
+    "title": "Recurring transactions",
+    "link": "Recurring",
+    "none": "No recurring transactions yet. Pick Repeat when adding a transaction.",
+    "paused": "Paused",
+    "ended": "Ended",
+    "next": "Next {{date}}",
+    "every": {
+      "day_one": "Every day",
+      "day_other": "Every {{count}} days",
+      "week_one": "Every week",
+      "week_other": "Every {{count}} weeks",
+      "month_one": "Every month",
+      "month_other": "Every {{count}} months",
+      "year_one": "Every year",
+      "year_other": "Every {{count}} years"
+    },
+    "unit": {
+      "day": "Days",
+      "week": "Weeks",
+      "month": "Months",
+      "year": "Years"
+    },
+    "form": {
+      "repeat": "Repeat",
+      "repeatHint": "Make it happen again on a schedule.",
+      "startsOn": "Starts on",
+      "every": "Every",
+      "unit": "Period",
+      "ends": "Ends",
+      "endsNever": "Never",
+      "endsOnDate": "On a date",
+      "endsOn": "End date",
+      "endsAfter": "After a number of times",
+      "times": "Times",
+      "saveAndRepeat": "Save and repeat",
+      "repeatFromThen": "Repeat from then",
+      "nextDue": "Next due"
+    },
+    "errors": {
+      "loadFailed": "Couldn't load recurring transactions. Check your connection and try again.",
+      "recordFailed": "Couldn't record it. It may have been recorded or skipped already, or your connection dropped.",
+      "skipFailed": "Couldn't skip it. It may have been recorded or skipped already, or your connection dropped.",
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete it. Check your connection and try again."
+    },
+    "due": "Due {{date}}",
+    "skip": "Skip",
+    "record": {
+      "title": "Record “{{label}}”",
+      "submit": "Record"
+    },
+    "notFound": "This recurring transaction doesn't exist, or isn't in your spaces.",
+    "backToList": "Back to recurring transactions",
+    "pause": {
+      "title": "Pause",
+      "explained": "Nothing comes due while it's paused.",
+      "submit": "Pause"
+    },
+    "resume": {
+      "title": "Paused",
+      "explained": "Resuming it leaves out the ones that would have come due meanwhile.",
+      "submit": "Resume"
+    },
+    "delete": {
+      "title": "Delete",
+      "explained": "The transactions it recorded stay as they are.",
+      "submit": "Delete recurring transaction",
+      "confirmTitle": "Delete “{{label}}”?",
+      "confirm": "Delete"
+    }
   }
 }
