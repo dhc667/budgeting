@@ -9,7 +9,7 @@ import type { Enums } from "../../src/supabase/database.types.ts";
 process.loadEnvFile(".env.instance.local");
 const env = (name: string) => process.env[name] ?? "";
 
-const instance: Instance = {
+export const instance: Instance = {
   supabaseUrl: env("SUPABASE_URL"),
   publishableKey: env("SUPABASE_PUBLISHABLE_KEY"),
 };

@@ -9,7 +9,7 @@ import { deviceLanguage, languageNames, languages } from "../i18n/languages";
 import { useInstance, useSupabase } from "../instance/instance-context";
 import { CurrencySelect } from "../money/CurrencySelect";
 import { useLatestRates } from "../rates/rate-queries";
-import { signOutHere } from "../supabase/client";
+import { useSignOut } from "../sync/sign-out";
 import { isCheckViolation, refusalReason } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -208,10 +208,10 @@ function PasswordForm() {
 
 function DeviceCard() {
   const { t } = useTranslation();
-  const supabase = useSupabase();
   const { instance, disconnect } = useInstance();
+  const signOut = useSignOut();
   const signOutAndDisconnect = async () => {
-    await signOutHere(supabase);
+    await signOut();
     disconnect();
   };
 
@@ -221,7 +221,7 @@ function DeviceCard() {
         {instance && t("instance.connectedTo", { host: new URL(instance.supabaseUrl).host })}
       </p>
       <div className="flex flex-wrap gap-3">
-        <Button variant="secondary" onClick={() => void signOutHere(supabase)}>
+        <Button variant="secondary" onClick={() => void signOut()}>
           {t("auth.signOut")}
         </Button>
         <Button variant="secondary" onClick={() => void signOutAndDisconnect()}>
