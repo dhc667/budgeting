@@ -59,8 +59,8 @@ function LoadedBudgetForm({
   const [currency, setCurrency] = useState(initial.currency);
   const [length, setLength] = useState<LengthKind>(initial.length.kind);
   const [startsOn, setStartsOn] = useState(initial.startsOn);
-  const [categoryIds, setCategoryIds] = useState(initial.categoryIds ?? []);
-  const [accountIds, setAccountIds] = useState(initial.accountIds ?? []);
+  const [categoryIds, setCategoryIds] = useState(initial.categoryIds);
+  const [accountIds, setAccountIds] = useState(initial.accountIds);
   const [amountInvalid, setAmountInvalid] = useState(false);
   const decimals = currencies.find(({ code }) => code === currency)?.decimals ?? 2;
   const offeredCategories = categories.filter(
@@ -68,25 +68,19 @@ function LoadedBudgetForm({
   );
   const offeredAccounts = accounts.filter(
     (account) =>
-      account.space_id === spaceId && (!account.archived || accountIds.includes(account.id)),
+      account.space_id === spaceId && (!account.archived || accountIds?.includes(account.id)),
   );
   const repeat = initial.length.kind === "repeating" ? initial.length : null;
   const endsOn = initial.length.kind === "fixed" ? initial.length.endsOn : "";
 
   const save = (form: FormData) => {
-    const amount = format.parseAmount(textField(form, "amount"), decimals);
-    setAmountInvalid(amount === null || amount <= 0);
-    if (amount === null || amount <= 0) return;
-    const chosenCategories = categoryIds.filter((id) =>
-      offeredCategories.some((category) => category.id === id),
-    );
-    const chosenAccounts = accountIds.filter((id) =>
-      offeredAccounts.some((account) => account.id === id),
-    );
+    const limit = format.parseAmount(textField(form, "amount"), decimals);
+    setAmountInvalid(limit === null || limit <= 0);
+    if (limit === null || limit <= 0) return;
     onSave({
       name: textField(form, "name").trim(),
       currency,
-      amount,
+      limit,
       startsOn,
       length:
         length === "repeating"
@@ -98,8 +92,8 @@ function LoadedBudgetForm({
           : { kind: "fixed", endsOn: textField(form, "endsOn") },
       carryUnspent: form.has("carryUnspent"),
       carryOverspent: form.has("carryOverspent"),
-      categoryIds: chosenCategories.length === 0 ? null : chosenCategories,
-      accountIds: chosenAccounts.length === 0 ? null : chosenAccounts,
+      categoryIds: offeredOnly(categoryIds, offeredCategories),
+      accountIds: offeredOnly(accountIds, offeredAccounts),
     });
   };
 
@@ -122,8 +116,8 @@ function LoadedBudgetForm({
         autoComplete="off"
         required
         defaultValue={
-          currency === initial.currency && initial.amount > 0
-            ? format.amount(initial.amount, decimals)
+          currency === initial.currency && initial.limit > 0
+            ? format.amount(initial.limit, decimals)
             : ""
         }
         placeholder={format.amount(0, decimals)}
@@ -191,17 +185,17 @@ function LoadedBudgetForm({
       <ChecklistField
         label={t("budgets.form.categories")}
         groups={[{ heading: null, options: categoryOptions(offeredCategories) }]}
-        value={categoryIds}
-        onChange={setCategoryIds}
-        none={t("budgets.form.allCategories")}
+        value={categoryIds ?? []}
+        onChange={(ids) => setCategoryIds(allIfNone(ids))}
+        none={categoryIds ? t("budgets.form.noCategories") : t("budgets.form.allCategories")}
         several={(count) => t("budgets.form.someCategories", { count })}
       />
       <ChecklistField
         label={t("budgets.form.accounts")}
         groups={[{ heading: null, options: offeredAccounts.map(accountOption) }]}
-        value={accountIds}
-        onChange={setAccountIds}
-        none={t("budgets.form.allAccounts")}
+        value={accountIds ?? []}
+        onChange={(ids) => setAccountIds(allIfNone(ids))}
+        none={accountIds ? t("budgets.form.noAccounts") : t("budgets.form.allAccounts")}
         several={(count) => t("budgets.form.someAccounts", { count })}
       />
       {length === "repeating" && (
@@ -252,6 +246,16 @@ function CarryOverChoice({ name, defaultChecked, label, hint }: CarryOverChoiceP
       </span>
     </label>
   );
+}
+
+// Choosing none means all of them. Only deleting every chosen one leaves a budget covering none,
+// which the form keeps rather than widening it to all on an unrelated edit.
+function allIfNone(ids: string[]): string[] | null {
+  return ids.length === 0 ? null : ids;
+}
+
+function offeredOnly(ids: string[] | null, offered: { id: string }[]): string[] | null {
+  return ids && ids.filter((id) => offered.some((each) => each.id === id));
 }
 
 function lengthName(kind: LengthKind, t: TFunction): string {

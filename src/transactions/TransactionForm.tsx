@@ -204,7 +204,7 @@ function LoadedTransactionForm({
           return saving.onRepeat(draft, scheduleFrom(form, date), button === "record");
         return saving.onSave(
           draft,
-          excludedBudgetIds.filter((id) => countedIn.some((budget) => budget.id === id)),
+          keptExclusions(excludedBudgetIds, countedIn, saving.excludedBudgetIds),
         );
     }
   };
@@ -347,6 +347,14 @@ function LoadedTransactionForm({
         </Button>
       )}
     </form>
+  );
+}
+
+// One left out of a budget it no longer counts toward stays left out, rather than its History saying
+// it counts again, and stays out should the transaction come back to it.
+function keptExclusions(excluded: string[], countedIn: Budget[], stored: string[]): string[] {
+  return excluded.filter(
+    (id) => countedIn.some((budget) => budget.id === id) || stored.includes(id),
   );
 }
 

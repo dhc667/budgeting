@@ -3,7 +3,7 @@ import { type BudgetPlan, budgetPeriods, currentPeriod, dailyAllowance } from ".
 
 function monthly(overrides: Partial<BudgetPlan> = {}): BudgetPlan {
   return {
-    amount: 100_00,
+    limit: 100_00,
     startsOn: "2026-01-25",
     length: { kind: "repeating", every: 1, unit: "month" },
     carryUnspent: false,

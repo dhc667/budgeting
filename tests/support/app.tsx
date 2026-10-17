@@ -87,6 +87,7 @@ type NewTransaction = {
   category?: string;
   to?: string;
   title?: string;
+  date?: string;
 };
 
 // Through the app's own form, landing on the transactions list.
@@ -97,9 +98,14 @@ export async function recordTransaction({
   category,
   to,
   title,
+  date,
 }: NewTransaction) {
   await openNewTransaction();
   if (title) await user.type(screen.getByLabelText("Title"), title);
+  if (date) {
+    await user.clear(screen.getByLabelText("Date"));
+    await user.type(screen.getByLabelText("Date"), date);
+  }
   if (type === "Refund") await user.click(screen.getByLabelText(/Refund/));
   else if (type) await user.click(screen.getByRole("tab", { name: type }));
   await user.type(screen.getByLabelText("Amount"), amount);

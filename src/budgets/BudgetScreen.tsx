@@ -18,6 +18,7 @@ import { ErrorText } from "../ui/ErrorText";
 import {
   type Budget,
   detailsOf,
+  repeatOf,
   useBudgetHistory,
   useBudgetProgress,
   useBudgets,
@@ -25,7 +26,7 @@ import {
   useUpdateBudget,
 } from "./budget-queries";
 import { BudgetForm } from "./BudgetForm";
-import { BudgetSummary } from "./BudgetSummary";
+import { BudgetSummary, SpendingBar } from "./BudgetSummary";
 import type { PeriodProgress } from "./periods";
 
 export function BudgetScreen() {
@@ -58,10 +59,8 @@ export function BudgetScreen() {
 
 function lengthDescription(budget: Budget, spaces: Space[], t: TFunction): string {
   const space = spaces.find(({ id }) => id === budget.space_id);
-  const length =
-    budget.every !== null && budget.unit !== null
-      ? scheduleName({ every: budget.every, unit: budget.unit }, t)
-      : t("budgets.fixed");
+  const repeat = repeatOf(budget);
+  const length = repeat ? scheduleName(repeat, t) : t("budgets.fixed");
   return space ? `${length} · ${spaceName(space, t)}` : length;
 }
 
@@ -83,7 +82,7 @@ function PastPeriodsCard({ budget }: { budget: Budget }) {
   const progress = useBudgetProgress(budget);
   const today = localToday();
   const past =
-    budget.every === null ? [] : (progress?.periods.filter(({ end }) => end < today) ?? []);
+    repeatOf(budget) === null ? [] : (progress?.periods.filter(({ end }) => end < today) ?? []);
   if (past.length === 0) return null;
 
   return (
@@ -91,7 +90,7 @@ function PastPeriodsCard({ budget }: { budget: Budget }) {
       <ol className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
         {[...past].reverse().map((period) => (
           <li key={period.start}>
-            <PastPeriod period={period} currency={budget.currency} />
+            <PastPeriod period={period} budget={budget} />
           </li>
         ))}
       </ol>
@@ -99,31 +98,45 @@ function PastPeriodsCard({ budget }: { budget: Budget }) {
   );
 }
 
-function PastPeriod({ period, currency }: { period: PeriodProgress; currency: string }) {
+function PastPeriod({ period, budget }: { period: PeriodProgress; budget: Budget }) {
   const { t } = useTranslation();
   const format = useFormat();
   const money = useMoney();
   const over = period.spent > period.limit;
+  const share = spentShare(period, budget.amount);
   return (
-    <div className="flex items-center justify-between gap-3 py-2">
-      <span className="flex flex-col">
-        <span>
-          {t("budgets.period", { start: format.day(period.start), end: format.day(period.end) })}
+    <div className="flex flex-col gap-2 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex flex-col">
+          <span>
+            {t("budgets.period", { start: format.day(period.start), end: format.day(period.end) })}
+          </span>
+          <span className="text-sm text-zinc-500 tabular-nums">
+            {t("budgets.spentOfLimit", {
+              spent: money(period.spent, budget.currency),
+              limit: money(period.limit, budget.currency),
+            })}
+          </span>
         </span>
-        <span className="text-sm text-zinc-500 tabular-nums">
-          {t("budgets.spentOfLimit", {
-            spent: money(period.spent, currency),
-            limit: money(period.limit, currency),
-          })}
+        <span
+          className={`shrink-0 text-sm font-medium tabular-nums ${over ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}
+        >
+          {format.percent(share)}
         </span>
-      </span>
-      <span
-        className={`shrink-0 text-sm font-medium ${over ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}
-      >
-        {over ? t("budgets.endedOverShort") : t("budgets.endedUnderShort")}
-      </span>
+      </div>
+      <SpendingBar share={share} over={over} thin />
     </div>
   );
+}
+
+// What was spent less what was carried in, so overspending carried in adds to it and unspent money
+// takes from it, below zero if need be. A share of the budget's own limit, so that a period whose
+// limit carry-over took to zero or below still has one. Over 100% exactly when the period went over
+// its limit, and rounded away from 100% so that 100% means the limit went exactly.
+function spentShare({ spent, limit }: PeriodProgress, budgetLimit: number): number {
+  const carriedIn = limit - budgetLimit;
+  const percent = ((spent - carriedIn) * 100) / budgetLimit;
+  return (spent > limit ? Math.ceil(percent) : Math.floor(percent)) / 100;
 }
 
 function EditCard({ budget }: { budget: Budget }) {

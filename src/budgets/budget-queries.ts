@@ -7,6 +7,7 @@ import { useCurrencies } from "../money/currency-queries";
 import { convertOn, type RateHistory } from "../rates/convert";
 import type { Activity, Space } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
+import type { Repeat } from "../recurring/schedule";
 import type { Database } from "../supabase/database";
 import {
   type BudgetPlan,
@@ -272,17 +273,17 @@ function useBudgetMutation<Input, Output>(mutationFn: (input: Input) => Promise<
 }
 
 function detailsColumns(details: BudgetDetails) {
-  const repeating = details.length.kind === "repeating";
+  const repeat = details.length.kind === "repeating" ? details.length : null;
   return {
     name: details.name,
     currency: details.currency,
-    amount: details.amount,
+    amount: details.limit,
     starts_on: details.startsOn,
     ends_on: details.length.kind === "fixed" ? details.length.endsOn : null,
-    every: details.length.kind === "repeating" ? details.length.every : null,
-    unit: details.length.kind === "repeating" ? details.length.unit : null,
-    carry_unspent: repeating && details.carryUnspent,
-    carry_overspent: repeating && details.carryOverspent,
+    every: repeat?.every ?? null,
+    unit: repeat?.unit ?? null,
+    carry_unspent: repeat !== null && details.carryUnspent,
+    carry_overspent: repeat !== null && details.carryOverspent,
     category_ids: details.categoryIds,
     account_ids: details.accountIds,
   };
@@ -299,16 +300,21 @@ export function detailsOf(budget: Budget): BudgetDetails {
 }
 
 function planOf(budget: Budget): BudgetPlan {
+  const repeat = repeatOf(budget);
   return {
-    amount: budget.amount,
+    limit: budget.amount,
     startsOn: budget.starts_on,
-    length:
-      budget.every !== null && budget.unit !== null
-        ? { kind: "repeating", every: budget.every, unit: budget.unit }
-        : { kind: "fixed", endsOn: budget.ends_on ?? budget.starts_on },
+    length: repeat
+      ? { kind: "repeating", ...repeat }
+      : { kind: "fixed", endsOn: budget.ends_on ?? budget.starts_on },
     carryUnspent: budget.carry_unspent,
     carryOverspent: budget.carry_overspent,
   };
+}
+
+// Null for a budget that runs between two dates.
+export function repeatOf({ every, unit }: Budget): Repeat | null {
+  return every !== null && unit !== null ? { every, unit } : null;
 }
 
 export type Budget = Database["public"]["Tables"]["budgets"]["Row"];
