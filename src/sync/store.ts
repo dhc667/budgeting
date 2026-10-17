@@ -1,21 +1,12 @@
 import { type DBSchema, deleteDB, type IDBPDatabase, openDB } from "idb";
 import {
-  buildCopy,
   type Delta,
   type LocalCopy,
-  type Row,
+  type Meta,
+  type RowOf,
   type SyncedTable,
   syncedTables,
 } from "./copy";
-
-export type CopyStore = {
-  load: (schemaVersion: number) => Promise<LocalCopy | null>;
-  // Rows, deletions and the version reached go in one transaction, so a crash can't leave a
-  // version ahead of its rows.
-  save: (copy: LocalCopy, delta: Delta) => Promise<void>;
-  clear: () => Promise<void>;
-  close: () => void;
-};
 
 export async function openCopyStore(name: string): Promise<CopyStore> {
   const db = await openDB<CopySchema>(name, 1, {
@@ -23,7 +14,7 @@ export async function openCopyStore(name: string): Promise<CopyStore> {
       for (const table of syncedTables) upgrading.createObjectStore(table);
       upgrading.createObjectStore(metaStore);
     },
-    // Deleting the copy (signing out) must not wait for this connection.
+    // Deleting the database (signing out) waits for open connections, so this one must give way.
     blocking() {
       db.close();
     },
@@ -41,15 +32,6 @@ export function deleteCopy(name: string): Promise<void> {
   return deleteDB(name);
 }
 
-const metaStore = "meta";
-const metaKey = "state";
-
-type Meta = Pick<LocalCopy, "version" | "spaceIds" | "schemaVersion">;
-
-type CopySchema = DBSchema & { [Table in SyncedTable]: { key: string; value: Row } } & {
-  [metaStore]: { key: string; value: Meta };
-};
-
 async function load(
   db: IDBPDatabase<CopySchema>,
   schemaVersion: number,
@@ -62,13 +44,32 @@ async function load(
     return null;
   }
 
-  const rows = new Map<SyncedTable, Map<string, Row>>();
-  for (const table of syncedTables) {
-    const stored = new Map<string, Row>();
-    for await (const cursor of tx.objectStore(table)) stored.set(cursor.key, cursor.value);
-    rows.set(table, stored);
-  }
-  return buildCopy(meta, (table) => rows.get(table) ?? new Map());
+  return {
+    ...meta,
+    rows: {
+      currencies: await readAll(tx.objectStore("currencies")),
+      exchange_rates: await readAll(tx.objectStore("exchange_rates")),
+      exchange_rate_history_starts: await readAll(tx.objectStore("exchange_rate_history_starts")),
+      profiles: await readAll(tx.objectStore("profiles")),
+      spaces: await readAll(tx.objectStore("spaces")),
+      space_members: await readAll(tx.objectStore("space_members")),
+      activity: await readAll(tx.objectStore("activity")),
+      ledger_accounts: await readAll(tx.objectStore("ledger_accounts")),
+      transactions: await readAll(tx.objectStore("transactions")),
+      postings: await readAll(tx.objectStore("postings")),
+      recurring_transactions: await readAll(tx.objectStore("recurring_transactions")),
+      budgets: await readAll(tx.objectStore("budgets")),
+      budget_exclusions: await readAll(tx.objectStore("budget_exclusions")),
+    },
+  };
+}
+
+async function readAll<Row>(
+  store: AsyncIterable<{ key: string; value: Row }>,
+): Promise<Map<string, Row>> {
+  const rows = new Map<string, Row>();
+  for await (const cursor of store) rows.set(cursor.key, cursor.value);
+  return rows;
 }
 
 async function save(db: IDBPDatabase<CopySchema>, copy: LocalCopy, delta: Delta) {
@@ -77,10 +78,32 @@ async function save(db: IDBPDatabase<CopySchema>, copy: LocalCopy, delta: Delta)
   await Promise.all([
     ...(delta.startedOver ? syncedTables.map((table) => tx.objectStore(table).clear()) : []),
     ...delta.removed.map(({ table, key }) => tx.objectStore(table).delete(key)),
-    ...delta.written.map(({ table, key, row }) => tx.objectStore(table).put(row, key)),
+    putAll(tx.objectStore("currencies"), delta.written.currencies),
+    putAll(tx.objectStore("exchange_rates"), delta.written.exchange_rates),
+    putAll(
+      tx.objectStore("exchange_rate_history_starts"),
+      delta.written.exchange_rate_history_starts,
+    ),
+    putAll(tx.objectStore("profiles"), delta.written.profiles),
+    putAll(tx.objectStore("spaces"), delta.written.spaces),
+    putAll(tx.objectStore("space_members"), delta.written.space_members),
+    putAll(tx.objectStore("activity"), delta.written.activity),
+    putAll(tx.objectStore("ledger_accounts"), delta.written.ledger_accounts),
+    putAll(tx.objectStore("transactions"), delta.written.transactions),
+    putAll(tx.objectStore("postings"), delta.written.postings),
+    putAll(tx.objectStore("recurring_transactions"), delta.written.recurring_transactions),
+    putAll(tx.objectStore("budgets"), delta.written.budgets),
+    putAll(tx.objectStore("budget_exclusions"), delta.written.budget_exclusions),
     tx.objectStore(metaStore).put({ version, spaceIds, schemaVersion }, metaKey),
     tx.done,
   ]);
+}
+
+function putAll<Row>(
+  store: { put: (row: Row, key: string) => Promise<unknown> },
+  rows: ReadonlyMap<string, Row> | undefined,
+): Promise<unknown> {
+  return Promise.all([...(rows ?? [])].map(([key, row]) => store.put(row, key)));
 }
 
 async function clear(db: IDBPDatabase<CopySchema>) {
@@ -91,3 +114,19 @@ async function clear(db: IDBPDatabase<CopySchema>) {
     tx.done,
   ]);
 }
+
+export type CopyStore = {
+  load: (schemaVersion: number) => Promise<LocalCopy | null>;
+  // Rows, deletions and the version reached go in one transaction, so a crash can't leave a
+  // version ahead of its rows.
+  save: (copy: LocalCopy, delta: Delta) => Promise<void>;
+  clear: () => Promise<void>;
+  close: () => void;
+};
+
+const metaStore = "meta";
+const metaKey = "state";
+
+type CopySchema = DBSchema & { [Table in SyncedTable]: { key: string; value: RowOf<Table> } } & {
+  [metaStore]: { key: string; value: Meta };
+};
