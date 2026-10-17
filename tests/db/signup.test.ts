@@ -109,6 +109,25 @@ describe("profiles", () => {
     expect(await sql`select display_currency from profiles where id = ${anaId}`).toEqual(before);
   });
 
+  it("lets a user choose how far ahead the dashboard shows upcoming transactions", async () => {
+    const before = await ana.from("profiles").select("upcoming_days").eq("id", anaId).single();
+
+    const { error } = await ana.from("profiles").update({ upcoming_days: 14 }).eq("id", anaId);
+
+    expect(before.data).toEqual({ upcoming_days: 7 });
+    expect(error).toBeNull();
+    const after = await ana.from("profiles").select("upcoming_days").eq("id", anaId).single();
+    expect(after.data).toEqual({ upcoming_days: 14 });
+  });
+
+  it("looks no further ahead for upcoming transactions than a year, nor behind today", async () => {
+    const calls = await Promise.all(
+      [-1, 366].map((days) => ana.from("profiles").update({ upcoming_days: days }).eq("id", anaId)),
+    );
+
+    expect(calls.map(({ error }) => error?.code)).toEqual(["23514", "23514"]);
+  });
+
   it("hides invite codes from users", async () => {
     const { data } = await ana.from("invite_codes").select("code_hash");
 

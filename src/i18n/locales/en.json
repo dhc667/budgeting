@@ -609,6 +609,12 @@
       "submit": "Delete recurring transaction",
       "confirmTitle": "Delete “{{label}}”?",
       "confirm": "Delete"
+    },
+    "upcomingDays": {
+      "label": "Show on the dashboard",
+      "dueOnly": "What's due",
+      "within_one": "Due within {{count}} day",
+      "within_other": "Due within {{count}} days"
     }
   }
 }

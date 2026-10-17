@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { type Category, useCategories } from "../categories/category-queries";
-import { localToday } from "../format/days";
+import { daysAfter, localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
+import { useProfile } from "../profile/profile-queries";
 import { useShownSpaces } from "../spaces/space-picker";
 import { transactionLabel } from "../transactions/transaction";
 import { TransactionSummary } from "../transactions/TransactionList";
@@ -13,28 +14,31 @@ import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
-import { asTransaction, dueUpcoming } from "./recurring";
+import { asTransaction, upcomingBy } from "./recurring";
 import {
   type Upcoming,
   useRecordUpcoming,
   useRecurringTransactions,
   useSkipUpcoming,
 } from "./recurring-queries";
+import { UpcomingDaysField } from "./UpcomingDaysField";
 
-// Shown only while something is due: it stands in for a notification.
+// Shown only while something is due soon enough: it stands in for a notification.
 export function UpcomingCard() {
   const { t } = useTranslation();
+  const { data: profile } = useProfile();
   const shownSpaces = useShownSpaces();
   const { data: rules } = useRecurringTransactions();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
-  if (!shownSpaces || !rules || !accounts || !categories) return null;
+  if (!profile || !shownSpaces || !rules || !accounts || !categories) return null;
   const shown = rules.filter((rule) => shownSpaces.some(({ id }) => id === rule.space_id));
-  const due = dueUpcoming(shown, localToday());
+  const due = upcomingBy(shown, daysAfter(localToday(), profile.upcoming_days));
   if (due.length === 0) return null;
 
   return (
     <Card title={t("dashboard.upcoming")}>
+      <UpcomingDaysField />
       <ul className="-mx-2 flex flex-col">
         {due.map((upcoming) => (
           <li key={upcoming.rule.id}>

@@ -14,6 +14,7 @@ import {
   useRecurringTransactions,
 } from "./recurring-queries";
 import { nextDueDate } from "./schedule";
+import { UpcomingDaysField } from "./UpcomingDaysField";
 
 export function RecurringScreen() {
   const { t } = useTranslation();
@@ -27,6 +28,9 @@ export function RecurringScreen() {
         <BackLink to="/transactions" place={t("nav.transactions")} />
         <h1 className="text-2xl font-semibold">{t("recurring.title")}</h1>
       </header>
+      <div className="max-w-xs">
+        <UpcomingDaysField />
+      </div>
       {error && <ErrorText>{t("recurring.errors.loadFailed")}</ErrorText>}
       {rules &&
         accounts &&

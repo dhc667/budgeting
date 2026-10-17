@@ -19,7 +19,7 @@ A person who can sign in to an instance. A user who has changed anything in a sp
 _Avoid_: account, member (when meaning a login)
 
 **Profile**:
-A user's name and display currency, visible to everyone in the instance, plus their language and how numbers and dates look. Each of those three can be left on Automatic, which follows the device.
+A user's name and display currency, visible to everyone in the instance, plus their language and how numbers and dates look. Each of those three can be left on Automatic, which follows the device. It also holds how many days ahead the dashboard shows upcoming transactions, 7 unless they choose otherwise.
 
 **Invite code**:
 A one-time, expiring code, issued by the instance owner and delivered as a QR code, that lets one person sign up as a user.

@@ -5,6 +5,7 @@ import {
   addAccount,
   choose,
   goHome,
+  openApp,
   openNewTransaction,
   openSignedIn,
   uniqueName,
@@ -131,6 +132,28 @@ describe("recurring transactions", () => {
 
     await screen.findByRole("heading", { name: "Recurring transactions", level: 1 });
     expect(await screen.findByText(/No recurring transactions yet/)).toBeTruthy();
+  });
+
+  it("shows on the dashboard what's due in the next 7 days, or as far ahead as chosen", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await repeatFrom(daysAgo(-3), { title: "Insurance", amount: "20" });
+
+    await goHome();
+    const upcoming = within(await screen.findByRole("region", { name: "Upcoming" }));
+    expect(upcoming.getByText("Insurance")).toBeTruthy();
+    await user.selectOptions(upcoming.getByLabelText("Show on the dashboard"), "What's due");
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Upcoming" })).toBeNull());
+
+    cleanup();
+    openApp("http://localhost:3000/#/recurring");
+    await screen.findByRole("heading", { name: "Recurring transactions", level: 1 });
+    const showing = await screen.findByLabelText("Show on the dashboard");
+    expect(showing).toHaveProperty("value", "0");
+    await user.selectOptions(showing, "Due within 14 days");
+    await waitFor(() => expect(showing).toHaveProperty("value", "14"));
+    await goHome();
+    expect(await screen.findByRole("region", { name: "Upcoming" })).toBeTruthy();
   });
 });
 

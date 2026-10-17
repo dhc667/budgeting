@@ -609,6 +609,12 @@
       "submit": "Eliminar movimiento recurrente",
       "confirmTitle": "¿Eliminar “{{label}}”?",
       "confirm": "Eliminar"
+    },
+    "upcomingDays": {
+      "label": "Mostrar en el inicio",
+      "dueOnly": "Lo que ya vence",
+      "within_one": "Lo que vence en {{count}} día",
+      "within_other": "Lo que vence en {{count}} días"
     }
   }
 }

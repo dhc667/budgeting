@@ -195,14 +195,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"date_format": Database["public"]['Enums']["date_format"] | null,"display_currency": string,"display_name": string,"id": string,"language": Database["public"]['Enums']["language"] | null,"number_format": Database["public"]['Enums']["number_format"] | null
+                    "created_at": string,"date_format": Database["public"]['Enums']["date_format"] | null,"display_currency": string,"display_name": string,"id": string,"language": Database["public"]['Enums']["language"] | null,"number_format": Database["public"]['Enums']["number_format"] | null,"upcoming_days": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name": string,"id": string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null
+                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name": string,"id": string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null,"upcoming_days"?: number
                   }
                   Update: {
-                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name"?: string,"id"?: string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null
+                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name"?: string,"id"?: string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null,"upcoming_days"?: number
                   }
                   Relationships: [
                     {
