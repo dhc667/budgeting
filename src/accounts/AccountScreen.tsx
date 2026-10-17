@@ -1,7 +1,6 @@
-import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { localToday } from "../format/days";
 import { useMoney } from "../money/use-money";
 import { afterSuccess } from "../query-client";
@@ -12,6 +11,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
+import { ScreenLink, ScreenLinks } from "../ui/ScreenLinks";
 import {
   type Account,
   useArchiveAccount,
@@ -51,29 +51,14 @@ export function AccountScreen() {
           {money(account.balance, account.currency)}
         </p>
       </Card>
-      <nav
-        aria-label={account.name}
-        className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900"
-      >
+      <ScreenLinks label={account.name}>
         <ScreenLink to={`/accounts/${account.id}/transactions`} label={t("transactions.title")} />
         <ScreenLink to={`/accounts/${account.id}/history`} label={t("accounts.history")} />
-      </nav>
+      </ScreenLinks>
       <EditCard account={account} />
       <ArchiveCard account={account} />
       <DeleteCard account={account} />
     </div>
-  );
-}
-
-function ScreenLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 py-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800"
-    >
-      {label}
-      <ChevronRight aria-hidden className="size-5 text-zinc-400" />
-    </Link>
   );
 }
 

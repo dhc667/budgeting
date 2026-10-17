@@ -125,10 +125,34 @@ describe("categories", () => {
 
     expect(await details.findByText("Saved.")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Supermarket", level: 1 })).toBeTruthy();
-    const history = within(screen.getByRole("region", { name: "History" }));
+    await user.click(screen.getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("heading", { name: "History", level: 1 })).toBeTruthy();
     expect(
-      await history.findByText(`${ana} renamed the category “Groceries” to “Supermarket”`),
+      await screen.findByText(`${ana} renamed the category “Groceries” to “Supermarket”`),
     ).toBeTruthy();
+  });
+
+  it("lists a category's transactions, its subcategories' too, on a screen of their own", async () => {
+    const family = uniqueName("Family");
+    const signedIn = await openSignedIn(uniqueName("Ana"));
+    await createSharedSpace(family, []);
+    const client = await signedInAs(signedIn.email);
+    await addSubcategory(client, await categoryIn(client, family, "Groceries"), "Cakes");
+    reopenAt("/");
+    await addAccount({ name: "Checking", space: family, openingBalance: "" });
+    await recordTransaction({ amount: "5", category: "Groceries › Cakes", title: "Birthday" });
+    await recordTransaction({ amount: "7", category: "Gifts", title: "Present" });
+    await openCategory(family, "Groceries");
+    expect(screen.queryByRole("link", { name: /Birthday/ })).toBeNull();
+
+    const category = within(screen.getByRole("navigation", { name: "Groceries" }));
+    await user.click(category.getByRole("link", { name: "Transactions" }));
+
+    expect(await screen.findByRole("heading", { name: "Transactions", level: 1 })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: /Birthday/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Present/ })).toBeNull();
+    await user.click(screen.getByRole("link", { name: "Back to Groceries" }));
+    expect(await screen.findByRole("heading", { name: "Groceries", level: 1 })).toBeTruthy();
   });
 
   it("deletes a category without transactions once confirmed", async () => {
@@ -161,11 +185,12 @@ describe("categories", () => {
     await user.click(confirm);
 
     const moved = `${ana} deleted the category “Eating out” and moved its transaction to “Groceries”`;
-    const activity = within(await screen.findByRole("region", { name: "Activity" }));
-    expect(await activity.findByText(moved)).toBeTruthy();
-    await user.click(screen.getByRole("link", { name: "Groceries" }));
-    const history = within(await screen.findByRole("region", { name: "History" }));
-    expect(await history.findByText(moved)).toBeTruthy();
+    await user.click(await screen.findByRole("link", { name: "Activity" }));
+    expect(await screen.findByText(moved)).toBeTruthy();
+    await user.click(screen.getByRole("link", { name: `Back to ${family}` }));
+    await user.click(await screen.findByRole("link", { name: "Groceries" }));
+    await user.click(await screen.findByRole("link", { name: "History" }));
+    expect(await screen.findByText(moved)).toBeTruthy();
   });
 
   it("offers a subcategory's parent for its transactions, until it has none", async () => {
