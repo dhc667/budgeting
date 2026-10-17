@@ -67,7 +67,12 @@ describe("accounts", () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "" });
     await addAccount({ name: "Checking", openingBalance: "" });
-    await recordTransaction({ amount: "9", account: "Cash", category: "Gifts", title: "Present" });
+    await recordTransaction({
+      amount: "9",
+      account: "Cash",
+      category: "Gifts given",
+      title: "Present",
+    });
     await recordTransaction({
       amount: "4",
       account: "Checking",
