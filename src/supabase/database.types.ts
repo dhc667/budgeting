@@ -33,17 +33,37 @@ isOneToOne: false
                   ]
                 },"currencies": {
                   Row: {
-                    "code": string,"decimals": number
+                    "code": string,"decimals": number,"rates_by_hand": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "code": string,"decimals": number
+                    "code": string,"decimals": number,"rates_by_hand"?: boolean
                   }
                   Update: {
-                    "code"?: string,"decimals"?: number
+                    "code"?: string,"decimals"?: number,"rates_by_hand"?: boolean
                   }
                   Relationships: [
                     
+                  ]
+                },"exchange_rates": {
+                  Row: {
+                    "currency": string,"date": string,"rate": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "currency": string,"date": string,"rate": number
+                  }
+                  Update: {
+                    "currency"?: string,"date"?: string,"rate"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exchange_rates_currency_currencies_code_fk"
+      columns: ["currency"]
+isOneToOne: false
+      referencedRelation: "currencies"
+      referencedColumns: ["code"]
+    }
                   ]
                 },"invite_codes": {
                   Row: {
@@ -480,6 +500,11 @@ isOneToOne: false
 "is_space_member":
 { Args: { "space": string }; Returns: boolean
                            },
+"latest_exchange_rates":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "currency": string,"date": string,"rate": number,"stale": boolean
+            }[]
+                           },
 "latest_today":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
@@ -509,6 +534,9 @@ isOneToOne: false
                            },
 "restored_ledger_account":
 { Args: { "posting": Json }; Returns: string
+                           },
+"save_exchange_rates":
+{ Args: { "rate_currencies": (string)[],"rate_dates": (string)[],"rate_values": (number)[] }; Returns: undefined
                            },
 "schema_version":
 { Args: Record<PropertyKey, never>; Returns: number

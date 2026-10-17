@@ -162,6 +162,20 @@
       "when": 1792184886266,
       "tag": "0022_restore_transactions",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792200856580,
+      "tag": "0023_naive_enchantress",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792200857454,
+      "tag": "0024_exchange_rate_rules",
+      "breakpoints": true
     }
   ]
 }

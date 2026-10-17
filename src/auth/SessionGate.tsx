@@ -7,6 +7,7 @@ import { deviceLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
 import { useProfile } from "../profile/profile-queries";
 import { createQueryClient } from "../query-client";
+import { useSyncExchangeRates } from "../rates/rates-sync";
 import { isNoRows } from "../supabase/errors";
 import { SessionContext, useSession } from "./session";
 
@@ -35,7 +36,9 @@ export function RequireSession() {
     <UserQueryCache key={session.user.id}>
       <SignOutDeletedUser>
         <UserLanguage>
-          <Outlet />
+          <ExchangeRates>
+            <Outlet />
+          </ExchangeRates>
         </UserLanguage>
       </SignOutDeletedUser>
     </UserQueryCache>
@@ -73,5 +76,10 @@ function UserLanguage({ children }: { children: ReactNode }) {
     return () => void i18n.changeLanguage(deviceLanguage());
   }, [i18n, language]);
 
+  return children;
+}
+
+function ExchangeRates({ children }: { children: ReactNode }) {
+  useSyncExchangeRates();
   return children;
 }

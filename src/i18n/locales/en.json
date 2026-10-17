@@ -75,7 +75,8 @@
       "evening": "Good evening, {{name}}"
     },
     "netWorth": "Net worth",
-    "netWorthPlaceholder": "The all-time net worth chart goes here.",
+    "netWorthNoRate": "Not counted, no exchange rate yet:",
+    "netWorthStale": "{{currency}} exchange rate is from {{date}}.",
     "accounts": "Accounts",
     "upcoming": "Upcoming",
     "upcomingPlaceholder": "Recurring transactions waiting to be paid go here.",
@@ -95,7 +96,7 @@
       "title": "About you",
       "name": "Name",
       "displayCurrency": "Display currency",
-      "displayCurrencyHint": "Totals across currencies are shown in this one."
+      "displayCurrencyHint": "Totals across currencies are shown in this one. Only currencies with recent exchange rates are offered."
     },
     "formats": {
       "title": "Language and formats",

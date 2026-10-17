@@ -75,7 +75,8 @@
       "evening": "Boa noite, {{name}}"
     },
     "netWorth": "Patrimônio líquido",
-    "netWorthPlaceholder": "O gráfico do patrimônio líquido de todos os tempos vai aqui.",
+    "netWorthNoRate": "Não contadas, ainda sem taxa de câmbio:",
+    "netWorthStale": "A taxa de câmbio de {{currency}} é de {{date}}.",
     "accounts": "Contas",
     "upcoming": "Próximas",
     "upcomingPlaceholder": "Transações recorrentes aguardando pagamento vão aqui.",
@@ -95,7 +96,7 @@
       "title": "Sobre você",
       "name": "Nome",
       "displayCurrency": "Moeda de exibição",
-      "displayCurrencyHint": "Totais em várias moedas são mostrados nesta."
+      "displayCurrencyHint": "Totais em várias moedas são mostrados nesta. Só são oferecidas moedas com taxas de câmbio recentes."
     },
     "formats": {
       "title": "Idioma e formatos",

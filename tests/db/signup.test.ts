@@ -120,7 +120,10 @@ describe("currencies", () => {
   it("lists each currency with its number of decimals", async () => {
     const { client } = await signedInUser("Ana");
 
-    const { data } = await client.from("currencies").select().in("code", ["JPY", "USD", "KWD"]);
+    const { data } = await client
+      .from("currencies")
+      .select("code, decimals")
+      .in("code", ["JPY", "USD", "KWD"]);
 
     expect(data).toEqual(
       expect.arrayContaining([
