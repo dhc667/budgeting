@@ -1,14 +1,15 @@
 import { SlidersHorizontal } from "lucide-react";
-import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAccountOption } from "../accounts/account-options";
 import type { Account } from "../accounts/account-queries";
-import { categoryLabel, categoryTree } from "../categories/category";
+import { categoryOptions } from "../categories/category-options";
 import type { Category } from "../categories/category-queries";
+import { bySpace } from "../spaces/by-space";
 import { spaceName } from "../spaces/space";
 import type { Space } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
-import { type ChecklistGroup, ChecklistField } from "../ui/ChecklistField";
+import { ChecklistField } from "../ui/ChecklistField";
 import { Field } from "../ui/Field";
 import { SelectField } from "../ui/SelectField";
 import { activeCount, type ListFilters } from "./list-filters";
@@ -34,6 +35,7 @@ export function TransactionFilters({
   categories,
 }: TransactionFiltersProps) {
   const { t } = useTranslation();
+  const accountOption = useAccountOption();
   const count = activeCount(values);
   const [open, setOpen] = useState(count > 0);
 
@@ -70,37 +72,19 @@ export function TransactionFilters({
           )}
           <ChecklistField
             label={t("transactions.filters.account")}
-            summary={summary(accounts, values.account, ({ name }) => name, {
-              none: t("transactions.filters.allAccounts"),
-              several: (count) => t("transactions.filters.someAccounts", { count }),
-            })}
-            groups={bySpace(spaces, accounts, t, (inSpace) =>
-              inSpace.map(({ id, name }) => ({ id, label: name })),
-            )}
+            groups={bySpace(spaces, accounts, t, (inSpace) => inSpace.map(accountOption))}
             value={values.account}
             onChange={(account) => change({ account })}
+            none={t("transactions.filters.allAccounts")}
+            several={(count) => t("transactions.filters.someAccounts", { count })}
           />
           <ChecklistField
             label={t("transactions.filters.category")}
-            summary={summary(
-              categories,
-              values.category,
-              (category) => categoryLabel(category, categories),
-              {
-                none: t("transactions.filters.allCategories"),
-                several: (count) => t("transactions.filters.someCategories", { count }),
-              },
-            )}
-            groups={bySpace(spaces, categories, t, (inSpace) =>
-              categoryTree(inSpace).flatMap(({ category, children }) =>
-                [category, ...children].map((each) => ({
-                  id: each.id,
-                  label: categoryLabel(each, inSpace),
-                })),
-              ),
-            )}
+            groups={bySpace(spaces, categories, t, categoryOptions)}
             value={values.category}
             onChange={(category) => change({ category })}
+            none={t("transactions.filters.allCategories")}
+            several={(count) => t("transactions.filters.someCategories", { count })}
           />
           <Field
             type="date"
@@ -120,31 +104,4 @@ export function TransactionFilters({
       )}
     </div>
   );
-}
-
-// Names repeat from space to space, so with more than one in play each gets its own group.
-function bySpace<Item extends { space_id: string }>(
-  spaces: Space[],
-  items: Item[],
-  t: TFunction,
-  options: (inSpace: Item[]) => ChecklistGroup["options"],
-): ChecklistGroup[] {
-  if (spaces.length === 1) return [{ options: options(items) }];
-  return spaces.map((space) => ({
-    label: spaceName(space, t),
-    options: options(items.filter(({ space_id }) => space_id === space.id)),
-  }));
-}
-
-function summary<Item extends { id: string }>(
-  items: Item[],
-  chosenIds: string[],
-  nameOf: (item: Item) => string,
-  { none, several }: { none: string; several: (count: number) => string },
-): string {
-  const chosen = items.filter(({ id }) => chosenIds.includes(id));
-  const [only] = chosen;
-  if (chosen.length === 0) return none;
-  if (chosen.length === 1 && only) return nameOf(only);
-  return several(chosen.length);
 }

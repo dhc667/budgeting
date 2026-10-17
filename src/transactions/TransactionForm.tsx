@@ -1,24 +1,22 @@
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAccountOption } from "../accounts/account-options";
 import { type Account, useAccounts } from "../accounts/account-queries";
-import { categoryLabel, categoryTree } from "../categories/category";
-import { CategoryIcon } from "../categories/CategoryIcon";
+import { categoryOptions } from "../categories/category-options";
 import { type Category, type CategoryKind, useCategories } from "../categories/category-queries";
-import { ColorDot } from "../colors/ColorDot";
 import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
-import { useMoney } from "../money/use-money";
 import { useProfile } from "../profile/profile-queries";
-import { spaceName } from "../spaces/space";
+import { bySpace } from "../spaces/by-space";
 import { type Space, useSpaces } from "../spaces/space-queries";
 import { isRaisedException } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
-import { Picker, type PickerOption } from "../ui/Picker";
+import { Picker } from "../ui/Picker";
 import { TitleField } from "./TitleField";
 import { draftOf } from "./transaction";
 import {
@@ -286,33 +284,11 @@ type AccountPickerProps = {
 // Every space's accounts are offered, whatever the space picker shows.
 function AccountPicker({ label, accounts, spaces, value, onChange }: AccountPickerProps) {
   const { t } = useTranslation();
-  const money = useMoney();
-  const option = (account: Account): PickerOption => ({
-    id: account.id,
-    label: account.name,
-    content: (
-      <>
-        <ColorDot color={account.color} />
-        <span className="flex-1 truncate">{account.name}</span>
-        <span className="text-sm text-zinc-500 tabular-nums">
-          {money(account.balance, account.currency)}
-        </span>
-      </>
-    ),
-  });
-  const groups =
-    spaces.length > 1
-      ? spaces
-          .map((space) => ({
-            heading: spaceName(space, t),
-            options: accounts.filter(({ space_id }) => space_id === space.id).map(option),
-          }))
-          .filter(({ options }) => options.length > 0)
-      : [{ heading: null, options: accounts.map(option) }];
+  const accountOption = useAccountOption();
   return (
     <Picker
       label={label}
-      groups={groups}
+      groups={bySpace(spaces, accounts, t, (inSpace) => inSpace.map(accountOption))}
       value={value}
       onChange={onChange}
       placeholder={t("transactions.form.chooseAccount")}
@@ -328,25 +304,10 @@ type CategoryPickerProps = {
 
 function CategoryPicker({ categories, value, onChange }: CategoryPickerProps) {
   const { t } = useTranslation();
-  const option = (category: Category, indent: boolean): PickerOption => ({
-    id: category.id,
-    label: categoryLabel(category, categories),
-    indent,
-    content: (
-      <>
-        <CategoryIcon icon={category.icon} color={category.color} />
-        <span className="flex-1 truncate">{category.name}</span>
-      </>
-    ),
-  });
-  const options = categoryTree(categories).flatMap(({ category, children }) => [
-    option(category, false),
-    ...children.map((child) => option(child, true)),
-  ]);
   return (
     <Picker
       label={t("transactions.form.category")}
-      groups={[{ heading: null, options }]}
+      groups={[{ heading: null, options: categoryOptions(categories) }]}
       value={value}
       onChange={onChange}
       placeholder={t("transactions.form.chooseCategory")}
