@@ -13,8 +13,10 @@ import qrcode from "qrcode-terminal";
 import { migrationCount } from "../db/migration-count.ts";
 import { buildConnectLink, type ConnectRequest } from "../src/instance/connect-link.ts";
 import type { Database } from "../src/supabase/database.ts";
-import { type ImportFile, ImportError, importIntoPrivateSpace, parseImport } from "./import.ts";
+import * as z from "zod";
+import { ImportError, importFile, importIntoPrivateSpace } from "./import.ts";
 import { createInviteCode } from "./invites.ts";
+import { loadRatesByHand, RatesError, ratesFile } from "./rates.ts";
 
 const usage = `Usage: pnpm run instance <command> [--env <file>]
 
@@ -27,6 +29,8 @@ Commands:
   restore <file>              Load a backup into a fresh project, then migrate
   import <email> <file>       Add the accounts, categories and transactions in a JSON file to a
                               user's private space (the format is in cli/import.ts)
+  load-rates <file>           Replace a currency's exchange rates with the ones in a JSON file;
+                              the app stops fetching that currency's (the format is in cli/rates.ts)
 
 Options:
   --env <file>                Instance settings (default: .env.instance; see .env.instance.example)
@@ -44,6 +48,7 @@ const commands: Record<string, (options: Options) => void | Promise<void>> = {
   backup,
   restore,
   import: importTransactions,
+  "load-rates": loadRates,
 };
 
 await main();
@@ -174,7 +179,7 @@ async function restore(options: Options) {
 
 async function importTransactions({ args: [email, file], env }: Options) {
   if (!email || !file) fail("Usage: pnpm run instance import <email> <file>");
-  const data = readImportFile(file);
+  const data = readJsonFile(file, importFile, "the import format");
 
   const client = postgres(requireEnv(env, "DATABASE_URL"), { max: 1, onnotice: () => {} });
   try {
@@ -191,7 +196,26 @@ async function importTransactions({ args: [email, file], env }: Options) {
   }
 }
 
-function readImportFile(file: string): ImportFile {
+async function loadRates({ args: [file], env }: Options) {
+  if (!file) fail("Usage: pnpm run instance load-rates <file>");
+  const data = readJsonFile(file, ratesFile, "the rates format");
+
+  const client = postgres(requireEnv(env, "DATABASE_URL"), { max: 1, onnotice: () => {} });
+  try {
+    const loaded = await loadRatesByHand(client, data);
+    console.log(
+      `Loaded ${loaded.count} ${data.currency} rates, from ${loaded.from} to ${loaded.to}.`,
+    );
+    console.log(`The app no longer fetches ${data.currency} rates.`);
+  } catch (error) {
+    if (error instanceof RatesError) fail(error.message);
+    fail(`Nothing was loaded: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    await client.end();
+  }
+}
+
+function readJsonFile<T>(file: string, schema: z.ZodType<T>, format: string): T {
   if (!existsSync(file)) fail(`No file at ${file}.`);
   let json: unknown;
   try {
@@ -199,13 +223,9 @@ function readImportFile(file: string): ImportFile {
   } catch (error) {
     return fail(`${file} is not valid JSON: ${messageOf(error)}`);
   }
-  try {
-    return parseImport(json);
-  } catch (error) {
-    if (error instanceof ImportError)
-      fail(`${file} doesn't match the import format:\n${error.message}`);
-    throw error;
-  }
+  const result = schema.safeParse(json);
+  if (!result.success) fail(`${file} doesn't match ${format}:\n${z.prettifyError(result.error)}`);
+  return result.data;
 }
 
 function readBackupVersion(file: string): number {

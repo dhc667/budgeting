@@ -3,12 +3,6 @@ import type { Sql, TransactionSql } from "postgres";
 import * as z from "zod";
 import { color } from "../db/schema.ts";
 
-export function parseImport(input: unknown): ImportFile {
-  const result = importFile.safeParse(input);
-  if (!result.success) throw new ImportError(z.prettifyError(result.error));
-  return result.data;
-}
-
 // Everything goes through the app's own functions, acting as the user, in one database
 // transaction: a file that breaks any rule of the app leaves nothing behind.
 export async function importIntoPrivateSpace(
@@ -266,7 +260,7 @@ const transaction = z.discriminatedUnion("type", [
 ]);
 
 // Amounts are integers in each currency's minor units (ADR 0010).
-const importFile = z
+export const importFile = z
   .strictObject({
     accounts: z.array(account).min(1),
     categories: z.array(category).default([]),
