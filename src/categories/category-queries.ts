@@ -70,7 +70,7 @@ export function useDeleteCategory(categoryId: string) {
   });
 }
 
-// Category changes show up in their space's activity too.
+// Category changes show up in their space's activity too, and budgets follow deleted ones.
 function useCategoryMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -78,6 +78,7 @@ function useCategoryMutation<Input, Output>(mutationFn: (input: Input) => Promis
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["categories"] }),
+        queryClient.invalidateQueries({ queryKey: ["budgets"] }),
         queryClient.invalidateQueries({ queryKey: ["spaces"] }),
       ]),
   });

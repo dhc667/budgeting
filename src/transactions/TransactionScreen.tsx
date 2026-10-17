@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 import { useAccounts } from "../accounts/account-queries";
+import { useBudgetExclusions } from "../budgets/budget-queries";
 import { type Category, useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
@@ -91,6 +92,8 @@ function EditCard({
 }) {
   const { t } = useTranslation();
   const updateTransaction = useUpdateTransaction(transaction.id);
+  const { data: excludedBudgetIds } = useBudgetExclusions(transaction.id);
+  if (!excludedBudgetIds) return null;
   return (
     <Card title={t("transactions.details")}>
       <TransactionForm
@@ -98,7 +101,12 @@ function EditCard({
         keptAccountIds={accountsOf(transaction)}
         submitLabel={t("transactions.form.save")}
         mutation={updateTransaction}
-        saving={{ kind: "transaction", onSave: (draft) => updateTransaction.mutate(draft) }}
+        saving={{
+          kind: "transaction",
+          excludedBudgetIds,
+          onSave: (draft, excluded) =>
+            updateTransaction.mutate({ ...draft, excludedBudgetIds: excluded }),
+        }}
       />
     </Card>
   );

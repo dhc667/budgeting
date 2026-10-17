@@ -19,7 +19,10 @@ export function useSyncExchangeRates() {
     retry: false,
     async queryFn() {
       await syncExchangeRates(supabase, await currenciesWithProviderRates(supabase));
-      await queryClient.invalidateQueries({ queryKey: ["latest-rates"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["latest-rates"] }),
+        queryClient.invalidateQueries({ queryKey: ["rate-history"] }),
+      ]);
       return null;
     },
   });

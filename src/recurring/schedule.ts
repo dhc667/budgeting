@@ -2,12 +2,17 @@
 // rather than from the one before, so a rule on the 31st comes back to it after a shorter month.
 export function nextDueDate(schedule: Schedule, done: number): string | null {
   if (schedule.times !== null && done >= schedule.times) return null;
-  const start = new Date(`${schedule.startsOn}T00:00:00Z`);
-  const due = after(start, done * schedule.every, schedule.unit)
-    .toISOString()
-    .slice(0, 10);
+  const due = nthDate(schedule, done);
   if (schedule.endsOn !== null && due > schedule.endsOn) return null;
   return due;
+}
+
+// Counting from 0, the start date itself.
+export function nthDate({ startsOn, every, unit }: Repeat & { startsOn: string }, n: number) {
+  const start = new Date(`${startsOn}T00:00:00Z`);
+  return after(start, n * every, unit)
+    .toISOString()
+    .slice(0, 10);
 }
 
 // The occurrence to resume a paused rule at: those that fell before `day` never happened.
@@ -19,7 +24,7 @@ export function firstDueFrom(schedule: Schedule, done: number, day: string): num
   }
 }
 
-function after(date: Date, steps: number, unit: Schedule["unit"]): Date {
+function after(date: Date, steps: number, unit: Unit): Date {
   switch (unit) {
     case "day":
       return daysAfter(date, steps);
@@ -48,10 +53,12 @@ function monthsAfter(date: Date, months: number): Date {
 
 export const units = ["day", "week", "month", "year"] as const;
 
-export type Schedule = {
+export type Schedule = Repeat & {
   startsOn: string;
-  every: number;
-  unit: (typeof units)[number];
   endsOn: string | null;
   times: number | null;
 };
+
+export type Repeat = { every: number; unit: Unit };
+
+type Unit = (typeof units)[number];

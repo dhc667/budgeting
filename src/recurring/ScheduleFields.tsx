@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Field } from "../ui/Field";
 import { SelectField } from "../ui/SelectField";
 import { type Schedule, units } from "./schedule";
+import { unitName } from "./recurring";
 import { type Ending, endingOf, endings } from "./schedule-form";
 
 type ScheduleFieldsProps = { initial: Schedule | null; startsOn: string };
@@ -77,19 +78,6 @@ export function ScheduleFields({ initial, startsOn }: ScheduleFieldsProps) {
       )}
     </fieldset>
   );
-}
-
-function unitName(unit: Schedule["unit"], t: TFunction): string {
-  switch (unit) {
-    case "day":
-      return t("recurring.unit.day");
-    case "week":
-      return t("recurring.unit.week");
-    case "month":
-      return t("recurring.unit.month");
-    case "year":
-      return t("recurring.unit.year");
-  }
 }
 
 function endingName(ending: Ending, t: TFunction): string {

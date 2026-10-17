@@ -82,8 +82,9 @@
     "accounts": "Cuentas",
     "upcoming": "Próximos",
     "budgets": "Presupuestos",
-    "budgetsPlaceholder": "Aquí irá el progreso de los presupuestos.",
-    "recent": "Movimientos recientes"
+    "recent": "Movimientos recientes",
+    "allBudgets": "Todos los presupuestos",
+    "showBudget": "Mostrar {{name}}"
   },
   "profile": {
     "title": "Perfil",
@@ -242,6 +243,15 @@
       "resumed": "{{actor}} reanudó el movimiento recurrente “{{label}}”",
       "recorded": "{{actor}} registró “{{label}}” del {{date}}",
       "skipped": "{{actor}} omitió “{{label}}” del {{date}}"
+    },
+    "budget": {
+      "created": "{{actor}} creó el presupuesto “{{name}}”",
+      "deleted": "{{actor}} eliminó el presupuesto “{{name}}”",
+      "renamed": "{{actor}} cambió el nombre del presupuesto “{{from}}” a “{{name}}”",
+      "limitChanged": "{{actor}} cambió el límite de “{{name}}” de {{from}} a {{to}}",
+      "changed": "{{actor}} cambió el presupuesto “{{name}}”",
+      "excluded": "{{actor}} dejó “{{transaction}}” del {{date}} fuera del presupuesto “{{name}}”",
+      "included": "{{actor}} volvió a contar “{{transaction}}” del {{date}} en el presupuesto “{{name}}”"
     }
   },
   "accounts": {
@@ -416,7 +426,11 @@
       "pastTitles": "Títulos anteriores",
       "note": "Nota",
       "save": "Guardar",
-      "saved": "Guardado."
+      "saved": "Guardado.",
+      "leftOutOf": "Dejar fuera de presupuestos",
+      "countedInAll": "Cuenta en todos sus presupuestos",
+      "leftOutOfSome_one": "Fuera de {{count}} presupuesto",
+      "leftOutOfSome_other": "Fuera de {{count}} presupuestos"
     },
     "oneSided": {
       "toAnotherSpace": "De “{{account}}” a otro espacio",
@@ -615,6 +629,79 @@
       "dueOnly": "Lo que ya vence",
       "within_one": "Lo que vence en {{count}} día",
       "within_other": "Lo que vence en {{count}} días"
+    }
+  },
+  "budgets": {
+    "title": "Presupuestos",
+    "add": "Nuevo presupuesto",
+    "none": "Todavía no hay presupuestos. Un presupuesto limita lo que entra en algunas categorías cada semana, mes o año, o entre dos fechas.",
+    "noneShown": "Los espacios que se muestran no tienen presupuestos.",
+    "ofLimit": "de {{limit}}",
+    "period": "{{start}} – {{end}}",
+    "unconverted": "Sin contar, no hay tipo de cambio para su día: {{currencies}}",
+    "startsOn": "Empieza el {{date}}",
+    "perDay_one": "Puedes gastar {{amount}} hoy, el último día",
+    "perDay_other": "Puedes gastar {{amount}} por día durante {{count}} días más",
+    "over_one": "{{amount}} por encima, en el último día",
+    "over_other": "{{amount}} por encima, con {{count}} días más por delante",
+    "endedUnder": "Terminó {{amount}} por debajo",
+    "endedOver": "Terminó {{amount}} por encima",
+    "fixed": "Entre dos fechas",
+    "standing": "Este período",
+    "pastPeriods": "Períodos anteriores",
+    "spentOfLimit": "{{spent}} de {{limit}}",
+    "endedUnderShort": "Por debajo",
+    "endedOverShort": "Por encima",
+    "details": "Detalles",
+    "notFound": "Este presupuesto no existe o no está en tus espacios.",
+    "backToList": "Volver a presupuestos",
+    "new": {
+      "title": "Nuevo presupuesto",
+      "submit": "Agregar presupuesto"
+    },
+    "form": {
+      "space": "Espacio",
+      "name": "Nombre",
+      "currency": "Moneda",
+      "amount": "Límite",
+      "amountHint": "Para cada período, antes de arrastrar saldos.",
+      "length": "Dura",
+      "repeating": "Una y otra vez",
+      "fixed": "Entre dos fechas",
+      "every": "Cada",
+      "unit": "Período",
+      "startsOn": "Empieza el",
+      "startsOnHint": "Cada período empieza este día.",
+      "endsOn": "Termina el",
+      "categories": "Categorías",
+      "allCategories": "Todas las categorías de gastos",
+      "someCategories_one": "{{count}} categoría",
+      "someCategories_other": "{{count}} categorías",
+      "accounts": "Cuentas",
+      "allAccounts": "Todas las cuentas",
+      "someAccounts_one": "{{count}} cuenta",
+      "someAccounts_other": "{{count}} cuentas",
+      "carryOver": "Arrastrar saldos",
+      "carryUnspent": "Arrastrar lo que no se gastó",
+      "carryUnspentHint": "Lo que sobra sube el límite del período siguiente.",
+      "carryOverspent": "Arrastrar lo que se gastó de más",
+      "carryOverspentHint": "Pasarse baja el límite del período siguiente.",
+      "save": "Guardar",
+      "saved": "Guardado."
+    },
+    "delete": {
+      "title": "Eliminar",
+      "explained": "Sus movimientos quedan como están.",
+      "submit": "Eliminar presupuesto",
+      "confirmTitle": "¿Eliminar “{{name}}”?",
+      "confirm": "Eliminar"
+    },
+    "errors": {
+      "loadFailed": "No se pudieron cargar los presupuestos. Revisa tu conexión e inténtalo de nuevo.",
+      "amount": "Escribe un límite mayor que cero, como {{example}}.",
+      "nameBlank": "Ponle un nombre al presupuesto.",
+      "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar. Revisa tu conexión e inténtalo de nuevo."
     }
   }
 }
