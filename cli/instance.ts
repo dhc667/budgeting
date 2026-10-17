@@ -13,6 +13,7 @@ import qrcode from "qrcode-terminal";
 import { migrationCount } from "../db/migration-count.ts";
 import { buildConnectLink, type ConnectRequest } from "../src/instance/connect-link.ts";
 import type { Database } from "../src/supabase/database.ts";
+import { type ImportFile, ImportError, importIntoPrivateSpace, parseImport } from "./import.ts";
 import { createInviteCode } from "./invites.ts";
 
 const usage = `Usage: pnpm run instance <command> [--env <file>]
@@ -24,6 +25,8 @@ Commands:
   reset-password <email>      Give a user a temporary password
   backup                      Save the database to backup-<date>.sql in the current folder
   restore <file>              Load a backup into a fresh project, then migrate
+  import <email> <file>       Add the accounts, categories and transactions in a JSON file to a
+                              user's private space (the format is in cli/import.ts)
 
 Options:
   --env <file>                Instance settings (default: .env.instance; see .env.instance.example)
@@ -40,6 +43,7 @@ const commands: Record<string, (options: Options) => void | Promise<void>> = {
   "reset-password": resetPassword,
   backup,
   restore,
+  import: importTransactions,
 };
 
 await main();
@@ -166,6 +170,42 @@ async function restore(options: Options) {
   );
   console.log(`Loaded ${file}.`);
   await migrateDatabase(options);
+}
+
+async function importTransactions({ args: [email, file], env }: Options) {
+  if (!email || !file) fail("Usage: pnpm run instance import <email> <file>");
+  const data = readImportFile(file);
+
+  const client = postgres(requireEnv(env, "DATABASE_URL"), { max: 1, onnotice: () => {} });
+  try {
+    const accounts = await importIntoPrivateSpace(client, email, data);
+    console.log(`Imported ${data.transactions.length} transactions. Balances now:`);
+    for (const { name, currency, balance, decimals } of accounts) {
+      console.log(`  ${name}: ${(balance / 10 ** decimals).toFixed(decimals)} ${currency}`);
+    }
+  } catch (error) {
+    if (error instanceof ImportError) fail(error.message);
+    fail(`Nothing was imported: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    await client.end();
+  }
+}
+
+function readImportFile(file: string): ImportFile {
+  if (!existsSync(file)) fail(`No file at ${file}.`);
+  let json: unknown;
+  try {
+    json = JSON.parse(readFileSync(file, "utf8"));
+  } catch (error) {
+    return fail(`${file} is not valid JSON: ${error instanceof Error ? error.message : ""}`);
+  }
+  try {
+    return parseImport(json);
+  } catch (error) {
+    if (error instanceof ImportError)
+      fail(`${file} doesn't match the import format:\n${error.message}`);
+    throw error;
+  }
 }
 
 function readBackupVersion(file: string): number {
