@@ -38,6 +38,7 @@ export default defineConfig({
           include: ["tests/**/*.test.{ts,tsx}"],
           fileParallelism: false,
           testTimeout: 20_000,
+          globalSetup: ["tests/support/empty-local-instance.ts"],
         },
       },
     ],
