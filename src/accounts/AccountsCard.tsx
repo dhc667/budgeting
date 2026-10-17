@@ -9,7 +9,7 @@ import type { Space } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
-import { type Account, useAccounts, useReorderAccounts } from "./account-queries";
+import { type Account, accountsInSpaces, useAccounts, useReorderAccounts } from "./account-queries";
 import { ColorDot } from "../colors/ColorDot";
 
 export function AccountsCard({ className }: { className?: string }) {
@@ -25,9 +25,7 @@ export function AccountsCard({ className }: { className?: string }) {
       accounts: accounts.filter(({ space_id, archived }) => space_id === space.id && !archived),
     }))
     .filter((group) => group.accounts.length > 0);
-  const archived = accounts.filter(
-    ({ space_id, archived }) => archived && shownSpaces.some(({ id }) => id === space_id),
-  );
+  const archived = accountsInSpaces(accounts, shownSpaces).filter(({ archived }) => archived);
 
   return (
     <Card

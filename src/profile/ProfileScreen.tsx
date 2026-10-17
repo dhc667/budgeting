@@ -10,7 +10,7 @@ import { useInstance, useSupabase } from "../instance/instance-context";
 import { CurrencySelect } from "../money/CurrencySelect";
 import { useLatestRates } from "../rates/rate-queries";
 import { signOutHere } from "../supabase/client";
-import { isCheckViolation } from "../supabase/errors";
+import { isCheckViolation, refusalReason } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
@@ -147,6 +147,7 @@ function SaveControls({ mutation }: { mutation: ReturnType<typeof useUpdateProfi
 
 function saveErrorMessage(error: Error, t: TFunction): string {
   if (isCheckViolation(error)) return t("profile.errors.nameBlank");
+  if (refusalReason(error) === "no_recent_rate") return t("profile.errors.noRecentRate");
   return t("profile.errors.saveFailed");
 }
 

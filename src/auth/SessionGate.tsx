@@ -36,9 +36,9 @@ export function RequireSession() {
     <UserQueryCache key={session.user.id}>
       <SignOutDeletedUser>
         <UserLanguage>
-          <ExchangeRates>
+          <SyncExchangeRates>
             <Outlet />
-          </ExchangeRates>
+          </SyncExchangeRates>
         </UserLanguage>
       </SignOutDeletedUser>
     </UserQueryCache>
@@ -79,7 +79,7 @@ function UserLanguage({ children }: { children: ReactNode }) {
   return children;
 }
 
-function ExchangeRates({ children }: { children: ReactNode }) {
+function SyncExchangeRates({ children }: { children: ReactNode }) {
   useSyncExchangeRates();
   return children;
 }

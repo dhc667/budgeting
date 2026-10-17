@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
 import type { Color } from "../colors/colors";
+import type { Space } from "../spaces/space-queries";
 import type { Database } from "../supabase/database";
 
 export function useAccounts() {
@@ -101,6 +102,10 @@ function detailsArgs(details: AccountDetails) {
     opening_amount: details.openingAmount,
     opening_date: details.openingDate,
   };
+}
+
+export function accountsInSpaces(accounts: Account[], spaces: Pick<Space, "id">[]): Account[] {
+  return accounts.filter(({ space_id }) => spaces.some(({ id }) => id === space_id));
 }
 
 export type Account = Database["public"]["Views"]["accounts"]["Row"];

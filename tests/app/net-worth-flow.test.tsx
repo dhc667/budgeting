@@ -5,10 +5,10 @@ import { addAccount, goHome, openSignedIn, uniqueName } from "../support/app";
 import { sql } from "../support/local-instance";
 
 // The provider is unreachable: the dashboard works from the rates the instance already holds.
-vi.mock("../../src/rates/rates-provider", () => ({
-  fetchLatestRates: () => Promise.reject(new Error("offline")),
-  fetchRatesBetween: () => Promise.reject(new Error("offline")),
-}));
+vi.mock("../../src/rates/rates-provider", async () => {
+  const { offlineProvider } = await import("../support/rates-provider");
+  return offlineProvider;
+});
 
 const converted = "XTA";
 const stale = "XTB";

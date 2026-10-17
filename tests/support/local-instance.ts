@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
+import { defined } from "../../cli/defined.ts";
 import { createInviteCode } from "../../cli/invites.ts";
 import { buildConnectLink, type Instance } from "../../src/instance/connect-link.ts";
 import type { Database } from "../../src/supabase/database.ts";
@@ -102,7 +103,4 @@ export function uniqueEmail() {
   return `${crypto.randomUUID()}@test.local`;
 }
 
-export function defined<T>(value: T | null | undefined): T {
-  if (value === null || value === undefined) throw new Error("Expected a value");
-  return value;
-}
+export { defined };

@@ -3,21 +3,26 @@ import { useSupabase } from "../instance/instance-context";
 import type { AppSupabase } from "../supabase/client";
 import { fetchLatestRates, fetchRatesBetween, type ProviderRate } from "./rates-provider";
 
-// Runs once per session, in the background: a failure only leaves rates as they were.
+// Runs on the first open of each day, in the background: a failure only leaves rates as they were.
 export function useSyncExchangeRates() {
   const supabase = useSupabase();
   const queryClient = useQueryClient();
   useQuery({
     queryKey: ["exchange-rates-sync"],
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: ({ state }) => nextLocalMidnight(state.dataUpdatedAt) - state.dataUpdatedAt,
     retry: false,
-    refetchOnWindowFocus: false,
     async queryFn() {
       await syncExchangeRates(supabase, await currenciesWithProviderRates(supabase));
       await queryClient.invalidateQueries({ queryKey: ["latest-rates"] });
       return null;
     },
   });
+}
+
+function nextLocalMidnight(since: number): number {
+  const midnight = new Date(since);
+  midnight.setHours(24, 0, 0, 0);
+  return midnight.getTime();
 }
 
 // Currencies loaded by hand are invisible to the sync: never saved, never measured against.
@@ -30,58 +35,58 @@ async function currenciesWithProviderRates(supabase: AppSupabase): Promise<Set<s
   return new Set(data.map(({ code }) => code));
 }
 
-async function syncExchangeRates(supabase: AppSupabase, known: ReadonlySet<string>) {
-  const latest = (await fetchLatestRates()).filter(({ currency }) => known.has(currency));
-  const newest = latest
-    .map(({ date }) => date)
-    .sort()
-    .at(-1);
-  if (!newest) return;
-
-  const covered = [...new Set(latest.map(({ currency }) => currency))];
-  const stored = await storedRange(supabase, covered);
-  if (!stored) await saveRates(supabase, latest);
-
-  const gaps = missingRanges(stored, newest, await oldestTransactionDate(supabase));
-  for (const gap of gaps) {
-    const rates = await fetchRatesBetween(gap.from, gap.to);
-    await saveRates(
-      supabase,
-      rates.filter(({ currency }) => known.has(currency)),
-    );
-  }
-}
-
-// Each currency's rates stay one unbroken range, so only the stretch after the last stored date
-// and the one before the first can be missing.
-export function missingRanges(
-  stored: DateRange | null,
-  newest: string,
-  oldestTransaction: string | null,
-): DateRange[] {
-  const first = stored?.from ?? newest;
-  const last = stored?.to ?? newest;
-  const gaps: DateRange[] = [];
-  if (last < newest) gaps.push({ from: addDays(last, 1), to: newest });
-  if (oldestTransaction && oldestTransaction < first)
-    gaps.push({ from: oldestTransaction, to: addDays(first, -1) });
-  return gaps;
-}
-
-async function storedRange(supabase: AppSupabase, currencies: string[]): Promise<DateRange | null> {
-  const [from, to] = await Promise.all(
-    [true, false].map(async (ascending) => {
-      const { data, error } = await supabase
-        .from("exchange_rates")
-        .select("date")
-        .in("currency", currencies)
-        .order("date", { ascending })
-        .limit(1);
-      if (error) throw error;
-      return data[0]?.date;
-    }),
+// Each currency's rates stay one unbroken range, so only the stretch after its last stored date
+// and the one before its first can be missing. Two requests cover every currency's gaps.
+async function syncExchangeRates(supabase: AppSupabase, providerCurrencies: ReadonlySet<string>) {
+  const latest = (await fetchLatestRates()).filter(({ currency }) =>
+    providerCurrencies.has(currency),
   );
-  return from && to ? { from, to } : null;
+  if (latest.length === 0) return;
+
+  const stored = await storedRanges(supabase);
+  await saveRates(
+    supabase,
+    latest.filter(({ currency }) => !stored.has(currency)),
+  );
+
+  const oldestTransaction = await oldestTransactionDate(supabase);
+  const coverage = newestDates(latest).map(({ currency, date }) => ({
+    currency,
+    newest: date,
+    stored: stored.get(currency) ?? { from: date, to: date },
+  }));
+
+  const forward = coverage.flatMap(({ currency, newest, stored }) =>
+    stored.to < newest ? [{ currency, from: addDays(stored.to, 1), to: newest, stored }] : [],
+  );
+  const ahead = await fetchMissing(forward, (date, stored) => date > stored.to);
+  // Saved outward from the stored range, so an interrupted save still leaves it unbroken.
+  await saveRates(
+    supabase,
+    ahead.sort((a, b) => a.date.localeCompare(b.date)),
+  );
+
+  const backward = coverage.flatMap(({ currency, stored }) =>
+    oldestTransaction && oldestTransaction < stored.from
+      ? [{ currency, from: oldestTransaction, to: addDays(stored.from, -1), stored }]
+      : [],
+  );
+  const behind = await fetchMissing(backward, (date, stored) => date < stored.from);
+  await saveRates(
+    supabase,
+    behind.sort((a, b) => b.date.localeCompare(a.date)),
+  );
+}
+
+async function storedRanges(supabase: AppSupabase): Promise<Map<string, DateRange>> {
+  const { data, error } = await supabase.rpc("stored_exchange_rate_ranges");
+  if (error) throw error;
+  return new Map(
+    data.map(({ currency, first_date, last_date }) => [
+      currency,
+      { from: first_date, to: last_date },
+    ]),
+  );
 }
 
 async function oldestTransactionDate(supabase: AppSupabase): Promise<string | null> {
@@ -94,13 +99,33 @@ async function oldestTransactionDate(supabase: AppSupabase): Promise<string | nu
   return data[0]?.date ?? null;
 }
 
+function newestDates(rates: ProviderRate[]): { currency: string; date: string }[] {
+  const newest = new Map<string, string>();
+  for (const { currency, date } of rates) {
+    const seen = newest.get(currency);
+    if (!seen || date > seen) newest.set(currency, date);
+  }
+  return [...newest].map(([currency, date]) => ({ currency, date }));
+}
+
+async function fetchMissing(
+  gaps: Gap[],
+  isMissing: (date: string, stored: DateRange) => boolean,
+): Promise<ProviderRate[]> {
+  if (gaps.length === 0) return [];
+  const from = gaps.map((gap) => gap.from).reduce((a, b) => (a < b ? a : b));
+  const to = gaps.map((gap) => gap.to).reduce((a, b) => (a > b ? a : b));
+  const storedBy = new Map(gaps.map(({ currency, stored }) => [currency, stored]));
+  return (await fetchRatesBetween(from, to)).filter(({ currency, date }) => {
+    const stored = storedBy.get(currency);
+    return stored !== undefined && isMissing(date, stored);
+  });
+}
+
 async function saveRates(supabase: AppSupabase, rates: ProviderRate[]) {
   for (let start = 0; start < rates.length; start += batchSize) {
-    const batch = rates.slice(start, start + batchSize);
     const { error } = await supabase.rpc("save_exchange_rates", {
-      rate_dates: batch.map(({ date }) => date),
-      rate_currencies: batch.map(({ currency }) => currency),
-      rate_values: batch.map(({ rate }) => rate),
+      rates: rates.slice(start, start + batchSize),
     });
     if (error) throw error;
   }
@@ -114,4 +139,5 @@ function addDays(day: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export type DateRange = { from: string; to: string };
+type DateRange = { from: string; to: string };
+type Gap = DateRange & { currency: string; stored: DateRange };

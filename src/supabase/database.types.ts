@@ -536,7 +536,7 @@ isOneToOne: false
 { Args: { "posting": Json }; Returns: string
                            },
 "save_exchange_rates":
-{ Args: { "rate_currencies": (string)[],"rate_dates": (string)[],"rate_values": (number)[] }; Returns: undefined
+{ Args: { "rates": Json }; Returns: undefined
                            },
 "schema_version":
 { Args: Record<PropertyKey, never>; Returns: number
@@ -549,6 +549,11 @@ isOneToOne: false
                            },
 "spaces_touched":
 { Args: { "transaction": string }; Returns: string[]
+                           },
+"stored_exchange_rate_ranges":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "currency": string,"first_date": string,"last_date": string
+            }[]
                            },
 "title_suggestions":
 { Args: Record<PropertyKey, never>; Returns: {

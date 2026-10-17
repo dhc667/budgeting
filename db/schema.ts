@@ -28,7 +28,7 @@ export const currencies = pgTable(
   {
     code: text().primaryKey(),
     decimals: smallint().notNull(),
-    // The owner loads this currency's exchange rates; the app never saves any for it.
+    // Its exchange rates are loaded by the instance owner, not fetched.
     ratesByHand: boolean("rates_by_hand").notNull().default(false),
   },
   () => [

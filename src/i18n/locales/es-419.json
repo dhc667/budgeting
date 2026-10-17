@@ -90,6 +90,7 @@
     "saved": "Guardado.",
     "errors": {
       "nameBlank": "Tu nombre no puede quedar vacío.",
+      "noRecentRate": "Esa moneda no tiene una tasa de cambio reciente, así que no puede ser tu moneda de visualización.",
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
     },
     "about": {

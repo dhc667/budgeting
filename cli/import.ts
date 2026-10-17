@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
 import * as z from "zod";
 import { color } from "../db/schema.ts";
+import { defined } from "./defined.ts";
 
 // Everything goes through the app's own functions, acting as the user, in one database
 // transaction: a file that breaks any rule of the app leaves nothing behind.
@@ -193,11 +194,6 @@ function kindFor(type: "expense" | "refund" | "income"): Kind {
 
 function categoryKey(kind: Kind, name: string, subcategory?: string): string {
   return JSON.stringify([kind, name, subcategory ?? null]);
-}
-
-function defined<T>(value: T | undefined): T {
-  if (value === undefined) throw new Error("Expected a value");
-  return value;
 }
 
 export class ImportError extends Error {}

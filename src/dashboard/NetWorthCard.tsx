@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useAccounts } from "../accounts/account-queries";
+import { accountsInSpaces, useAccounts } from "../accounts/account-queries";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
 import { useMoney } from "../money/use-money";
@@ -22,12 +22,7 @@ export function NetWorthCard() {
 
   const worth =
     currencies && displayCurrency && accounts && rates && shownSpaces
-      ? netWorth(
-          accounts.filter(({ space_id }) => shownSpaces.some(({ id }) => id === space_id)),
-          currencies,
-          displayCurrency,
-          rates,
-        )
+      ? netWorth(accountsInSpaces(accounts, shownSpaces), currencies, displayCurrency, rates)
       : null;
 
   return (
