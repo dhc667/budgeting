@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { useAccounts } from "../accounts/account-queries";
 import { localToday } from "../format/days";
+import { useCreateRecurringTransaction } from "../recurring/recurring-queries";
 import { BackLink } from "../ui/BackLink";
 import { Card, EmptyState } from "../ui/Card";
 import { useLastAccount } from "./last-account";
@@ -15,6 +16,7 @@ export function NewTransactionScreen() {
   const { data: accounts } = useAccounts();
   const { lastAccountId, remember } = useLastAccount();
   const addTransaction = useAddTransaction();
+  const createRecurring = useCreateRecurringTransaction();
   // One id for every attempt, so a retry after a lost reply can't save it twice.
   const [id] = useState(() => crypto.randomUUID());
   if (!accounts) return null;
@@ -41,18 +43,34 @@ export function NewTransactionScreen() {
             }}
             keptAccountIds={[]}
             submitLabel={t("transactions.new.submit")}
-            mutation={addTransaction}
-            onSave={(draft) =>
-              addTransaction.mutate(
-                { ...draft, id },
-                {
-                  onSuccess: () => {
-                    remember(draft.accountId);
-                    void navigate("/transactions");
+            mutation={{
+              isPending: addTransaction.isPending || createRecurring.isPending,
+              isSuccess: false,
+              error: addTransaction.error ?? createRecurring.error,
+            }}
+            saving={{
+              kind: "transaction",
+              onSave: (draft) =>
+                addTransaction.mutate(
+                  { ...draft, id },
+                  {
+                    onSuccess: () => {
+                      remember(draft.accountId);
+                      void navigate("/transactions");
+                    },
                   },
-                },
-              )
-            }
+                ),
+              onRepeat: (draft, schedule, recordFirst) =>
+                createRecurring.mutate(
+                  { draft, schedule, recordFirst },
+                  {
+                    onSuccess: () => {
+                      remember(draft.accountId);
+                      void navigate("/recurring");
+                    },
+                  },
+                ),
+            }}
           />
         </Card>
       ) : (

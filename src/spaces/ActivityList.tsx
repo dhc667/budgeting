@@ -3,6 +3,7 @@ import { useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
+import { describeRecurringChange } from "../recurring/recurring-activity";
 import { RestoreTransaction } from "../transactions/RestoreTransaction";
 import {
   describeTransactionChange,
@@ -57,6 +58,8 @@ function describe(entry: Activity, phrasing: Phrasing): string[] {
       return describeLedgerAccountChange(entry, actor, phrasing);
     case "transactions":
       return describeTransactionChange(entry, actor, phrasing);
+    case "recurring_transactions":
+      return describeRecurringChange(entry, actor, phrasing);
     default:
       return [];
   }

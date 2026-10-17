@@ -98,7 +98,7 @@ function EditCard({
         keptAccountIds={accountsOf(transaction)}
         submitLabel={t("transactions.form.save")}
         mutation={updateTransaction}
-        onSave={(draft) => updateTransaction.mutate(draft)}
+        saving={{ kind: "transaction", onSave: (draft) => updateTransaction.mutate(draft) }}
       />
     </Card>
   );

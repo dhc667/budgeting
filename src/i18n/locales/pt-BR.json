@@ -81,7 +81,6 @@
     "netWorthStale": "A taxa de câmbio de {{currency}} é de {{date}}.",
     "accounts": "Contas",
     "upcoming": "Próximas",
-    "upcomingPlaceholder": "Transações recorrentes aguardando pagamento vão aqui.",
     "budgets": "Orçamentos",
     "budgetsPlaceholder": "O progresso dos orçamentos vai aqui.",
     "recent": "Transações recentes"
@@ -234,6 +233,15 @@
       "transferExchanged": "uma transferência de {{amount}} de “{{from}}” para “{{to}}”, recebida como {{received}}, em {{date}}",
       "transferToOtherSpace": "uma transferência de {{amount}} de “{{from}}” para outro espaço, em {{date}}",
       "transferFromOtherSpace": "uma transferência de {{amount}} para “{{to}}” de outro espaço, em {{date}}"
+    },
+    "recurring": {
+      "created": "{{actor}} criou a transação recorrente “{{label}}”",
+      "changed": "{{actor}} alterou a transação recorrente “{{label}}”",
+      "deleted": "{{actor}} excluiu a transação recorrente “{{label}}”",
+      "paused": "{{actor}} pausou a transação recorrente “{{label}}”",
+      "resumed": "{{actor}} retomou a transação recorrente “{{label}}”",
+      "recorded": "{{actor}} registrou “{{label}}” de {{date}}",
+      "skipped": "{{actor}} pulou “{{label}}” de {{date}}"
     }
   },
   "accounts": {
@@ -530,5 +538,77 @@
   },
   "dialog": {
     "cancel": "Cancelar"
+  },
+  "recurring": {
+    "title": "Transações recorrentes",
+    "link": "Recorrentes",
+    "none": "Nenhuma transação recorrente ainda. Escolha Repetir ao adicionar uma transação.",
+    "paused": "Pausada",
+    "ended": "Encerrada",
+    "next": "Próxima: {{date}}",
+    "every": {
+      "day_one": "Todo dia",
+      "day_other": "A cada {{count}} dias",
+      "week_one": "Toda semana",
+      "week_other": "A cada {{count}} semanas",
+      "month_one": "Todo mês",
+      "month_other": "A cada {{count}} meses",
+      "year_one": "Todo ano",
+      "year_other": "A cada {{count}} anos"
+    },
+    "unit": {
+      "day": "Dias",
+      "week": "Semanas",
+      "month": "Meses",
+      "year": "Anos"
+    },
+    "form": {
+      "repeat": "Repetir",
+      "repeatHint": "Faz acontecer de novo em um calendário.",
+      "startsOn": "Começa em",
+      "every": "A cada",
+      "unit": "Período",
+      "ends": "Termina",
+      "endsNever": "Nunca",
+      "endsOnDate": "Em uma data",
+      "endsOn": "Data de término",
+      "endsAfter": "Depois de um número de vezes",
+      "times": "Vezes",
+      "saveAndRepeat": "Salvar e repetir",
+      "repeatFromThen": "Repetir a partir dessa data",
+      "nextDue": "Próximo vencimento"
+    },
+    "errors": {
+      "loadFailed": "Não foi possível carregar as transações recorrentes. Verifique sua conexão e tente novamente.",
+      "recordFailed": "Não foi possível registrar. Talvez já tenha sido registrada ou pulada, ou sua conexão caiu.",
+      "skipFailed": "Não foi possível pular. Talvez já tenha sido registrada ou pulada, ou sua conexão caiu.",
+      "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente novamente.",
+      "deleteFailed": "Não foi possível excluir. Verifique sua conexão e tente novamente."
+    },
+    "due": "Vence em {{date}}",
+    "skip": "Pular",
+    "record": {
+      "title": "Registrar “{{label}}”",
+      "submit": "Registrar"
+    },
+    "notFound": "Esta transação recorrente não existe ou não está nos seus espaços.",
+    "backToList": "Voltar para as transações recorrentes",
+    "pause": {
+      "title": "Pausar",
+      "explained": "Enquanto estiver pausada, nada vence.",
+      "submit": "Pausar"
+    },
+    "resume": {
+      "title": "Pausada",
+      "explained": "Ao retomá-la, as que teriam vencido nesse meio-tempo ficam de fora.",
+      "submit": "Retomar"
+    },
+    "delete": {
+      "title": "Excluir",
+      "explained": "As transações que ela registrou continuam como estão.",
+      "submit": "Excluir transação recorrente",
+      "confirmTitle": "Excluir “{{label}}”?",
+      "confirm": "Excluir"
+    }
   }
 }

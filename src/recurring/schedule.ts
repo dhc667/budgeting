@@ -10,6 +10,15 @@ export function nextDueDate(schedule: Schedule, done: number): string | null {
   return due;
 }
 
+// The occurrence to resume a paused rule at: those that fell before `day` never happened.
+export function firstDueFrom(schedule: Schedule, done: number, day: string): number | null {
+  for (let occurrence = done; ; occurrence++) {
+    const due = nextDueDate(schedule, occurrence);
+    if (due === null) return null;
+    if (due >= day) return occurrence;
+  }
+}
+
 function after(date: Date, steps: number, unit: Schedule["unit"]): Date {
   switch (unit) {
     case "day":
@@ -37,10 +46,12 @@ function monthsAfter(date: Date, months: number): Date {
   return month;
 }
 
+export const units = ["day", "week", "month", "year"] as const;
+
 export type Schedule = {
   startsOn: string;
   every: number;
-  unit: "day" | "week" | "month" | "year";
+  unit: (typeof units)[number];
   endsOn: string | null;
   times: number | null;
 };

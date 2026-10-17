@@ -16,6 +16,8 @@ import { InstanceGate } from "./instance/InstanceGate";
 import { connectPath } from "./instance/connect-link";
 import { AppShell } from "./layout/AppShell";
 import { ProfileScreen } from "./profile/ProfileScreen";
+import { RecurringScreen } from "./recurring/RecurringScreen";
+import { RecurringTransactionScreen } from "./recurring/RecurringTransactionScreen";
 import { ComingSoonScreen } from "./screens/ComingSoonScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
 import { NewSpaceScreen } from "./spaces/NewSpaceScreen";
@@ -51,6 +53,8 @@ export function createAppRouter() {
                         { path: "transactions", element: <TransactionsScreen /> },
                         { path: "transactions/new", element: <NewTransactionScreen /> },
                         { path: "transactions/:transactionId", element: <TransactionScreen /> },
+                        { path: "recurring", element: <RecurringScreen /> },
+                        { path: "recurring/:ruleId", element: <RecurringTransactionScreen /> },
                         {
                           path: "budgets",
                           element: <ComingSoonScreen title={(t) => t("nav.budgets")} />,

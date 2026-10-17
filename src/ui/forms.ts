@@ -8,6 +8,19 @@ export function submitWith(handle: (form: FormData) => void) {
   };
 }
 
+// For a form with more than one way to send it: `button` is the value of the one that did.
+export function submitWithButton(handle: (form: FormData, button: string | null) => void) {
+  return (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const { nativeEvent } = event;
+    const submitter = nativeEvent instanceof SubmitEvent ? nativeEvent.submitter : null;
+    handle(
+      new FormData(event.currentTarget),
+      submitter instanceof HTMLButtonElement ? submitter.value : null,
+    );
+  };
+}
+
 export function textField(form: FormData, name: string): string {
   const value = form.get(name);
   return typeof value === "string" ? value : "";

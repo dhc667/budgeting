@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { AccountsCard } from "../accounts/AccountsCard";
 import { useProfile } from "../profile/profile-queries";
+import { UpcomingCard } from "../recurring/UpcomingCard";
 import { NetWorthCard } from "./NetWorthCard";
 import { RecentTransactionsCard } from "../transactions/RecentTransactionsCard";
 import { Card, EmptyState } from "../ui/Card";
@@ -24,9 +25,7 @@ export function DashboardScreen() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4 lg:order-last">
-          <Card title={t("dashboard.upcoming")}>
-            <EmptyState>{t("dashboard.upcomingPlaceholder")}</EmptyState>
-          </Card>
+          <UpcomingCard />
           <Card title={t("dashboard.budgets")}>
             <EmptyState>{t("dashboard.budgetsPlaceholder")}</EmptyState>
           </Card>
