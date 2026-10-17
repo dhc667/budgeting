@@ -105,7 +105,7 @@ A rule that produces an upcoming transaction on a schedule.
 _Avoid_: subscription, repeating transaction
 
 **Upcoming transaction**:
-A transaction a recurring transaction has produced but no member has marked paid or skipped. It does not affect balances until it is paid.
+A transaction a recurring transaction has produced but no member has recorded or skipped yet. It does not affect balances until it is recorded, as a transaction of its own.
 _Avoid_: pending, scheduled
 
 ### Oversight
