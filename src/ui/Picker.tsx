@@ -160,7 +160,7 @@ export function Picker({ label, groups, value, onChange, placeholder }: PickerPr
   );
 }
 
-type PickerGroup = { heading: string | null; options: PickerOption[] };
+export type PickerGroup = { heading: string | null; options: PickerOption[] };
 
 // `label` names the option to assistive technology, so it can say more than `content` shows.
 export type PickerOption = { id: string; label: string; content: ReactNode; indent?: boolean };
