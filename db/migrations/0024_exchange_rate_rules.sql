@@ -18,27 +18,47 @@ $$;
 -- Two clients saving the same day at once is normal, so rates already stored are left as they are.
 -- Rows for currencies whose rates the owner loads by hand are skipped without complaint: clients
 -- send whole batches.
-create or replace function public.save_exchange_rates(
-  rate_dates date[],
-  rate_currencies text[],
-  rate_values numeric[]
-)
+create or replace function public.save_exchange_rates(rates jsonb)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  if exists (select 1 from unnest(rate_dates) as rate_date where rate_date > public.latest_today()) then
+  if exists (
+    select 1 from jsonb_to_recordset(rates) as incoming(date date, currency text, rate numeric)
+    where incoming.date > public.latest_today()
+  ) then
     raise exception 'an exchange rate can''t be dated in the future';
   end if;
 
+  -- Without the lock, loading a currency by hand could commit between the check below and the
+  -- insert, leaving fetched rows beside the loaded ones.
+  perform 1 from public.currencies
+  where code in (
+    select incoming.currency
+    from jsonb_to_recordset(rates) as incoming(date date, currency text, rate numeric)
+  )
+  for share;
+
   insert into public.exchange_rates (date, currency, rate)
-  select incoming.* from unnest(rate_dates, rate_currencies, rate_values) as incoming(date, currency, rate)
+  select incoming.date, incoming.currency, incoming.rate
+  from jsonb_to_recordset(rates) as incoming(date date, currency text, rate numeric)
   join public.currencies on currencies.code = incoming.currency
   where not currencies.rates_by_hand
   on conflict do nothing;
 end;
+$$;
+--> statement-breakpoint
+create or replace function public.stored_exchange_rate_ranges()
+returns table (currency text, first_date date, last_date date)
+language sql
+stable
+set search_path = ''
+as $$
+  select rates.currency, min(rates.date), max(rates.date)
+  from public.exchange_rates as rates
+  group by rates.currency;
 $$;
 --> statement-breakpoint
 create or replace function public.check_display_currency()
@@ -52,7 +72,8 @@ begin
     select 1 from public.latest_exchange_rates() as latest
     where latest.currency = new.display_currency and not latest.stale
   ) then
-    raise exception 'the display currency needs a recent exchange rate';
+    raise exception 'the display currency needs a recent exchange rate'
+      using detail = 'no_recent_rate';
   end if;
   return new;
 end;
@@ -69,5 +90,6 @@ grant select on public.exchange_rates to authenticated;
 --> statement-breakpoint
 grant execute on function
   public.latest_exchange_rates(),
-  public.save_exchange_rates(date[], text[], numeric[])
+  public.stored_exchange_rate_ranges(),
+  public.save_exchange_rates(jsonb)
 to authenticated;

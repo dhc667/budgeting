@@ -8,6 +8,7 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance.ts";
+import { today } from "../support/dates.ts";
 
 afterAll(() => sql.end());
 
@@ -831,10 +832,6 @@ async function transactionActivityOf(user: User, spaceId: string) {
 
 function isOpeningBalance(snapshot: unknown): boolean {
   return JSON.stringify(snapshot).includes('"opening_balance"');
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 const permissionDenied = "42501";

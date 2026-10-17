@@ -16,14 +16,18 @@ import {
 import { openApp, openSignedIn, signIn, user } from "../support/app";
 
 // The provider is unreachable: the display currency list comes from the rates the instance holds.
-vi.mock("../../src/rates/rates-provider", () => ({
-  fetchLatestRates: () => Promise.reject(new Error("offline")),
-  fetchRatesBetween: () => Promise.reject(new Error("offline")),
-}));
+vi.mock("../../src/rates/rates-provider", async () => {
+  const { offlineProvider } = await import("../support/rates-provider");
+  return offlineProvider;
+});
 
 let seededRate = false;
+const goingStale = "XTS";
 
 beforeAll(async () => {
+  await sql`insert into currencies (code, decimals) values (${goingStale}, 2) on conflict do nothing`;
+  await sql`insert into exchange_rates (date, currency, rate) values (current_date, ${goingStale}, 3)
+    on conflict (date, currency) do nothing`;
   const inserted =
     await sql`insert into exchange_rates (date, currency, rate) values (current_date, 'EUR', 0.9) on conflict do nothing returning 1`;
   seededRate = inserted.length > 0;
@@ -32,6 +36,7 @@ beforeAll(async () => {
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 afterAll(async () => {
+  await sql`delete from exchange_rates where currency = ${goingStale}`;
   if (seededRate)
     await sql`delete from exchange_rates where date = current_date and currency = 'EUR'`;
   await sql.end();
@@ -121,6 +126,16 @@ describe("profile", () => {
 
     expect(await screen.findByRole("heading", { name: /, Daniela$/ })).toBeTruthy();
     expect(screen.getByText("€0.00")).toBeTruthy();
+  });
+
+  it("explains a display currency refused because its rate went stale meanwhile", async () => {
+    const card = within(await screen.findByRole("region", { name: "About you" }));
+    await sql`update exchange_rates set date = current_date - 30 where currency = ${goingStale}`;
+
+    await user.selectOptions(card.getByLabelText("Display currency"), goingStale);
+    await user.click(card.getByRole("button", { name: "Save" }));
+
+    expect((await card.findByRole("alert")).textContent).toMatch(/no recent exchange rate/);
   });
 
   it("changes the password", async () => {

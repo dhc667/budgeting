@@ -90,6 +90,7 @@
     "saved": "Saved.",
     "errors": {
       "nameBlank": "Your name can't be blank.",
+      "noRecentRate": "That currency has no recent exchange rate, so it can't be your display currency.",
       "saveFailed": "Couldn't save. Check your connection and try again."
     },
     "about": {

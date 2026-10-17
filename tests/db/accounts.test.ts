@@ -7,6 +7,7 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance.ts";
+import { today } from "../support/dates.ts";
 
 afterAll(() => sql.end());
 
@@ -458,8 +459,4 @@ async function transfer(from: string, to: string, amount: number) {
     to_amount: null,
   });
   if (error) throw error;
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }

@@ -5,6 +5,7 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance.ts";
+import { daysAgo, today } from "../support/dates.ts";
 
 // Made-up currencies, so these tests leave the instance's real rates alone. The currencies
 // themselves stay: profiles and accounts may still point at them.
@@ -195,9 +196,7 @@ describe("changing the display currency", () => {
 
 function save(client: User["client"], rates: Rate[]) {
   return client.rpc("save_exchange_rates", {
-    rate_dates: rates.map(({ date }) => date),
-    rate_currencies: rates.map(({ currency }) => currency),
-    rate_values: rates.map(({ value }) => value),
+    rates: rates.map(({ date, currency, value }) => ({ date, currency, rate: value })),
   });
 }
 
@@ -206,10 +205,13 @@ function setDisplayCurrency(user: User, currency: string) {
 }
 
 async function displayCurrencyOf(user: User) {
-  const [profile] = await sql<
-    { display_currency: string }[]
-  >`select display_currency from profiles where id = ${user.userId}`;
-  return profile?.display_currency;
+  const { data, error } = await user.client
+    .from("profiles")
+    .select("display_currency")
+    .eq("id", user.userId)
+    .single();
+  if (error) throw error;
+  return data.display_currency;
 }
 
 async function storedRates() {
@@ -224,12 +226,4 @@ type Rate = { date: string; currency: string; value: number };
 
 function rate(date: string, currency: string, value: number): Rate {
   return { date, currency, value };
-}
-
-function today(): string {
-  return daysAgo(0);
-}
-
-function daysAgo(days: number): string {
-  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 }

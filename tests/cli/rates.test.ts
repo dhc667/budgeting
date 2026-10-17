@@ -3,6 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { daysAgo } from "../support/dates";
 import { signedInUser, sql } from "../support/local-instance";
 
 // A made-up currency, so loading rates by hand leaves the instance's real ones alone. It stays,
@@ -23,9 +24,7 @@ describe("loading a currency's rates by hand", () => {
   it("replaces every rate the app had for it", async () => {
     const ana = await signedInUser("Ana");
     await ana.client.rpc("save_exchange_rates", {
-      rate_dates: [daysAgo(1)],
-      rate_currencies: [currency],
-      rate_values: [24],
+      rates: [{ date: daysAgo(1), currency, rate: 24 }],
     });
 
     const run = loadRates({
@@ -51,9 +50,7 @@ describe("loading a currency's rates by hand", () => {
     const ana = await signedInUser("Ana");
 
     await ana.client.rpc("save_exchange_rates", {
-      rate_dates: [daysAgo(1)],
-      rate_currencies: [currency],
-      rate_values: [24],
+      rates: [{ date: daysAgo(1), currency, rate: 24 }],
     });
 
     expect(await storedRates()).toEqual([{ date: daysAgo(3), rate: "700" }]);
@@ -99,10 +96,4 @@ function loadRates(contents: unknown) {
 async function storedRates() {
   return sql<{ date: string; rate: string }[]>`
     select date::text, rate::text from exchange_rates where currency = ${currency} order by date`;
-}
-
-function daysAgo(days: number): string {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() - days);
-  return date.toISOString().slice(0, 10);
 }

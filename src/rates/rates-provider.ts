@@ -5,8 +5,9 @@ export async function fetchLatestRates(): Promise<ProviderRate[]> {
 
 export async function fetchRatesBetween(from: string, to: string): Promise<ProviderRate[]> {
   const rates = parseRates(await get({ base: "USD", from, to }));
-  // For a currency with no rate on `from`, the provider also sends the one before it.
-  return rates.filter(({ date }) => date >= from && date <= to);
+  // For a currency with no rate on `from`, the provider also sends the one before it, which is the
+  // rate `from` itself trades at.
+  return rates.filter(({ date }) => date <= to);
 }
 
 async function get(query: Record<string, string>): Promise<unknown> {

@@ -1,46 +1,40 @@
 // @vitest-environment jsdom
-import { cleanup } from "@testing-library/react";
-import { screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { addAccount, goHome, openApp, openSignedIn, uniqueName } from "../support/app";
-import { signInLink, sql } from "../support/local-instance";
+import { addAccount, goHome, openApp, openSignedIn, signIn, uniqueName } from "../support/app";
+import { daysAgo } from "../support/dates";
+import { existingUser, password, signedInAs, signInLink, sql } from "../support/local-instance";
+import { stubbedProvider } from "../support/rates-provider";
 
 const provided = "XTA";
+const alsoProvided = "XTB";
 const byHand = "XTH";
 
-// The provider covers both currencies and has a rate for every day asked about.
-vi.mock("../../src/rates/rates-provider", () => {
-  const days = (from: string, to: string) => {
-    const result: string[] = [];
-    for (let day = new Date(from); day <= new Date(to); day.setUTCDate(day.getUTCDate() + 1))
-      result.push(day.toISOString().slice(0, 10));
-    return result;
-  };
-  const ratesFor = (dates: string[]) =>
-    dates.flatMap((date) => [
-      { date, currency: "XTA", rate: 4 },
-      { date, currency: "XTH", rate: 24 },
-    ]);
-  return {
-    fetchLatestRates: () => Promise.resolve(ratesFor([new Date().toISOString().slice(0, 10)])),
-    fetchRatesBetween: (from: string, to: string) => Promise.resolve(ratesFor(days(from, to))),
-  };
+vi.mock("../../src/rates/rates-provider", async () => {
+  const { stubbedProvider } = await import("../support/rates-provider");
+  return stubbedProvider;
 });
 
 beforeAll(async () => {
-  await sql`insert into currencies (code, decimals) values (${provided}, 2) on conflict do nothing`;
+  await sql`insert into currencies (code, decimals) values (${provided}, 2), (${alsoProvided}, 2) on conflict do nothing`;
   await sql`insert into currencies (code, decimals, rates_by_hand) values (${byHand}, 2, true) on conflict (code) do update set rates_by_hand = true`;
 });
 
 beforeEach(async () => {
   localStorage.clear();
+  stubbedProvider.rates = new Map([
+    [provided, 4],
+    [alsoProvided, 5],
+    [byHand, 24],
+  ]);
+  stubbedProvider.hasRatesOn = () => true;
   await clearRates();
-  await sql`insert into exchange_rates (date, currency, rate)
-    select current_date - n, ${byHand}, 40 from generate_series(0, 30) as n`;
-  await sql`insert into exchange_rates (date, currency, rate) values (current_date, ${provided}, 4)`;
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 afterAll(async () => {
   await clearRates();
@@ -49,30 +43,112 @@ afterAll(async () => {
 
 describe("filling in missing exchange rates", () => {
   it("backfills a provided currency to the oldest transaction, and leaves a hand-loaded one alone", async () => {
-    const { userId } = await openSignedIn(uniqueName("Ana"));
+    await storeRates(byHand, 0, 30, 40);
+    await storeRates(provided, 0, 0, 4);
+    const ana = await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
-    await sql`update transactions set date = current_date - 20 where created_by = ${userId}`;
-    await goHome();
+    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
 
-    cleanup();
+    await reopenApp();
+
+    const client = await signedInAs(ana.email);
+    await vi.waitFor(async () => expect(await datesStored(client, provided)).toHaveLength(21), {
+      timeout: 10_000,
+    });
+    const handLoaded = await ratesStored(client, byHand);
+    expect(handLoaded).toHaveLength(31);
+    expect(handLoaded.every(({ rate }) => rate === 40)).toBe(true);
+  });
+
+  it("backfills a currency the provider only starts covering later", async () => {
+    stubbedProvider.rates.delete(alsoProvided);
+    await storeRates(provided, 0, 20, 4);
+    const ana = await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+    stubbedProvider.rates.set(alsoProvided, 5);
+
+    await reopenApp();
+
+    const client = await signedInAs(ana.email);
+    await vi.waitFor(async () => expect(await datesStored(client, alsoProvided)).toHaveLength(21), {
+      timeout: 10_000,
+    });
+    expect(await datesStored(client, provided)).toHaveLength(21);
+  });
+
+  it("gives an oldest transaction on a day without published rates the rate from before it", async () => {
+    stubbedProvider.hasRatesOn = (day) => day !== daysAgo(20) && day !== daysAgo(19);
+    await storeRates(provided, 0, 0, 4);
+    const ana = await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+
+    await reopenApp();
+
+    const client = await signedInAs(ana.email);
+    await vi.waitFor(
+      async () => expect((await datesStored(client, provided)).at(-1)).toBe(daysAgo(21)),
+      { timeout: 10_000 },
+    );
+  });
+
+  it("syncs again when the app is brought back on a new day", async () => {
+    const ana = await existingUser(uniqueName("Ana"));
+    const [yesterday, today] = [daysAgo(1), daysAgo(0)];
+    const realNow = Date.now();
+    vi.useFakeTimers({ toFake: ["Date"], now: realNow - 24 * 3_600_000 });
     openApp(signInLink());
+    await signIn(ana.email, password);
     await screen.findByRole("heading", { name: /^Good/ });
+    const client = await signedInAs(ana.email);
+    await vi.waitFor(async () => expect(await datesStored(client, provided)).toEqual([yesterday]), {
+      timeout: 10_000,
+    });
 
-    await vi.waitFor(async () => expect(await storedFor(provided)).toBe(21), { timeout: 10_000 });
-    expect(await storedFor(byHand)).toBe(31);
-    const [odd] = await sql`select count(*)::int as count from exchange_rates
-      where currency = ${byHand} and rate <> 40`;
-    expect(odd?.count).toBe(0);
+    vi.setSystemTime(realNow);
+    window.dispatchEvent(new Event("visibilitychange"));
+
+    await vi.waitFor(
+      async () => expect(await datesStored(client, provided)).toEqual([today, yesterday]),
+      { timeout: 10_000 },
+    );
   });
 });
 
-async function storedFor(currency: string): Promise<number> {
-  const [row] = await sql<
-    { count: number }[]
-  >`select count(*)::int as count from exchange_rates where currency = ${currency}`;
-  return row?.count ?? 0;
+async function reopenApp() {
+  await goHome();
+  cleanup();
+  openApp(signInLink());
+  await screen.findByRole("heading", { name: /^Good/ });
+}
+
+type Client = Awaited<ReturnType<typeof signedInAs>>;
+
+async function ratesStored(client: Client, currency: string) {
+  const { data, error } = await client
+    .from("exchange_rates")
+    .select("date, rate")
+    .eq("currency", currency)
+    .order("date", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+async function datesStored(client: Client, currency: string): Promise<string[]> {
+  return (await ratesStored(client, currency)).map(({ date }) => date);
+}
+
+async function storeRates(
+  currency: string,
+  newestDaysAgo: number,
+  oldestDaysAgo: number,
+  rate: number,
+) {
+  await sql`insert into exchange_rates (date, currency, rate)
+    select current_date - n, ${currency}, ${rate} from generate_series(${newestDaysAgo}::int, ${oldestDaysAgo}::int) as n`;
 }
 
 async function clearRates() {
-  await sql`delete from exchange_rates where currency in ${sql([provided, byHand])}`;
+  await sql`delete from exchange_rates where currency in ${sql([provided, alsoProvided, byHand])}`;
 }

@@ -209,7 +209,7 @@ async function loadRates({ args: [file], env }: Options) {
     console.log(`The app no longer fetches ${data.currency} rates.`);
   } catch (error) {
     if (error instanceof RatesError) fail(error.message);
-    fail(`Nothing was loaded: ${error instanceof Error ? error.message : String(error)}`);
+    fail(`Nothing was loaded: ${messageOf(error)}`);
   } finally {
     await client.end();
   }

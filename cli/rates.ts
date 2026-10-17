@@ -1,5 +1,6 @@
 import type { Sql } from "postgres";
 import * as z from "zod";
+import { defined } from "./defined.ts";
 
 // The file becomes the currency's whole rate history, replacing any rates a device fetched before
 // the flag was set; from then on the app never saves any for it.
@@ -21,11 +22,6 @@ export async function loadRatesByHand(sql: Sql, file: RatesFile): Promise<Loaded
       from public.exchange_rates where currency = ${file.currency}`;
     return defined(loaded);
   });
-}
-
-function defined<T>(value: T | undefined): T {
-  if (value === undefined) throw new Error("Expected a value");
-  return value;
 }
 
 export class RatesError extends Error {}
