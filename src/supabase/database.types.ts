@@ -7,14 +7,14 @@ export type Database = {
           Tables: {
             "activity": {
                   Row: {
-                    "action": Database["public"]['Enums']["activity_action"],"changed_at": string,"changed_by": string | null,"id": number,"new": Json | null,"old": Json | null,"row_id": string,"space_id": string,"table_name": string
+                    "action": Database["public"]['Enums']["activity_action"],"changed_at": string,"changed_by": string | null,"id": number,"new": Json | null,"old": Json | null,"row_id": string,"space_id": string,"table_name": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": Database["public"]['Enums']["activity_action"],"changed_at"?: string,"changed_by"?: string | null,"id"?: never,"new"?: Json | null,"old"?: Json | null,"row_id": string,"space_id": string,"table_name": string
+                    "action": Database["public"]['Enums']["activity_action"],"changed_at"?: string,"changed_by"?: string | null,"id"?: never,"new"?: Json | null,"old"?: Json | null,"row_id": string,"space_id": string,"table_name": string,"version"?: number
                   }
                   Update: {
-                    "action"?: Database["public"]['Enums']["activity_action"],"changed_at"?: string,"changed_by"?: string | null,"id"?: never,"new"?: Json | null,"old"?: Json | null,"row_id"?: string,"space_id"?: string,"table_name"?: string
+                    "action"?: Database["public"]['Enums']["activity_action"],"changed_at"?: string,"changed_by"?: string | null,"id"?: never,"new"?: Json | null,"old"?: Json | null,"row_id"?: string,"space_id"?: string,"table_name"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -33,14 +33,14 @@ isOneToOne: false
                   ]
                 },"budget_exclusions": {
                   Row: {
-                    "budget_id": string,"transaction_id": string
+                    "budget_id": string,"transaction_id": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "budget_id": string,"transaction_id": string
+                    "budget_id": string,"transaction_id": string,"version"?: number
                   }
                   Update: {
-                    "budget_id"?: string,"transaction_id"?: string
+                    "budget_id"?: string,"transaction_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -65,14 +65,14 @@ isOneToOne: false
                   ]
                 },"budgets": {
                   Row: {
-                    "account_ids": (string)[] | null,"amount": number,"carry_overspent": boolean,"carry_unspent": boolean,"category_ids": (string)[] | null,"created_at": string,"currency": string,"ends_on": string | null,"every": number | null,"id": string,"name": string,"space_id": string,"starts_on": string,"unit": Database["public"]['Enums']["repeat_unit"] | null
+                    "account_ids": (string)[] | null,"amount": number,"carry_overspent": boolean,"carry_unspent": boolean,"category_ids": (string)[] | null,"created_at": string,"currency": string,"ends_on": string | null,"every": number | null,"id": string,"name": string,"space_id": string,"starts_on": string,"unit": Database["public"]['Enums']["repeat_unit"] | null,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_ids"?: (string)[] | null,"amount": number,"carry_overspent"?: boolean,"carry_unspent"?: boolean,"category_ids"?: (string)[] | null,"created_at"?: string,"currency": string,"ends_on"?: string | null,"every"?: number | null,"id"?: string,"name": string,"space_id": string,"starts_on": string,"unit"?: Database["public"]['Enums']["repeat_unit"] | null
+                    "account_ids"?: (string)[] | null,"amount": number,"carry_overspent"?: boolean,"carry_unspent"?: boolean,"category_ids"?: (string)[] | null,"created_at"?: string,"currency": string,"ends_on"?: string | null,"every"?: number | null,"id"?: string,"name": string,"space_id": string,"starts_on": string,"unit"?: Database["public"]['Enums']["repeat_unit"] | null,"version"?: number
                   }
                   Update: {
-                    "account_ids"?: (string)[] | null,"amount"?: number,"carry_overspent"?: boolean,"carry_unspent"?: boolean,"category_ids"?: (string)[] | null,"created_at"?: string,"currency"?: string,"ends_on"?: string | null,"every"?: number | null,"id"?: string,"name"?: string,"space_id"?: string,"starts_on"?: string,"unit"?: Database["public"]['Enums']["repeat_unit"] | null
+                    "account_ids"?: (string)[] | null,"amount"?: number,"carry_overspent"?: boolean,"carry_unspent"?: boolean,"category_ids"?: (string)[] | null,"created_at"?: string,"currency"?: string,"ends_on"?: string | null,"every"?: number | null,"id"?: string,"name"?: string,"space_id"?: string,"starts_on"?: string,"unit"?: Database["public"]['Enums']["repeat_unit"] | null,"version"?: number
                   }
                   Relationships: [
                     {
@@ -91,28 +91,42 @@ isOneToOne: false
                   ]
                 },"currencies": {
                   Row: {
-                    "code": string,"decimals": number,"rates_by_hand": boolean
+                    "code": string,"decimals": number,"rates_by_hand": boolean,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "code": string,"decimals": number,"rates_by_hand"?: boolean
+                    "code": string,"decimals": number,"rates_by_hand"?: boolean,"version"?: number
                   }
                   Update: {
-                    "code"?: string,"decimals"?: number,"rates_by_hand"?: boolean
+                    "code"?: string,"decimals"?: number,"rates_by_hand"?: boolean,"version"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"deleted_rows": {
+                  Row: {
+                    "id": number,"key": NonNullable<Json>,"table_name": string,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: never,"key": NonNullable<Json>,"table_name": string,"version": number
+                  }
+                  Update: {
+                    "id"?: never,"key"?: NonNullable<Json>,"table_name"?: string,"version"?: number
                   }
                   Relationships: [
                     
                   ]
                 },"exchange_rate_history_starts": {
                   Row: {
-                    "checked_on": string,"currency": string,"provider": string,"starts_on": string
+                    "checked_on": string,"currency": string,"provider": string,"starts_on": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "checked_on": string,"currency": string,"provider": string,"starts_on": string
+                    "checked_on": string,"currency": string,"provider": string,"starts_on": string,"version"?: number
                   }
                   Update: {
-                    "checked_on"?: string,"currency"?: string,"provider"?: string,"starts_on"?: string
+                    "checked_on"?: string,"currency"?: string,"provider"?: string,"starts_on"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -125,14 +139,14 @@ isOneToOne: false
                   ]
                 },"exchange_rates": {
                   Row: {
-                    "currency": string,"date": string,"rate": number
+                    "currency": string,"date": string,"rate": number,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "currency": string,"date": string,"rate": number
+                    "currency": string,"date": string,"rate": number,"version"?: number
                   }
                   Update: {
-                    "currency"?: string,"date"?: string,"rate"?: number
+                    "currency"?: string,"date"?: string,"rate"?: number,"version"?: number
                   }
                   Relationships: [
                     {
@@ -159,14 +173,14 @@ isOneToOne: false
                   ]
                 },"ledger_accounts": {
                   Row: {
-                    "archived": boolean,"color": Database["public"]['Enums']["color"] | null,"created_at": string,"currency": string | null,"icon": string | null,"id": string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name": string | null,"parent_id": string | null,"position": number,"space_id": string,"came_with_space": boolean | null
+                    "archived": boolean,"color": Database["public"]['Enums']["color"] | null,"created_at": string,"currency": string | null,"icon": string | null,"id": string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name": string | null,"parent_id": string | null,"position": number,"space_id": string,"version": number,"came_with_space": boolean | null
                   }
                   ComputedFields: "came_with_space"
                   Insert: {
-                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id": string
+                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id": string,"version"?: number
                   }
                   Update: {
-                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id"?: string
+                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -203,14 +217,14 @@ isOneToOne: false
                   ]
                 },"postings": {
                   Row: {
-                    "amount": number,"currency": string,"id": string,"ledger_account_id": string,"transaction_id": string
+                    "amount": number,"currency": string,"id": string,"ledger_account_id": string,"transaction_id": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"currency": string,"id"?: string,"ledger_account_id": string,"transaction_id": string
+                    "amount": number,"currency": string,"id"?: string,"ledger_account_id": string,"transaction_id": string,"version"?: number
                   }
                   Update: {
-                    "amount"?: number,"currency"?: string,"id"?: string,"ledger_account_id"?: string,"transaction_id"?: string
+                    "amount"?: number,"currency"?: string,"id"?: string,"ledger_account_id"?: string,"transaction_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -253,14 +267,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"date_format": Database["public"]['Enums']["date_format"] | null,"display_currency": string,"display_name": string,"id": string,"language": Database["public"]['Enums']["language"] | null,"number_format": Database["public"]['Enums']["number_format"] | null,"upcoming_days": number
+                    "created_at": string,"date_format": Database["public"]['Enums']["date_format"] | null,"display_currency": string,"display_name": string,"id": string,"language": Database["public"]['Enums']["language"] | null,"number_format": Database["public"]['Enums']["number_format"] | null,"upcoming_days": number,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name": string,"id": string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null,"upcoming_days"?: number
+                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name": string,"id": string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null,"upcoming_days"?: number,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name"?: string,"id"?: string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null,"upcoming_days"?: number
+                    "created_at"?: string,"date_format"?: Database["public"]['Enums']["date_format"] | null,"display_currency"?: string,"display_name"?: string,"id"?: string,"language"?: Database["public"]['Enums']["language"] | null,"number_format"?: Database["public"]['Enums']["number_format"] | null,"upcoming_days"?: number,"version"?: number
                   }
                   Relationships: [
                     {
@@ -273,14 +287,14 @@ isOneToOne: false
                   ]
                 },"recurring_transactions": {
                   Row: {
-                    "account_id": string,"amount": number,"category_id": string | null,"created_at": string,"created_by": string,"done": number,"ends_on": string | null,"every": number,"id": string,"note": string | null,"paused": boolean,"space_id": string,"starts_on": string,"times": number | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"]
+                    "account_id": string,"amount": number,"category_id": string | null,"created_at": string,"created_by": string,"done": number,"ends_on": string | null,"every": number,"id": string,"note": string | null,"paused": boolean,"space_id": string,"starts_on": string,"times": number | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"],"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"amount": number,"category_id"?: string | null,"created_at"?: string,"created_by": string,"done"?: number,"ends_on"?: string | null,"every": number,"id"?: string,"note"?: string | null,"paused"?: boolean,"space_id": string,"starts_on": string,"times"?: number | null,"title"?: string | null,"to_account_id"?: string | null,"to_amount"?: number | null,"type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"]
+                    "account_id": string,"amount": number,"category_id"?: string | null,"created_at"?: string,"created_by": string,"done"?: number,"ends_on"?: string | null,"every": number,"id"?: string,"note"?: string | null,"paused"?: boolean,"space_id": string,"starts_on": string,"times"?: number | null,"title"?: string | null,"to_account_id"?: string | null,"to_amount"?: number | null,"type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"],"version"?: number
                   }
                   Update: {
-                    "account_id"?: string,"amount"?: number,"category_id"?: string | null,"created_at"?: string,"created_by"?: string,"done"?: number,"ends_on"?: string | null,"every"?: number,"id"?: string,"note"?: string | null,"paused"?: boolean,"space_id"?: string,"starts_on"?: string,"times"?: number | null,"title"?: string | null,"to_account_id"?: string | null,"to_amount"?: number | null,"type"?: Database["public"]['Enums']["transaction_type"],"unit"?: Database["public"]['Enums']["repeat_unit"]
+                    "account_id"?: string,"amount"?: number,"category_id"?: string | null,"created_at"?: string,"created_by"?: string,"done"?: number,"ends_on"?: string | null,"every"?: number,"id"?: string,"note"?: string | null,"paused"?: boolean,"space_id"?: string,"starts_on"?: string,"times"?: number | null,"title"?: string | null,"to_account_id"?: string | null,"to_amount"?: number | null,"type"?: Database["public"]['Enums']["transaction_type"],"unit"?: Database["public"]['Enums']["repeat_unit"],"version"?: number
                   }
                   Relationships: [
                     {
@@ -353,14 +367,14 @@ isOneToOne: false
                   ]
                 },"space_members": {
                   Row: {
-                    "created_at": string,"id": string,"space_id": string,"user_id": string
+                    "created_at": string,"id": string,"space_id": string,"user_id": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"space_id": string,"user_id": string
+                    "created_at"?: string,"id"?: string,"space_id": string,"user_id": string,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"space_id"?: string,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"space_id"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -379,14 +393,14 @@ isOneToOne: false
                   ]
                 },"spaces": {
                   Row: {
-                    "created_at": string,"id": string,"name": string | null,"private_owner": string | null
+                    "created_at": string,"id": string,"name": string | null,"private_owner": string | null,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"name"?: string | null,"private_owner"?: string | null
+                    "created_at"?: string,"id"?: string,"name"?: string | null,"private_owner"?: string | null,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"name"?: string | null,"private_owner"?: string | null
+                    "created_at"?: string,"id"?: string,"name"?: string | null,"private_owner"?: string | null,"version"?: number
                   }
                   Relationships: [
                     {
@@ -433,14 +447,14 @@ isOneToOne: false
                   ]
                 },"transactions": {
                   Row: {
-                    "created_at": string,"created_by": string,"date": string,"id": string,"note": string | null,"title": string | null
+                    "created_at": string,"created_by": string,"date": string,"id": string,"note": string | null,"title": string | null,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by": string,"date": string,"id"?: string,"note"?: string | null,"title"?: string | null
+                    "created_at"?: string,"created_by": string,"date": string,"id"?: string,"note"?: string | null,"title"?: string | null,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string,"date"?: string,"id"?: string,"note"?: string | null,"title"?: string | null
+                    "created_at"?: string,"created_by"?: string,"date"?: string,"id"?: string,"note"?: string | null,"title"?: string | null,"version"?: number
                   }
                   Relationships: [
                     {
@@ -611,7 +625,8 @@ isOneToOne: false
 "old": Json | null,
 "row_id": string,
 "space_id": string,
-"table_name": string
+"table_name": string,
+"version": number
             }[]
                           SetofOptions: {
         from: "*"
@@ -632,7 +647,8 @@ isOneToOne: false
 "old": Json | null,
 "row_id": string,
 "space_id": string,
-"table_name": string
+"table_name": string,
+"version": number
             }[]
                           SetofOptions: {
         from: "*"
@@ -650,6 +666,9 @@ isOneToOne: false
                            },
 "can_change_transaction":
 { Args: { "transaction": string }; Returns: boolean
+                           },
+"changes_since":
+{ Args: { "since": number }; Returns: Json
                            },
 "check_invite_code":
 { Args: { "event": Json }; Returns: Json
@@ -718,7 +737,8 @@ isOneToOne: false
 "to_account_id": string | null,
 "to_amount": number | null,
 "type": Database["public"]['Enums']["transaction_type"],
-"unit": Database["public"]['Enums']["repeat_unit"]
+"unit": Database["public"]['Enums']["repeat_unit"],
+"version": number
             }
                           SetofOptions: {
         from: "*"
@@ -746,7 +766,8 @@ isOneToOne: false
 "to_account_id": string | null,
 "to_amount": number | null,
 "type": Database["public"]['Enums']["transaction_type"],
-"unit": Database["public"]['Enums']["repeat_unit"]
+"unit": Database["public"]['Enums']["repeat_unit"],
+"version": number
             }
                           SetofOptions: {
         from: "*"
@@ -774,7 +795,8 @@ isOneToOne: false
 "to_account_id": string | null,
 "to_amount": number | null,
 "type": Database["public"]['Enums']["transaction_type"],
-"unit": Database["public"]['Enums']["repeat_unit"]
+"unit": Database["public"]['Enums']["repeat_unit"],
+"version": number
             }
                           SetofOptions: {
         from: "*"
@@ -819,7 +841,8 @@ isOneToOne: false
 "old": Json | null,
 "row_id": string,
 "space_id": string,
-"table_name": string
+"table_name": string,
+"version": number
             }[]
                           SetofOptions: {
         from: "*"
@@ -901,7 +924,8 @@ isOneToOne: false
 "old": Json | null,
 "row_id": string,
 "space_id": string,
-"table_name": string
+"table_name": string,
+"version": number
             }[]
                           SetofOptions: {
         from: "*"
@@ -946,7 +970,8 @@ isOneToOne: false
 "name": string | null,
 "parent_id": string | null,
 "position": number,
-"space_id": string
+"space_id": string,
+"version": number
             }
                           SetofOptions: {
         from: "*"

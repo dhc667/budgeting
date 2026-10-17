@@ -4,11 +4,12 @@ import postgres from "postgres";
 
 // Every run signs up new users, and a database full of them slows the screens tests use down to
 // timeouts. Cascading from the users empties everything recorded since; the rows migrations seed
-// (currencies, starter categories) stay.
+// (currencies, starter categories) stay. Deleted rows have no foreign key to follow.
 export async function teardown() {
   const sql = postgres(localDatabaseUrl(), { max: 1, onnotice: () => {} });
   try {
     await sql`truncate auth.users cascade`;
+    await sql`truncate public.deleted_rows`;
   } finally {
     await sql.end();
   }

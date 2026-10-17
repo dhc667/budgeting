@@ -31,6 +31,7 @@ export type Database = Omit<Generated, "public"> & {
       | "create_recurring_transaction"
       | "update_recurring_transaction"
       | "record_recurring_transaction"
+      | "changes_since"
     > & {
       create_category: WithNullableArgs<GeneratedFunctions["create_category"], "parent">;
       update_category: WithNullableArgs<GeneratedFunctions["update_category"], "parent">;
@@ -52,6 +53,9 @@ export type Database = Omit<Generated, "public"> & {
         GeneratedFunctions["record_recurring_transaction"],
         "to_amount"
       >;
+      changes_since: Omit<GeneratedFunctions["changes_since"], "Returns"> & {
+        Returns: Changes;
+      };
       title_suggestions: Omit<GeneratedFunctions["title_suggestions"], "Returns"> & {
         Returns: NotNullExcept<
           GeneratedFunctions["title_suggestions"]["Returns"][number],
@@ -61,6 +65,31 @@ export type Database = Omit<Generated, "public"> & {
     };
   };
 };
+
+type Changes = {
+  version: number;
+  reset: boolean;
+  space_ids: string[];
+  rows: { [Table in SyncedTable]: GeneratedTables[Table]["Row"][] };
+  deleted: { table: SyncedTable; key: Record<string, string> }[];
+};
+
+type SyncedTable =
+  | "currencies"
+  | "exchange_rates"
+  | "exchange_rate_history_starts"
+  | "profiles"
+  | "spaces"
+  | "space_members"
+  | "activity"
+  | "ledger_accounts"
+  | "transactions"
+  | "postings"
+  | "recurring_transactions"
+  | "budgets"
+  | "budget_exclusions";
+
+type GeneratedTables = Generated["public"]["Tables"];
 
 type GeneratedViews = Generated["public"]["Views"];
 

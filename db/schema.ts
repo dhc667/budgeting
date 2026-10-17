@@ -22,16 +22,23 @@ import {
 } from "drizzle-orm/pg-core";
 import { authenticatedRole, authUsers } from "drizzle-orm/supabase";
 
+// Set by a trigger to the id of the Postgres transaction that wrote the row (ADR 0012).
+function version() {
+  return bigint({ mode: "number" }).notNull().default(0);
+}
+
 // ISO 4217 currencies in circulation. `decimals` is the number of minor units: 2 for USD, 0 for JPY.
 export const currencies = pgTable(
   "currencies",
   {
+    version: version(),
     code: text().primaryKey(),
     decimals: smallint().notNull(),
     // Its exchange rates are loaded by the instance owner, not fetched.
     ratesByHand: boolean("rates_by_hand").notNull().default(false),
   },
-  () => [
+  (t) => [
+    index("currencies_version_idx").on(t.version),
     pgPolicy("users see every currency", {
       for: "select",
       to: authenticatedRole,
@@ -45,6 +52,7 @@ export const currencies = pgTable(
 export const exchangeRates = pgTable(
   "exchange_rates",
   {
+    version: version(),
     date: date().notNull(),
     currency: text()
       .notNull()
@@ -52,6 +60,7 @@ export const exchangeRates = pgTable(
     rate: numeric({ mode: "number" }).notNull(),
   },
   (t) => [
+    index("exchange_rates_version_idx").on(t.version),
     primaryKey({ columns: [t.date, t.currency] }),
     check("rate_positive", sql`${t.rate} > 0`),
     index("exchange_rates_currency_date_idx").on(t.currency, t.date.desc()),
@@ -67,6 +76,7 @@ export const exchangeRates = pgTable(
 export const exchangeRateHistoryStarts = pgTable(
   "exchange_rate_history_starts",
   {
+    version: version(),
     provider: text().notNull(),
     currency: text()
       .notNull()
@@ -76,6 +86,7 @@ export const exchangeRateHistoryStarts = pgTable(
     checkedOn: date("checked_on").notNull(),
   },
   (t) => [
+    index("exchange_rate_history_starts_version_idx").on(t.version),
     primaryKey({ columns: [t.provider, t.currency] }),
     pgPolicy("users see where every provider's history starts", {
       for: "select",
@@ -101,6 +112,7 @@ export const dateFormat = pgEnum("date_format", [
 export const profiles = pgTable(
   "profiles",
   {
+    version: version(),
     // Cascade only reaches users with no history: anything recording who did what must reference
     // profiles with RESTRICT, so deleting a user who has history fails instead of erasing it.
     id: uuid()
@@ -120,6 +132,7 @@ export const profiles = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("profiles_version_idx").on(t.version),
     check("display_name_not_blank", sql`trim(${t.displayName}) <> ''`),
     check("upcoming_days_within_a_year", sql`${t.upcomingDays} between 0 and 365`),
     pgPolicy("users see everyone in the instance", {
@@ -148,6 +161,7 @@ export const inviteCodes = pgTable("invite_codes", {
 export const spaces = pgTable(
   "spaces",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     name: text(),
     // Cascades because signup creates the private space without logging it: a user with nothing
@@ -158,6 +172,7 @@ export const spaces = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("spaces_version_idx").on(t.version),
     check("private_or_named", sql`(${t.privateOwner} is null) = (${t.name} is not null)`),
     check("name_not_blank", sql`trim(${t.name}) <> ''`),
     pgPolicy("members see their spaces", {
@@ -182,6 +197,7 @@ export const spaces = pgTable(
 export const spaceMembers = pgTable(
   "space_members",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     spaceId: uuid("space_id")
       .notNull()
@@ -192,6 +208,7 @@ export const spaceMembers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("space_members_version_idx").on(t.version),
     unique("one_membership_per_user").on(t.spaceId, t.userId),
     index("space_members_user_id_idx").on(t.userId),
     pgPolicy("members see who else is a member", {
@@ -218,6 +235,7 @@ export const activityAction = pgEnum("activity_action", ["insert", "update", "de
 export const activity = pgTable(
   "activity",
   {
+    version: version(),
     id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
     spaceId: uuid("space_id")
       .notNull()
@@ -232,6 +250,7 @@ export const activity = pgTable(
     new: jsonb(),
   },
   (t) => [
+    index("activity_version_idx").on(t.version),
     index("activity_space_id_idx").on(t.spaceId),
     index("activity_row_id_idx").on(t.rowId),
     index("activity_changed_by_idx").on(t.changedBy),
@@ -270,6 +289,7 @@ export const ledgerAccountKind = pgEnum("ledger_account_kind", [
 export const ledgerAccounts = pgTable(
   "ledger_accounts",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     spaceId: uuid("space_id")
       .notNull()
@@ -287,6 +307,7 @@ export const ledgerAccounts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("ledger_accounts_version_idx").on(t.version),
     check(
       "named_unless_opening_balance",
       sql`(${t.kind} = 'opening_balance') = (${t.name} is null)`,
@@ -357,6 +378,7 @@ export const transactionType = pgEnum("transaction_type", [
 export const transactions = pgTable(
   "transactions",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     date: date().notNull(),
     title: text(),
@@ -367,6 +389,7 @@ export const transactions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("transactions_version_idx").on(t.version),
     check("title_not_blank", sql`trim(${t.title}) <> ''`),
     check("note_not_blank", sql`trim(${t.note}) <> ''`),
     index("transactions_created_by_idx").on(t.createdBy),
@@ -388,6 +411,7 @@ export const transactions = pgTable(
 export const postings = pgTable(
   "postings",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     transactionId: uuid("transaction_id")
       .notNull()
@@ -401,6 +425,7 @@ export const postings = pgTable(
     amount: bigint({ mode: "number" }).notNull(),
   },
   (t) => [
+    index("postings_version_idx").on(t.version),
     index("postings_transaction_id_idx").on(t.transactionId),
     index("postings_ledger_account_id_idx").on(t.ledgerAccountId),
     pgPolicy("members see postings in their spaces", {
@@ -418,6 +443,7 @@ export const repeatUnit = pgEnum("repeat_unit", ["day", "week", "month", "year"]
 export const recurringTransactions = pgTable(
   "recurring_transactions",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     // The space of the account the money leaves or reaches, where the rule's activity is logged.
     spaceId: uuid("space_id")
@@ -449,6 +475,7 @@ export const recurringTransactions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("recurring_transactions_version_idx").on(t.version),
     check("title_not_blank", sql`trim(${t.title}) <> ''`),
     check("note_not_blank", sql`trim(${t.note}) <> ''`),
     check("amount_positive", sql`${t.amount} > 0`),
@@ -481,6 +508,7 @@ export const recurringTransactions = pgTable(
 export const budgets = pgTable(
   "budgets",
   {
+    version: version(),
     id: uuid().primaryKey().defaultRandom(),
     spaceId: uuid("space_id")
       .notNull()
@@ -504,6 +532,7 @@ export const budgets = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    index("budgets_version_idx").on(t.version),
     check("name_not_blank", sql`trim(${t.name}) <> ''`),
     check("amount_positive", sql`${t.amount} > 0`),
     check("every_positive", sql`${t.every} > 0`),
@@ -546,6 +575,7 @@ export const budgets = pgTable(
 export const budgetExclusions = pgTable(
   "budget_exclusions",
   {
+    version: version(),
     budgetId: uuid("budget_id")
       .notNull()
       .references(() => budgets.id, { onDelete: "cascade" }),
@@ -554,12 +584,32 @@ export const budgetExclusions = pgTable(
       .references(() => transactions.id, { onDelete: "cascade" }),
   },
   (t) => [
+    index("budget_exclusions_version_idx").on(t.version),
     primaryKey({ columns: [t.budgetId, t.transactionId] }),
     index("budget_exclusions_transaction_id_idx").on(t.transactionId),
     pgPolicy("members see what their spaces' budgets leave out", {
       for: "select",
       to: authenticatedRole,
       using: sql`exists (select 1 from public.budgets where budgets.id = ${t.budgetId})`,
+    }),
+  ],
+);
+
+// Written only by the trigger that records deletions (ADR 0012). A key tells another space nothing.
+export const deletedRows = pgTable(
+  "deleted_rows",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    tableName: text("table_name").notNull(),
+    key: jsonb().notNull(),
+    version: bigint({ mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("deleted_rows_version_idx").on(t.version),
+    pgPolicy("users see every deleted row", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
     }),
   ],
 );
