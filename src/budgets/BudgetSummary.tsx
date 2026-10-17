@@ -22,7 +22,6 @@ function LoadedSummary({ budget, progress }: { budget: Budget; progress: BudgetP
   const period = progress.current ?? progress.periods.at(-1);
   if (!period) return null;
   const over = period.spent > period.limit;
-  const share = period.limit <= 0 ? 1 : Math.min(Math.max(period.spent / period.limit, 0), 1);
 
   return (
     <div className="flex flex-col gap-2">
@@ -34,12 +33,7 @@ function LoadedSummary({ budget, progress }: { budget: Budget; progress: BudgetP
           {t("budgets.ofLimit", { limit: money(period.limit, budget.currency) })}
         </span>
       </p>
-      <div aria-hidden className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-        <div
-          className={`h-full rounded-full ${over ? "bg-red-500" : "bg-emerald-500"}`}
-          style={{ width: `${share * 100}%` }}
-        />
-      </div>
+      <SpendingBar share={period.limit <= 0 ? 1 : period.spent / period.limit} over={over} />
       <p className={`text-sm ${over ? "text-red-600 dark:text-red-400" : ""}`}>
         {standing(period, today, t, (amount) => money(amount, budget.currency), format.day)}
       </p>
@@ -51,6 +45,22 @@ function LoadedSummary({ budget, progress }: { budget: Budget; progress: BudgetP
           {t("budgets.unconverted", { currencies: progress.unconverted.join(", ") })}
         </p>
       )}
+    </div>
+  );
+}
+
+type SpendingBarProps = { share: number; over: boolean; thin?: boolean };
+
+export function SpendingBar({ share, over, thin = false }: SpendingBarProps) {
+  return (
+    <div
+      aria-hidden
+      className={`${thin ? "h-1" : "h-2"} overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800`}
+    >
+      <div
+        className={`h-full rounded-full ${over ? "bg-red-500" : "bg-emerald-500"}`}
+        style={{ width: `${Math.min(Math.max(share, 0), 1) * 100}%` }}
+      />
     </div>
   );
 }

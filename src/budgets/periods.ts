@@ -10,7 +10,7 @@ export function budgetPeriods(
 ): PeriodProgress[] {
   let carried = 0;
   return periodsUpTo(plan, today).map((period) => {
-    const limit = plan.amount + carried;
+    const limit = plan.limit + carried;
     const spent = spentWithin(spending, period);
     carried = carryOver(plan, limit - spent);
     return { ...period, limit, spent };
@@ -65,9 +65,9 @@ function daysBetween(from: string, to: string): number {
 
 export type BudgetPlan = {
   // Each period's, before carry-over.
-  amount: number;
+  limit: number;
   startsOn: string;
-  length: { kind: "repeating"; every: Repeat["every"]; unit: Repeat["unit"] } | FixedLength;
+  length: (Repeat & { kind: "repeating" }) | FixedLength;
   carryUnspent: boolean;
   carryOverspent: boolean;
 };

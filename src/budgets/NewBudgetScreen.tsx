@@ -36,7 +36,7 @@ export function NewBudgetScreen() {
           initial={{
             name: "",
             currency: profile.display_currency,
-            amount: 0,
+            limit: 0,
             startsOn: localToday(),
             length: { kind: "repeating", every: 1, unit: "month" },
             carryUnspent: false,

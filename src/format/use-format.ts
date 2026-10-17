@@ -21,6 +21,10 @@ export function useFormat() {
       date: (date: Date) => formatDate(date, dateFormat),
       day: (day: string) => formatDate(dayToDate(day), dateFormat),
       time: (date: Date) => new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date),
+      percent: (share: number) =>
+        new Intl.NumberFormat(language, { style: "percent", maximumFractionDigits: 0 }).format(
+          share,
+        ),
     }),
     [language, numberFormat, dateFormat],
   );
