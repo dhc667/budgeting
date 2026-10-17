@@ -70,6 +70,7 @@ describe("categories", () => {
     await user.type(await screen.findByLabelText("Tu nombre"), "Ana");
     await user.type(screen.getByLabelText("Correo electrónico"), uniqueEmail());
     await user.type(screen.getByLabelText("Contraseña"), password);
+    await user.type(screen.getByLabelText("Repite la contraseña"), password);
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
     await user.click(defined((await screen.findAllByRole("link", { name: "Perfil" }))[0]));
     await user.click(await screen.findByRole("link", { name: "Administrar espacios" }));

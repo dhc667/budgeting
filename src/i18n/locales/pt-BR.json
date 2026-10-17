@@ -52,7 +52,9 @@
       "title": "Crie sua conta",
       "name": "Seu nome",
       "submit": "Criar conta",
-      "inviteOnce": "Seu convite funciona uma única vez. Se você já tem uma conta, <signIn>entre</signIn>."
+      "inviteOnce": "Seu convite funciona uma única vez. Se você já tem uma conta, <signIn>entre</signIn>.",
+      "repeatPassword": "Repita a senha",
+      "mismatch": "As senhas não coincidem."
     },
     "alreadySignedIn": {
       "title": "Você já entrou",
