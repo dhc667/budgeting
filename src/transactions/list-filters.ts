@@ -12,8 +12,8 @@ export function useListFilters() {
   const values: ListFilters = {
     search: value("search"),
     space: value("space"),
-    account: value("account"),
-    category: value("category"),
+    account: params.getAll("account"),
+    category: params.getAll("category"),
     from: value("from"),
     to: value("to"),
   };
@@ -21,14 +21,14 @@ export function useListFilters() {
     setParams(
       (next) => {
         for (const [name, value] of Object.entries(changes)) {
-          if (value) next.set(name, value);
-          else next.delete(name);
+          next.delete(name);
+          for (const each of [value].flat()) if (each) next.append(name, each);
         }
         return next;
       },
       { replace: true },
     );
-  const clear = () => change(Object.fromEntries(narrowingNames.map((name) => [name, ""])));
+  const clear = () => change({ space: "", account: [], category: [], from: "", to: "" });
   return { values, change, clear };
 }
 
@@ -59,12 +59,15 @@ export function transactionFilter(
   search: string,
 ): TransactionFilter {
   const { spaces, accounts, categories } = inPlay(values, choices);
-  const account = accounts.find(({ id }) => id === values.account);
-  const category = categories.find(({ id }) => id === values.category);
+  const chosenAccounts = accounts.filter(({ id }) => values.account.includes(id));
+  const chosenCategories = categories
+    .filter(({ id }) => values.category.includes(id))
+    .flatMap((category) => withSubcategories(category, categories));
   return {
     spaceIds: spaces.map(({ id }) => id),
-    accountId: account?.id,
-    categoryIds: category && withSubcategories(category, categories).map(({ id }) => id),
+    accountIds: chosenAccounts.length > 0 ? chosenAccounts.map(({ id }) => id) : undefined,
+    categoryIds:
+      chosenCategories.length > 0 ? [...new Set(chosenCategories.map(({ id }) => id))] : undefined,
     from: values.from || undefined,
     to: values.to || undefined,
     search,
@@ -72,7 +75,7 @@ export function transactionFilter(
 }
 
 export function activeCount(values: ListFilters): number {
-  return narrowingNames.filter((name) => values[name]).length;
+  return narrowingNames.filter((name) => values[name].length > 0).length;
 }
 
 // The search shows on its own, so it isn't counted or cleared with the rest.
@@ -89,6 +92,14 @@ function isOpenedFromList(state: unknown): state is OpenedFromList {
 
 type OpenedFromList = { listSearch: string };
 
-export type ListFilters = Record<"search" | (typeof narrowingNames)[number], string>;
+// Accounts and categories each match any of those chosen.
+export type ListFilters = {
+  search: string;
+  space: string;
+  account: string[];
+  category: string[];
+  from: string;
+  to: string;
+};
 
 type Choices = { shownSpaces: Space[]; accounts: Account[]; categories: Category[] };

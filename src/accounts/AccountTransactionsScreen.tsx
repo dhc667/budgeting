@@ -6,7 +6,7 @@ export function AccountTransactionsScreen() {
   const { t } = useTranslation();
   return (
     <AccountSubscreen title={t("transactions.title")}>
-      {(account) => <TransactionList filter={{ accountId: account.id }} />}
+      {(account) => <TransactionList filter={{ accountIds: [account.id] }} />}
     </AccountSubscreen>
   );
 }

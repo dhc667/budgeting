@@ -84,7 +84,7 @@ describe("filtering transactions", () => {
     await openTransactions();
 
     await user.click(screen.getByRole("button", { name: /Filters/ }));
-    await user.selectOptions(screen.getByLabelText("Category"), "Groceries");
+    await pick("Category", ["Groceries"]);
     await user.type(screen.getByLabelText("From"), daysAgo(30));
     await user.type(screen.getByLabelText("To"), daysAgo(10));
 
@@ -94,6 +94,43 @@ describe("filtering transactions", () => {
     expect(list.getByRole("link", { name: /Supermarket/ })).toBeTruthy();
     for (const left of [/Long ago/, /Pizza/, /Mine/])
       expect(list.queryByRole("link", { name: left })).toBeNull();
+  });
+
+  it("shows what any of the accounts chosen did in any of the categories chosen", async () => {
+    const ana = await budgetOf(uniqueName("Ana"));
+    const [checking, cash, card] = await Promise.all(
+      ["Checking", "Cash", "Card"].map((name) => ana.account(ana.privateSpace, name)),
+    );
+    const [groceries, eatingOut, transport] = await Promise.all(
+      ["Groceries", "Eating out", "Transport"].map((name) => ana.category(ana.privateSpace, name)),
+    );
+    await ana.expense({
+      account: defined(checking),
+      category: defined(groceries),
+      title: "Market",
+    });
+    await ana.expense({ account: defined(cash), category: defined(eatingOut), title: "Lunch" });
+    await ana.expense({
+      account: defined(card),
+      category: defined(groceries),
+      title: "Online shop",
+    });
+    await ana.expense({ account: defined(checking), category: defined(transport), title: "Bus" });
+    await ana.open();
+    await openTransactions();
+
+    await user.click(screen.getByRole("button", { name: /Filters/ }));
+    await pick("Account", ["Checking", "Cash"]);
+    await pick("Category", ["Groceries", "Eating out"]);
+
+    const list = within(screen.getByRole("main"));
+    // Each choice narrows the list as it's made; only all four together show Lunch but not Bus.
+    await waitFor(() => {
+      expect(list.queryByRole("link", { name: /Bus/ })).toBeNull();
+      expect(list.getByRole("link", { name: /Lunch/ })).toBeTruthy();
+    });
+    expect(list.getByRole("link", { name: /Market/ })).toBeTruthy();
+    expect(list.queryByRole("link", { name: /Online shop/ })).toBeNull();
   });
 
   it("keeps the search and filters after opening a transaction and coming back", async () => {
@@ -108,7 +145,7 @@ describe("filtering transactions", () => {
     await openTransactions();
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "market");
     await user.click(screen.getByRole("button", { name: /Filters/ }));
-    await user.selectOptions(screen.getByLabelText("Category"), "Eating out");
+    await pick("Category", ["Eating out"]);
     const list = within(screen.getByRole("main"));
     await waitFor(() =>
       expect(list.queryByRole("link", { name: /^Market\b(?! lunch)/ })).toBeNull(),
@@ -218,6 +255,12 @@ async function rpc<Name extends keyof Functions>(
 }
 
 type Functions = Database["public"]["Functions"];
+
+async function pick(filter: string, options: string[]) {
+  await user.click(screen.getByRole("button", { name: new RegExp(`^${filter}`) }));
+  for (const option of options) await user.click(screen.getByRole("checkbox", { name: option }));
+  await user.keyboard("{Escape}");
+}
 
 async function hideSpace(spaceName: string) {
   await user.click(defined((await screen.findAllByRole("button", { name: "All spaces" }))[0]));

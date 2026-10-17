@@ -28,8 +28,7 @@ export function TransactionList({ filter, empty }: TransactionListProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Seen from one account, a transfer shows whether it left or reached it. */}
-      <TransactionGroups transactions={transactions} accountId={filter.accountId} empty={empty} />
+      <TransactionGroups transactions={transactions} accountId={seenFrom(filter)} empty={empty} />
       {hasNextPage && (
         // The pages shown may still be those of the filter before, until this one's first arrives.
         <Button
@@ -165,6 +164,11 @@ export function TransactionSummary({
       </span>
     </>
   );
+}
+
+// Seen from one account, a transfer shows whether it left or reached it.
+function seenFrom({ accountIds }: TransactionFilter): string | undefined {
+  return accountIds?.length === 1 ? accountIds[0] : undefined;
 }
 
 function plusSign(direction: ShownAmount["direction"]): string {
