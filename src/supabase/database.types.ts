@@ -45,6 +45,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"exchange_rate_history_starts": {
+                  Row: {
+                    "checked_on": string,"currency": string,"provider": string,"starts_on": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_on": string,"currency": string,"provider": string,"starts_on": string
+                  }
+                  Update: {
+                    "checked_on"?: string,"currency"?: string,"provider"?: string,"starts_on"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exchange_rate_history_starts_currency_currencies_code_fk"
+      columns: ["currency"]
+isOneToOne: false
+      referencedRelation: "currencies"
+      referencedColumns: ["code"]
+    }
+                  ]
                 },"exchange_rates": {
                   Row: {
                     "currency": string,"date": string,"rate": number
@@ -525,6 +545,9 @@ isOneToOne: false
                            },
 "opening_balance_transaction":
 { Args: { "account": string }; Returns: string
+                           },
+"record_exchange_rate_history_starts":
+{ Args: { "rate_provider": string,"starts": Json }; Returns: undefined
                            },
 "reorder_accounts":
 { Args: { "account_ids": (string)[] }; Returns: undefined

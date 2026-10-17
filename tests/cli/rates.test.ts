@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { daysAgo } from "../support/dates";
-import { signedInUser, sql } from "../support/local-instance";
+import { defined, signedInUser, sql } from "../support/local-instance";
 
 // A made-up currency, so loading rates by hand leaves the instance's real ones alone. It stays,
 // as the other made-up currencies do.
@@ -71,6 +71,17 @@ describe("loading a currency's rates by hand", () => {
     expect(run.stderr).toContain(`${daysAgo(-3)} is in the future`);
     expect(run.stderr).toContain("rates[2]");
     expect(await storedRates()).toEqual([]);
+  });
+
+  it("agrees with the app on what today is, wherever in the world it already is", async () => {
+    const [row] = await sql<{ today: string; tomorrow: string }[]>`
+      select latest_today()::text as today, (latest_today() + 1)::text as tomorrow`;
+    const { today, tomorrow } = defined(row);
+
+    expect(loadRates({ currency, rates: [{ date: today, rate: 700 }] }).stderr).toBe("");
+    expect(loadRates({ currency, rates: [{ date: tomorrow, rate: 700 }] }).stderr).toContain(
+      `${tomorrow} is in the future`,
+    );
   });
 
   it("refuses a currency the app doesn't know", () => {

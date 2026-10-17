@@ -1,5 +1,5 @@
 {
-  "id": "d31f5fcd-9da0-459c-a0a5-dc3239a98712",
+  "id": "ce5b670f-2b64-4082-a2e2-7e117ec46709",
   "prevId": "9628328c-c30a-4096-82ef-a70fb6ac5aab",
   "version": "7",
   "dialect": "postgresql",
@@ -198,6 +198,75 @@
       "policies": {
         "users see every currency": {
           "name": "users see every currency",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.exchange_rate_history_starts": {
+      "name": "exchange_rate_history_starts",
+      "schema": "",
+      "columns": {
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starts_on": {
+          "name": "starts_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "checked_on": {
+          "name": "checked_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "exchange_rate_history_starts_currency_currencies_code_fk": {
+          "name": "exchange_rate_history_starts_currency_currencies_code_fk",
+          "tableFrom": "exchange_rate_history_starts",
+          "tableTo": "currencies",
+          "columnsFrom": [
+            "currency"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "exchange_rate_history_starts_provider_currency_pk": {
+          "name": "exchange_rate_history_starts_provider_currency_pk",
+          "columns": [
+            "provider",
+            "currency"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "users see where every provider's history starts": {
+          "name": "users see where every provider's history starts",
           "as": "PERMISSIVE",
           "for": "SELECT",
           "to": [

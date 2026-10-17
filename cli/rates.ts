@@ -38,7 +38,8 @@ export const ratesFile = z
     rates: z.array(z.strictObject({ date: z.iso.date(), rate: z.number().positive() })).min(1),
   })
   .superRefine((file, context) => {
-    const today = new Date().toISOString().slice(0, 10);
+    // The database's latest_today(): the date where the day starts first, UTC+14.
+    const today = new Date(Date.now() + 14 * 3_600_000).toISOString().slice(0, 10);
     const seen = new Set<string>();
     file.rates.forEach(({ date }, i) => {
       if (seen.has(date)) {

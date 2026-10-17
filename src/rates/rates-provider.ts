@@ -1,13 +1,21 @@
 // The only module that knows where rates come from. Rates are units per 1 USD.
+
+// What the app records about the provider is kept under this: change it when the rates start
+// coming from somewhere else.
+export const providerId = "frankfurter-v2";
+
 export async function fetchLatestRates(): Promise<ProviderRate[]> {
   return parseRates(await get({ base: "USD" }));
 }
 
-export async function fetchRatesBetween(from: string, to: string): Promise<ProviderRate[]> {
-  const rates = parseRates(await get({ base: "USD", from, to }));
-  // For a currency with no rate on `from`, the provider also sends the one before it, which is the
-  // rate `from` itself trades at.
-  return rates.filter(({ date }) => date <= to);
+export async function fetchRatesBetween(
+  from: string,
+  to: string,
+  currencies: string[],
+): Promise<ProviderRate[]> {
+  const rates = parseRates(await get({ base: "USD", quotes: currencies.join(","), from, to }));
+  // For a currency with no rate on `from`, the provider also sends the one before it.
+  return rates.filter(({ date }) => date >= from && date <= to);
 }
 
 async function get(query: Record<string, string>): Promise<unknown> {

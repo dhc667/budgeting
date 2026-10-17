@@ -28,6 +28,10 @@ beforeEach(async () => {
     [byHand, 24],
   ]);
   stubbedProvider.hasRatesOn = () => true;
+  stubbedProvider.requests = [];
+  stubbedProvider.latestRequests = 0;
+  stubbedProvider.historyStarts = new Map();
+  stubbedProvider.providerId = "stub";
   await clearRates();
 });
 
@@ -43,7 +47,8 @@ afterAll(async () => {
 
 describe("filling in missing exchange rates", () => {
   it("backfills a provided currency to the oldest transaction, and leaves a hand-loaded one alone", async () => {
-    await storeRates(byHand, 0, 30, 40);
+    // Like a currency the family no longer uses, whose rates end months ago.
+    await storeRates(byHand, 90, 120, 40);
     await storeRates(provided, 0, 0, 4);
     const ana = await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
@@ -52,12 +57,17 @@ describe("filling in missing exchange rates", () => {
     await reopenApp();
 
     const client = await signedInAs(ana.email);
-    await vi.waitFor(async () => expect(await datesStored(client, provided)).toHaveLength(21), {
-      timeout: 10_000,
-    });
+    await vi.waitFor(
+      async () =>
+        expect(rateDateFor(await datesStored(client, provided), daysAgo(20))).toBe(daysAgo(20)),
+      {
+        timeout: 10_000,
+      },
+    );
     const handLoaded = await ratesStored(client, byHand);
     expect(handLoaded).toHaveLength(31);
     expect(handLoaded.every(({ rate }) => rate === 40)).toBe(true);
+    expect(stubbedProvider.requests.flatMap(({ currencies }) => currencies)).not.toContain(byHand);
   });
 
   it("backfills a currency the provider only starts covering later", async () => {
@@ -71,10 +81,64 @@ describe("filling in missing exchange rates", () => {
     await reopenApp();
 
     const client = await signedInAs(ana.email);
-    await vi.waitFor(async () => expect(await datesStored(client, alsoProvided)).toHaveLength(21), {
-      timeout: 10_000,
+    await vi.waitFor(
+      async () =>
+        expect(rateDateFor(await datesStored(client, alsoProvided), daysAgo(20))).toBe(daysAgo(20)),
+      {
+        timeout: 10_000,
+      },
+    );
+    expect(rateDateFor(await datesStored(client, provided), daysAgo(20))).toBe(daysAgo(20));
+  });
+
+  it("asks the provider only for the currencies with rates missing", async () => {
+    await storeRates(provided, 0, 25, 4);
+    await storeRates(alsoProvided, 0, 0, 5);
+    const ana = await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+    stubbedProvider.requests = [];
+
+    await reopenApp();
+
+    const client = await signedInAs(ana.email);
+    await vi.waitFor(
+      async () =>
+        expect(rateDateFor(await datesStored(client, alsoProvided), daysAgo(20))).toBe(daysAgo(20)),
+      {
+        timeout: 10_000,
+      },
+    );
+    expect(stubbedProvider.requests.map(({ currencies }) => currencies)).toEqual([[alsoProvided]]);
+  });
+
+  describe("when the provider's history for a currency starts after the oldest transaction", () => {
+    it("doesn't ask for it again from any device", async () => {
+      const ana = await backfilledToWhereHistoryStarts();
+
+      await openOnAnotherDevice(ana.email);
+
+      expect(await currenciesAskedForOlderRates(ana)).toEqual([provided]);
     });
-    expect(await datesStored(client, provided)).toHaveLength(21);
+
+    it("asks again once the rates come from another provider", async () => {
+      const ana = await backfilledToWhereHistoryStarts();
+      stubbedProvider.providerId = "another";
+
+      await openOnAnotherDevice(ana.email);
+
+      expect(await currenciesAskedForOlderRates(ana)).toEqual([provided, alsoProvided]);
+    });
+
+    it("asks again a month later, in case the provider has added older rates", async () => {
+      const ana = await backfilledToWhereHistoryStarts();
+      await sql`update exchange_rate_history_starts set checked_on = current_date - 31
+        where currency = ${alsoProvided}`;
+
+      await openOnAnotherDevice(ana.email);
+
+      expect(await currenciesAskedForOlderRates(ana)).toEqual([provided, alsoProvided]);
+    });
   });
 
   it("gives an oldest transaction on a day without published rates the rate from before it", async () => {
@@ -88,12 +152,13 @@ describe("filling in missing exchange rates", () => {
 
     const client = await signedInAs(ana.email);
     await vi.waitFor(
-      async () => expect((await datesStored(client, provided)).at(-1)).toBe(daysAgo(21)),
+      async () =>
+        expect(rateDateFor(await datesStored(client, provided), daysAgo(20))).toBe(daysAgo(21)),
       { timeout: 10_000 },
     );
   });
 
-  it("syncs again when the app is brought back on a new day", async () => {
+  it("syncs once a day: not when the app is brought back the same day, but on the next", async () => {
     const ana = await existingUser(uniqueName("Ana"));
     const [yesterday, today] = [daysAgo(1), daysAgo(0)];
     const realNow = Date.now();
@@ -105,6 +170,10 @@ describe("filling in missing exchange rates", () => {
     await vi.waitFor(async () => expect(await datesStored(client, provided)).toEqual([yesterday]), {
       timeout: 10_000,
     });
+    window.dispatchEvent(new Event("visibilitychange"));
+    // Long enough for a sync to have asked the provider, had it started.
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(stubbedProvider.latestRequests).toBe(1);
 
     vi.setSystemTime(realNow);
     window.dispatchEvent(new Event("visibilitychange"));
@@ -115,6 +184,44 @@ describe("filling in missing exchange rates", () => {
     );
   });
 });
+
+// The provider has rates for alsoProvided only from 10 days ago, and Ana's oldest transaction is 20
+// days old. Then she records an older one, for which only the provided currency has rates to ask.
+async function backfilledToWhereHistoryStarts() {
+  stubbedProvider.historyStarts.set(alsoProvided, daysAgo(10));
+  await storeRates(provided, 0, 20, 4);
+  const ana = await openSignedIn(uniqueName("Ana"));
+  await addAccount({ name: "Checking", openingBalance: "100" });
+  await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+  await reopenApp();
+  const client = await signedInAs(ana.email);
+  await vi.waitFor(
+    async () => expect((await datesStored(client, alsoProvided)).at(-1)).toBe(daysAgo(10)),
+    { timeout: 10_000 },
+  );
+  await sql`update transactions set date = current_date - 25 where created_by = ${ana.userId}`;
+  return ana;
+}
+
+// Once the older transaction has its rate, the request that brought it is the last one made.
+async function currenciesAskedForOlderRates(ana: { email: string }) {
+  const client = await signedInAs(ana.email);
+  await vi.waitFor(
+    async () =>
+      expect(rateDateFor(await datesStored(client, provided), daysAgo(25))).toBe(daysAgo(25)),
+    { timeout: 10_000 },
+  );
+  return stubbedProvider.requests.at(-1)?.currencies;
+}
+
+async function openOnAnotherDevice(email: string) {
+  await goHome();
+  cleanup();
+  localStorage.clear();
+  openApp(signInLink());
+  await signIn(email, password);
+  await screen.findByRole("heading", { name: /^Good/ });
+}
 
 async function reopenApp() {
   await goHome();
@@ -137,6 +244,11 @@ async function ratesStored(client: Client, currency: string) {
 
 async function datesStored(client: Client, currency: string): Promise<string[]> {
   return (await ratesStored(client, currency)).map(({ date }) => date);
+}
+
+// A day trades at the latest rate on or before it; dates come newest first.
+function rateDateFor(dates: string[], day: string): string | undefined {
+  return dates.find((date) => date <= day);
 }
 
 async function storeRates(

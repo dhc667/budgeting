@@ -63,6 +63,28 @@ export const exchangeRates = pgTable(
   ],
 );
 
+// Keyed on the provider: another one may have older rates.
+export const exchangeRateHistoryStarts = pgTable(
+  "exchange_rate_history_starts",
+  {
+    provider: text().notNull(),
+    currency: text()
+      .notNull()
+      .references(() => currencies.code),
+    // The provider has no rates for the currency before this day.
+    startsOn: date("starts_on").notNull(),
+    checkedOn: date("checked_on").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.provider, t.currency] }),
+    pgPolicy("users see where every provider's history starts", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+  ],
+);
+
 export const language = pgEnum("language", ["en", "es-419", "pt-BR"]);
 export const numberFormat = pgEnum("number_format", [
   "comma_period",
