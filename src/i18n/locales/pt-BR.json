@@ -487,8 +487,9 @@
       "received": "Recebi",
       "receivedHint": "Peguei emprestado, ou recebi de volta",
       "counterparty": "Contraparte",
-      "chooseCounterparty": "Escolha uma contraparte",
-      "noCounterparties": "O espaço desta conta ainda não tem contrapartes."
+      "chooseCounterparty": "Escolha uma contraparte, ou digite uma nova",
+      "newCounterparty": "Adicionar “{{name}}”",
+      "newCounterpartyHint": "“{{name}}” é adicionado como contraparte ao salvar."
     },
     "oneSided": {
       "toAnotherSpace": "De “{{account}}” para outro espaço",
@@ -803,5 +804,8 @@
       "confirm": "Excluir",
       "confirmTitle": "Excluir {{name}}?"
     }
+  },
+  "money": {
+    "chooseCurrency": "Escolha uma moeda"
   }
 }

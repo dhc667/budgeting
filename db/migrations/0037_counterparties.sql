@@ -340,10 +340,13 @@ begin
 end;
 $$;
 --> statement-breakpoint
+-- The id may come from the app, so that a counterparty sent again, never having heard back, is
+-- saved once.
 create function public.create_counterparty(
   space uuid,
   counterparty_name text,
-  counterparty_color public.color
+  counterparty_color public.color,
+  counterparty_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -351,15 +354,15 @@ security definer
 set search_path = ''
 as $$
 declare
-  counterparty uuid;
+  counterparty uuid := coalesce(counterparty_id, gen_random_uuid());
 begin
   if not public.is_space_member(space) then
     raise exception 'only a member of a space can add counterparties to it';
   end if;
 
-  insert into public.ledger_accounts (space_id, kind, name, color)
-  values (space, 'counterparty', trim(counterparty_name), counterparty_color)
-  returning id into counterparty;
+  insert into public.ledger_accounts (id, space_id, kind, name, color)
+  values (counterparty, space, 'counterparty', trim(counterparty_name), counterparty_color)
+  on conflict (id) do nothing;
   return counterparty;
 end;
 $$;
@@ -413,7 +416,7 @@ $$;
 grant execute on function
   public.add_transaction(uuid, public.transaction_type, date, text, text, uuid, bigint, uuid, uuid, bigint, uuid),
   public.update_transaction(uuid, public.transaction_type, date, text, text, uuid, bigint, uuid, uuid, bigint, uuid),
-  public.create_counterparty(uuid, text, public.color),
+  public.create_counterparty(uuid, text, public.color, uuid),
   public.update_counterparty(uuid, text, public.color),
   public.delete_counterparty(uuid)
 to authenticated;

@@ -259,6 +259,31 @@ describe("transactions", () => {
   });
 });
 
-function picked(picker: string): string | null {
-  return screen.getByRole("combobox", { name: picker }).textContent;
+// What the field shows: the chosen option, or the placeholder.
+describe("pickers", () => {
+  it("narrow their options as the user types, but keep only an option", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "" });
+    await addAccount({ name: "Checking", openingBalance: "" });
+    await openNewTransaction();
+    await choose("Account", "Cash");
+
+    const account = screen.getByRole("combobox", { name: "Account" });
+    await user.clear(account);
+    await user.type(account, "chec");
+    expect(
+      screen.getAllByRole("option").map((option) => option.getAttribute("aria-label")),
+    ).toEqual(["Checking"]);
+    await user.clear(account);
+    await user.type(account, "Savings");
+    await user.tab();
+
+    expect(picked("Account")).toBe("Cash");
+  });
+});
+
+function picked(picker: string): string {
+  const field = screen.getByRole("combobox", { name: picker });
+  if (!(field instanceof HTMLInputElement)) throw new Error(`${picker} isn't a text field`);
+  return field.value || field.placeholder;
 }

@@ -111,6 +111,23 @@ describe("counterparties", () => {
     expect(error?.message).toBe("only a member of a space can add counterparties to it");
   });
 
+  it("are saved once when sent again with the same id", async () => {
+    const id = crypto.randomUUID();
+    const args: Database["public"]["Functions"]["create_counterparty"]["Args"] = {
+      space: familyId,
+      counterparty_name: "Acme",
+      counterparty_color: "red",
+      counterparty_id: id,
+    };
+
+    const first = await ana.client.rpc("create_counterparty", args);
+    const again = await ana.client.rpc("create_counterparty", args);
+
+    expect([first.data, again.data]).toEqual([id, id]);
+    const { data } = await ana.client.from("ledger_accounts").select("id").eq("name", "Acme");
+    expect(data).toEqual([{ id }]);
+  });
+
   it("are renamed and recolored", async () => {
     const { error } = await ana.client.rpc("update_counterparty", {
       counterparty_id: charlie,

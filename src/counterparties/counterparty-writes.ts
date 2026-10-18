@@ -2,15 +2,18 @@
 import type { AppSupabase } from "../supabase/client.ts";
 import type { Enums } from "../supabase/database.types.ts";
 
+// An id generated beforehand makes a retry save the counterparty once.
 export async function createCounterparty(
   supabase: AppSupabase,
   spaceId: string,
   { name, color }: CounterpartyDetails,
+  id?: string,
 ): Promise<string> {
   const { data, error } = await supabase.rpc("create_counterparty", {
     space: spaceId,
     counterparty_name: name,
     counterparty_color: color,
+    counterparty_id: id,
   });
   if (error) throw error;
   return data;

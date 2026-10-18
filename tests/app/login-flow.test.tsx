@@ -130,7 +130,8 @@ describe("profile", () => {
     const name = card.getByLabelText("Name");
     await user.clear(name);
     await user.type(name, "Daniela");
-    await user.selectOptions(card.getByLabelText("Display currency"), "EUR");
+    await user.click(card.getByRole("combobox", { name: "Display currency" }));
+    await user.click(card.getByRole("option", { name: /^EUR · / }));
     await user.click(card.getByRole("button", { name: "Save" }));
     await card.findByText("Saved.");
 
@@ -143,9 +144,8 @@ describe("profile", () => {
   it("explains a display currency refused because its rate went stale meanwhile", async () => {
     const card = within(await screen.findByRole("region", { name: "About you" }));
     await sql`update exchange_rates set date = current_date - 30 where currency = ${goingStale}`;
-    await card.findByRole("option", { name: new RegExp(goingStale) });
-
-    await user.selectOptions(card.getByLabelText("Display currency"), goingStale);
+    await user.click(card.getByRole("combobox", { name: "Display currency" }));
+    await user.click(await card.findByRole("option", { name: new RegExp(`^${goingStale} · `) }));
     await user.click(card.getByRole("button", { name: "Save" }));
 
     expect((await card.findByRole("alert")).textContent).toMatch(/no recent exchange rate/);

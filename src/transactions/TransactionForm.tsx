@@ -27,7 +27,7 @@ import { TitleField } from "./TitleField";
 import { AccountPicker, CategoryPicker } from "./TransactionPickers";
 import { categoryKindOf, ruleTabs, tabOf, tabs, typeOf } from "./transaction-tabs";
 import { DirectionChoice, TypeTabs } from "./TypeTabs";
-import { type TitleSuggestion, useTitleSuggestions } from "./transaction-queries";
+import { type Extras, type TitleSuggestion, useTitleSuggestions } from "./transaction-queries";
 import {
   draftOf,
   otherSideOf,
@@ -49,7 +49,7 @@ type Saving =
       kind: "transaction";
       // The budgets it was left out of, among those it counts toward.
       excludedBudgetIds: string[];
-      onSave: (draft: TransactionDraft, excludedBudgetIds: string[]) => void;
+      onSave: (draft: TransactionDraft, extras: Extras) => void;
       // Offers to repeat it instead. Its date is then where the schedule starts, and may be ahead.
       onRepeat?: (draft: TransactionDraft, schedule: Schedule, recordFirst: boolean) => void;
     }
@@ -125,6 +125,9 @@ function LoadedTransactionForm({
   );
   const [pickedCategoryId, setPickedCategoryId] = useState(initial.categoryId);
   const [pickedCounterpartyId, setPickedCounterpartyId] = useState(initial.counterpartyId);
+  // One id for every attempt, so a retry after a lost reply can't add the counterparty twice.
+  const [newCounterpartyId] = useState(() => crypto.randomUUID());
+  const [newCounterpartyName, setNewCounterpartyName] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState(initial.toAccountId ?? "");
   const [title, setTitle] = useState(initial.title);
   const [amount, setAmount] = useState(() => typedAmount(initial.amount, initial.accountId));
@@ -154,7 +157,12 @@ function LoadedTransactionForm({
   const offeredCounterparties = counterparties.filter(
     ({ space_id }) => space_id === account?.space_id,
   );
-  const counterparty = offeredCounterparties.find(({ id }) => id === pickedCounterpartyId);
+  const newCounterparty =
+    newCounterpartyName === null ? null : { id: newCounterpartyId, name: newCounterpartyName };
+  const counterparty =
+    pickedCounterpartyId === newCounterpartyId
+      ? (newCounterparty ?? undefined)
+      : offeredCounterparties.find(({ id }) => id === pickedCounterpartyId);
   const exchanged = toAccount !== undefined && toAccount.currency !== account?.currency;
   // Rules record transactions later, so they leave nothing out of budgets.
   const countedIn =
@@ -166,7 +174,8 @@ function LoadedTransactionForm({
     const chosen = accounts.find((candidate) => candidate.id === id);
     if (chosen?.space_id !== account?.space_id) {
       setPickedCategoryId(null);
-      setPickedCounterpartyId(null);
+      // A counterparty named in the form is added to whichever space the account is in.
+      if (pickedCounterpartyId !== newCounterpartyId) setPickedCounterpartyId(null);
     }
     setAccountId(id);
   };
@@ -227,10 +236,13 @@ function LoadedTransactionForm({
       case "transaction":
         if (repeating && saving.onRepeat)
           return saving.onRepeat(draft, scheduleFrom(form, date), button === "record");
-        return saving.onSave(
-          draft,
-          keptExclusions(excludedBudgetIds, countedIn, saving.excludedBudgetIds),
-        );
+        return saving.onSave(draft, {
+          excludedBudgetIds: keptExclusions(excludedBudgetIds, countedIn, saving.excludedBudgetIds),
+          newCounterparty:
+            otherSideOf(type) === "counterparty" && counterparty?.id === newCounterpartyId
+              ? { id: newCounterpartyId, spaceId: account.space_id, name: counterparty.name }
+              : null,
+        });
     }
   };
 
@@ -289,8 +301,13 @@ function LoadedTransactionForm({
       {tab === "debt" && (
         <CounterpartyPicker
           counterparties={offeredCounterparties}
+          named={newCounterparty}
           value={counterparty?.id ?? null}
           onChange={setPickedCounterpartyId}
+          onName={(name) => {
+            setNewCounterpartyName(name);
+            setPickedCounterpartyId(newCounterpartyId);
+          }}
         />
       )}
       {tab === "transfer" && exchanged && (
@@ -418,7 +435,7 @@ type ProblemInput = {
   type: TransactionType;
   amount: number | null;
   category: Category | undefined;
-  counterparty: Counterparty | undefined;
+  counterparty: { id: string } | undefined;
   toAccount: Account | undefined;
   exchanged: boolean;
   toAmount: number | null;

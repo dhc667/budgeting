@@ -8,6 +8,7 @@ export function useAccountOption(): (account: Account) => PickerOption {
   return (account) => ({
     id: account.id,
     label: account.name,
+    icon: <ColorDot color={account.color} />,
     content: (
       <>
         <ColorDot color={account.color} />

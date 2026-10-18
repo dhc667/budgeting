@@ -7,7 +7,7 @@ import { categoryOptions } from "../categories/category-options";
 import { type Category, useCategories } from "../categories/category-queries";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
-import { CurrencySelect } from "../money/CurrencySelect";
+import { CurrencyPicker } from "../money/CurrencyPicker";
 import { useProfile } from "../profile/profile-queries";
 import { units } from "../recurring/schedule";
 import { unitName } from "../recurring/recurring";
@@ -101,11 +101,7 @@ function LoadedBudgetForm({
     <form onSubmit={submitWith(save)} className="flex flex-col gap-4">
       {extraFields}
       <Field label={t("budgets.form.name")} name="name" defaultValue={initial.name} required />
-      <CurrencySelect
-        label={t("budgets.form.currency")}
-        value={currency}
-        onChange={(event) => setCurrency(event.target.value)}
-      />
+      <CurrencyPicker label={t("budgets.form.currency")} value={currency} onChange={setCurrency} />
       {/* Keyed by currency: an amount typed for one currency means nothing in another. */}
       <Field
         key={currency}

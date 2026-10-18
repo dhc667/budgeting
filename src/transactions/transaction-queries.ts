@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { setBudgetExclusions } from "../budgets/budget-queries";
+import { createCounterparty } from "../counterparties/counterparty-writes";
 import { useSupabase } from "../instance/instance-context";
+import type { AppSupabase } from "../supabase/client";
 import { useSignedInUser } from "../auth/session";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import {
@@ -66,7 +68,13 @@ export function useTitleSuggestions() {
 export function useAddTransaction() {
   const supabase = useSupabase();
   return useCopyMutation(
-    async ({ id, excludedBudgetIds, ...draft }: TransactionDraft & Exclusions & { id: string }) => {
+    async ({
+      id,
+      excludedBudgetIds,
+      newCounterparty,
+      ...draft
+    }: TransactionDraft & Extras & { id: string }) => {
+      if (newCounterparty) await addCounterparty(supabase, newCounterparty);
       await addTransaction(supabase, id, draft);
       if (excludedBudgetIds.length > 0) await setBudgetExclusions(supabase, id, excludedBudgetIds);
     },
@@ -75,10 +83,17 @@ export function useAddTransaction() {
 
 export function useUpdateTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useCopyMutation(async ({ excludedBudgetIds, ...draft }: TransactionDraft & Exclusions) => {
-    await updateTransaction(supabase, transactionId, draft);
-    await setBudgetExclusions(supabase, transactionId, excludedBudgetIds);
-  });
+  return useCopyMutation(
+    async ({ excludedBudgetIds, newCounterparty, ...draft }: TransactionDraft & Extras) => {
+      if (newCounterparty) await addCounterparty(supabase, newCounterparty);
+      await updateTransaction(supabase, transactionId, draft);
+      await setBudgetExclusions(supabase, transactionId, excludedBudgetIds);
+    },
+  );
+}
+
+function addCounterparty(supabase: AppSupabase, { id, spaceId, name }: NewCounterparty) {
+  return createCounterparty(supabase, spaceId, { name, color: "slate" }, id);
 }
 
 export function useDeleteTransaction(transactionId: string) {
@@ -93,7 +108,11 @@ export function useRestoreTransaction(transactionId: string) {
 
 const pageSize = 50;
 
-type Exclusions = { excludedBudgetIds: string[] };
+// What saving a transaction does besides: the budgets it's left out of, and the counterparty it
+// creates, named in the form.
+export type Extras = { excludedBudgetIds: string[]; newCounterparty: NewCounterparty | null };
+
+export type NewCounterparty = { id: string; spaceId: string; name: string };
 
 export type Transaction = Database["public"]["Views"]["transaction_details"]["Row"];
 

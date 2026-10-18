@@ -487,8 +487,9 @@
       "received": "I received",
       "receivedHint": "Borrowed it, or got it back",
       "counterparty": "Counterparty",
-      "chooseCounterparty": "Choose a counterparty",
-      "noCounterparties": "This account's space has no counterparties yet."
+      "chooseCounterparty": "Choose a counterparty, or type a new one",
+      "newCounterparty": "Add “{{name}}”",
+      "newCounterpartyHint": "“{{name}}” is added as a counterparty when you save."
     },
     "oneSided": {
       "toAnotherSpace": "From “{{account}}” to another space",
@@ -803,5 +804,8 @@
       "confirm": "Delete",
       "confirmTitle": "Delete {{name}}?"
     }
+  },
+  "money": {
+    "chooseCurrency": "Choose a currency"
   }
 }
