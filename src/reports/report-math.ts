@@ -1,3 +1,4 @@
+import type { Color } from "../colors/colors";
 import { daysAfter, type DateRange } from "../format/days";
 import { groupBy } from "../group-by";
 import {
@@ -6,24 +7,26 @@ import {
   earliestMissing,
   type MissingRate,
 } from "../rates/convert-dated";
-import { monthKey } from "./periods";
+import { inPeriod, monthKey } from "./periods";
 import type { AccountMovement, CategoryFlow } from "./read-reports";
 
 export function spendingByCategory(
   flows: readonly CategoryFlow[],
-  { from, to }: DateRange,
+  period: DateRange,
   conversion: DisplayConversion,
 ): SpendingReport {
   const missing: MissingRate[] = [];
-  const byCategory = new Map<string, CategorySpending>();
+  const byCategory = new Map<string, Omit<CategorySpending, "share">>();
 
   for (const flow of flows) {
-    if (flow.kind !== "expense" || flow.day < from || flow.day > to) continue;
+    if (flow.kind !== "expense" || !inPeriod(flow.day, period)) continue;
     const amount = inDisplayCurrency(flow.net, flow.currency, flow.day, conversion, missing);
     if (amount === undefined) continue;
     const spending = byCategory.get(flow.categoryId) ?? {
       categoryId: flow.categoryId,
       name: flow.categoryName,
+      icon: flow.categoryIcon,
+      color: flow.categoryColor,
       spaceId: flow.spaceId,
       amount: 0,
     };
@@ -31,12 +34,16 @@ export function spendingByCategory(
     byCategory.set(flow.categoryId, spending);
   }
 
-  const categories = [...byCategory.values()].sort(
+  const sorted = [...byCategory.values()].sort(
     (a, b) => b.amount - a.amount || a.name.localeCompare(b.name),
   );
+  const spent = sorted.reduce((sum, { amount }) => sum + Math.max(amount, 0), 0);
   return {
-    total: categories.reduce((sum, { amount }) => sum + amount, 0),
-    categories,
+    total: sorted.reduce((sum, { amount }) => sum + amount, 0),
+    categories: sorted.map((category) => ({
+      ...category,
+      share: spent > 0 ? Math.max(category.amount, 0) / spent : 0,
+    })),
     missing: earliestMissing(missing),
   };
 }
@@ -122,11 +129,16 @@ export type SpendingReport = {
   missing: MissingRate[];
 };
 
-type CategorySpending = {
+export type CategorySpending = {
   categoryId: string;
   name: string;
+  icon: string;
+  color: Color;
   spaceId: string;
   amount: number;
+  // Of what the categories that spent anything spent, so the shares add up to 1. A category
+  // refunded more than it spent takes none.
+  share: number;
 };
 
 export type IncomeExpenseReport = { months: MonthFlow[]; missing: MissingRate[] };

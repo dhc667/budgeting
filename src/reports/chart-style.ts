@@ -29,6 +29,3 @@ export const tooltipStyle = {
 export const noAnimation = { isAnimationActive: false };
 
 export const chartHeight = { netWorth: 160, incomeExpense: 200 };
-export const spendingRowHeight = 32;
-export const spendingAxisHeight = 32;
-export const spendingBarSize = 12;

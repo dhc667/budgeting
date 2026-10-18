@@ -1,27 +1,17 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bar, BarChart, Tooltip, XAxis, YAxis } from "recharts";
 import { localToday } from "../format/days";
-import type { Currency } from "../format/format";
 import { useFormat } from "../format/use-format";
 import { spaceName } from "../spaces/space";
+import { CategoryIcon } from "../categories/CategoryIcon";
 import { Card, EmptyState } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Field } from "../ui/Field";
 import type { DateRange } from "../format/days";
-import { lastMonth, thisMonth, thisYear } from "./periods";
+import { allTime, lastMonth, thisMonth, thisYear } from "./periods";
 import type { ReportData } from "./report-queries";
 import type { SpendingReport } from "./report-math";
-import { ChartFrame } from "./ChartFrame";
-import {
-  axisProps,
-  noAnimation,
-  series,
-  spendingAxisHeight,
-  spendingBarSize,
-  spendingRowHeight,
-  tooltipStyle,
-  useChartMoney,
-} from "./chart-style";
+import { SpendingPie } from "./SpendingPie";
 import { Unconverted } from "./Unconverted";
 
 export function SpendingByCategory({
@@ -39,6 +29,9 @@ export function SpendingByCategory({
   const format = useFormat();
   const today = localToday();
   const showSpace = data.spaces.length > 1;
+  const [selected, setSelected] = useState<string | null>(null);
+  const toggle = (categoryId: string) =>
+    setSelected((current) => (current === categoryId ? null : categoryId));
 
   return (
     <Card title={t("reports.spending.title")}>
@@ -53,15 +46,20 @@ export function SpendingByCategory({
               {format.money(total, data.conversion.currency)}
             </span>
           </p>
-          <SpendingBars categories={categories} currency={data.conversion.currency} />
-          <ul className="flex flex-col gap-3">
+          <SpendingPie categories={categories} selected={selected} onSelect={toggle} />
+          <ul className="-mx-2 flex flex-col gap-1">
             {categories.map((category) => {
               const space = data.spaces.find(({ id }) => id === category.spaceId);
-              const share = total > 0 ? Math.max(category.amount, 0) / total : 0;
               return (
                 <li key={category.categoryId}>
-                  <p className="flex items-baseline justify-between gap-3">
-                    <span className="truncate">
+                  <button
+                    type="button"
+                    aria-pressed={category.categoryId === selected}
+                    onClick={() => toggle(category.categoryId)}
+                    className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-zinc-100 aria-pressed:bg-zinc-100 dark:hover:bg-zinc-800 dark:aria-pressed:bg-zinc-800"
+                  >
+                    <CategoryIcon icon={category.icon} color={category.color} />
+                    <span className="min-w-0 flex-1 truncate">
                       {category.name}
                       {showSpace && space && (
                         <span className="ml-2 text-xs text-zinc-500">{spaceName(space, t)}</span>
@@ -69,9 +67,11 @@ export function SpendingByCategory({
                     </span>
                     <span className="shrink-0 tabular-nums">
                       <span>{format.money(category.amount, data.conversion.currency)}</span>
-                      <span className="ml-2 text-xs text-zinc-500">{format.percent(share)}</span>
+                      <span className="ml-2 text-xs text-zinc-500">
+                        {format.percent(category.share)}
+                      </span>
                     </span>
-                  </p>
+                  </button>
                 </li>
               );
             })}
@@ -80,28 +80,6 @@ export function SpendingByCategory({
       )}
       <Unconverted missing={missing} />
     </Card>
-  );
-}
-
-function SpendingBars({
-  categories,
-  currency,
-}: {
-  categories: SpendingReport["categories"];
-  currency: Currency;
-}) {
-  const { t } = useTranslation();
-  const money = useChartMoney(currency);
-
-  return (
-    <ChartFrame height={categories.length * spendingRowHeight + spendingAxisHeight}>
-      <BarChart data={categories} layout="vertical" aria-label={t("reports.spending.chart")}>
-        <XAxis type="number" tickFormatter={money.compact} {...axisProps} />
-        <YAxis type="category" dataKey="name" width="auto" {...axisProps} />
-        <Tooltip {...tooltipStyle} formatter={money.full} />
-        <Bar dataKey="amount" fill={series.income} barSize={spendingBarSize} {...noAnimation} />
-      </BarChart>
-    </ChartFrame>
   );
 }
 
@@ -119,6 +97,7 @@ function PeriodChoice({
     { name: t("reports.spending.thisMonth"), period: thisMonth(today) },
     { name: t("reports.spending.lastMonth"), period: lastMonth(today) },
     { name: t("reports.spending.thisYear"), period: thisYear(today) },
+    { name: t("reports.spending.allTime"), period: allTime },
   ];
 
   return (
@@ -142,7 +121,8 @@ function PeriodChoice({
           <Button
             key={choice.name}
             variant="secondary"
-            className="h-9 px-3 text-sm"
+            aria-pressed={choice.period.from === period.from && choice.period.to === period.to}
+            className="h-9 px-3 text-sm aria-pressed:border-emerald-600 aria-pressed:text-emerald-700 dark:aria-pressed:border-emerald-500 dark:aria-pressed:text-emerald-400"
             onClick={() => onChange(choice.period)}
           >
             {choice.name}
