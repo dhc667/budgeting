@@ -22,20 +22,23 @@
       "lastMonth": "Mês passado",
       "thisYear": "Este ano",
       "total": "Total gasto",
-      "none": "Nenhum gasto neste período."
+      "none": "Nenhum gasto neste período.",
+      "chart": "Gráfico de barras dos gastos por categoria"
     },
     "incomeExpense": {
       "title": "Receitas e despesas",
       "month": "Mês",
       "income": "Receitas",
       "expense": "Despesas",
-      "difference": "Diferença"
+      "difference": "Diferença",
+      "chart": "Gráfico de barras de receitas e despesas por mês"
     },
     "netWorth": {
       "title": "Patrimônio líquido ao longo do tempo",
       "on": "Em {{date}}",
       "today": "Hoje",
-      "none": "Nada registrado ainda."
+      "none": "Nada registrado ainda.",
+      "chart": "Gráfico de linhas do patrimônio líquido"
     }
   },
   "instance": {

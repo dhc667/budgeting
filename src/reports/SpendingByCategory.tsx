@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Tooltip, XAxis, YAxis } from "recharts";
 import { localToday } from "../format/days";
 import type { Currency } from "../format/format";
 import { useFormat } from "../format/use-format";
@@ -11,6 +11,17 @@ import type { DateRange } from "../format/days";
 import { lastMonth, thisMonth, thisYear } from "./periods";
 import type { ReportData } from "./report-queries";
 import type { SpendingReport } from "./report-math";
+import { ChartFrame } from "./ChartFrame";
+import {
+  axisProps,
+  noAnimation,
+  series,
+  spendingAxisHeight,
+  spendingBarSize,
+  spendingRowHeight,
+  tooltipStyle,
+  useChartMoney,
+} from "./chart-style";
 import { Unconverted } from "./Unconverted";
 
 export function SpendingByCategory({
@@ -79,23 +90,18 @@ function SpendingBars({
   categories: SpendingReport["categories"];
   currency: Currency;
 }) {
-  const format = useFormat();
-  const money = (amount: number) => format.money(amount, currency);
+  const { t } = useTranslation();
+  const money = useChartMoney(currency);
 
   return (
-    <ResponsiveContainer width="100%" height={categories.length * 32 + 32}>
-      <BarChart data={categories} layout="vertical">
-        <XAxis type="number" tickFormatter={money} />
-        <YAxis type="category" dataKey="name" width="auto" />
-        <Tooltip formatter={(amount) => money(Number(amount))} />
-        <Bar
-          dataKey="amount"
-          fill="var(--color-emerald-500)"
-          isAnimationActive={false}
-          barSize={12}
-        />
+    <ChartFrame height={categories.length * spendingRowHeight + spendingAxisHeight}>
+      <BarChart data={categories} layout="vertical" aria-label={t("reports.spending.chart")}>
+        <XAxis type="number" tickFormatter={money.compact} {...axisProps} />
+        <YAxis type="category" dataKey="name" width="auto" {...axisProps} />
+        <Tooltip {...tooltipStyle} formatter={money.full} />
+        <Bar dataKey="amount" fill={series.income} barSize={spendingBarSize} {...noAnimation} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
 

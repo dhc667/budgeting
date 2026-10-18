@@ -1,11 +1,21 @@
 import { useTranslation } from "react-i18next";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { dayToDate } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { Card } from "../ui/Card";
 import { firstDayOf } from "./periods";
 import type { IncomeExpenseReport } from "./report-math";
 import type { ReportData } from "./report-queries";
+import { ChartFrame } from "./ChartFrame";
+import {
+  axisProps,
+  chartHeight,
+  gridProps,
+  noAnimation,
+  series,
+  tooltipStyle,
+  useChartMoney,
+} from "./chart-style";
 import { Unconverted } from "./Unconverted";
 
 export function IncomeVsExpense({
@@ -18,6 +28,7 @@ export function IncomeVsExpense({
   const { t, i18n } = useTranslation();
   const format = useFormat();
   const money = (amount: number) => format.money(amount, data.conversion.currency);
+  const chartMoney = useChartMoney(data.conversion.currency);
   const monthName = new Intl.DateTimeFormat(i18n.language, { month: "short", year: "numeric" });
 
   const chartData = months.map(({ month, income, expense }) => ({
@@ -28,26 +39,26 @@ export function IncomeVsExpense({
 
   return (
     <Card title={t("reports.incomeExpense.title")}>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={chartData}>
-          <CartesianGrid vertical={false} stroke="var(--color-zinc-200)" />
-          <XAxis dataKey="name" minTickGap={8} />
-          <YAxis width="auto" tickFormatter={money} />
-          <Tooltip formatter={(amount) => money(Number(amount))} />
+      <ChartFrame height={chartHeight.incomeExpense}>
+        <BarChart data={chartData} aria-label={t("reports.incomeExpense.chart")}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="name" minTickGap={8} {...axisProps} />
+          <YAxis width="auto" tickFormatter={chartMoney.compact} {...axisProps} />
+          <Tooltip {...tooltipStyle} formatter={chartMoney.full} />
           <Bar
             dataKey="income"
             name={t("reports.incomeExpense.income")}
-            fill="var(--color-emerald-500)"
-            isAnimationActive={false}
+            fill={series.income}
+            {...noAnimation}
           />
           <Bar
             dataKey="expense"
             name={t("reports.incomeExpense.expense")}
-            fill="var(--color-red-400)"
-            isAnimationActive={false}
+            fill={series.expense}
+            {...noAnimation}
           />
         </BarChart>
-      </ResponsiveContainer>
+      </ChartFrame>
       <table className="w-full text-sm">
         <thead className="text-left text-xs text-zinc-500">
           <tr>

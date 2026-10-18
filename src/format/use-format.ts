@@ -2,7 +2,14 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useProfile } from "../profile/profile-queries";
 import { dayToDate } from "./days";
-import { type Currency, formatAmount, formatDate, formatMoney, parseAmount } from "./format";
+import {
+  type Currency,
+  formatAmount,
+  formatCompactMoney,
+  formatDate,
+  formatMoney,
+  parseAmount,
+} from "./format";
 
 export function useFormat() {
   const { i18n } = useTranslation();
@@ -15,6 +22,8 @@ export function useFormat() {
     () => ({
       money: (minorUnits: number, currency: Currency) =>
         formatMoney(minorUnits, currency, numberFormat, language),
+      compactMoney: (minorUnits: number, currency: Currency) =>
+        formatCompactMoney(minorUnits, currency, numberFormat, language),
       amount: (minorUnits: number, decimals: number) =>
         formatAmount(minorUnits, decimals, numberFormat),
       parseAmount: (text: string, decimals: number) => parseAmount(text, decimals, numberFormat),
