@@ -1,6 +1,7 @@
+// Its types reach the app CLI, which runs under Node's type stripping: import only with extensions.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Instance } from "../instance/connect-link";
-import type { Database } from "./database";
+import type { Instance } from "../instance/connect-link.ts";
+import type { Database } from "./database.ts";
 
 export type AppSupabase = SupabaseClient<Database>;
 

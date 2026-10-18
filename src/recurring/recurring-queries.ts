@@ -1,7 +1,7 @@
 import { useSupabase } from "../instance/instance-context";
 import type { Database } from "../supabase/database";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
-import type { TransactionDraft } from "../transactions/transaction-queries";
+import type { TransactionDraft } from "../transactions/transaction-writes";
 import { readRecurringHistory, readRecurringTransactions } from "./read-recurring";
 import type { Schedule } from "./schedule";
 

@@ -4,12 +4,8 @@ import type { Json } from "../supabase/database.types";
 import { memberOf } from "../supabase/json";
 import { keyOfId, type RowOf, type Rows } from "../sync/copy";
 import { postingsByTransaction } from "../sync/lookups";
-import type {
-  TitleSuggestion,
-  Transaction,
-  TransactionFilter,
-  TransactionType,
-} from "./transaction-queries";
+import type { TitleSuggestion, Transaction, TransactionFilter } from "./transaction-queries";
+import type { TransactionType } from "./transaction-writes";
 
 type TransactionRows = Pick<Rows, "transactions" | "postings" | "ledger_accounts">;
 

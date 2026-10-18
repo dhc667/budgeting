@@ -13,7 +13,7 @@ import { Field } from "../ui/Field";
 import { choiceField, submitWith, textField } from "../ui/forms";
 import { ColorChoice } from "../colors/ColorChoice";
 import { colors } from "../colors/colors";
-import type { AccountDetails } from "./account-queries";
+import type { AccountDetails } from "./account-writes";
 
 type AccountFormProps = {
   initial: AccountDetails;

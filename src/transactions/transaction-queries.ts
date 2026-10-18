@@ -10,6 +10,13 @@ import {
   readTransactionHistory,
   readTransactions,
 } from "./read-transactions";
+import {
+  addTransaction,
+  deleteTransaction,
+  restoreTransaction,
+  type TransactionDraft,
+  updateTransaction,
+} from "./transaction-writes";
 import type { Database } from "../supabase/database";
 
 export function useTransactions(filter: TransactionFilter) {
@@ -60,11 +67,7 @@ export function useAddTransaction() {
   const supabase = useSupabase();
   return useCopyMutation(
     async ({ id, excludedBudgetIds, ...draft }: TransactionDraft & Exclusions & { id: string }) => {
-      const { error } = await supabase.rpc("add_transaction", {
-        transaction_id: id,
-        ...draftArgs(draft),
-      });
-      if (error) throw error;
+      await addTransaction(supabase, id, draft);
       if (excludedBudgetIds.length > 0) await setBudgetExclusions(supabase, id, excludedBudgetIds);
     },
   );
@@ -73,45 +76,19 @@ export function useAddTransaction() {
 export function useUpdateTransaction(transactionId: string) {
   const supabase = useSupabase();
   return useCopyMutation(async ({ excludedBudgetIds, ...draft }: TransactionDraft & Exclusions) => {
-    const { error } = await supabase.rpc("update_transaction", {
-      transaction_id: transactionId,
-      ...draftArgs(draft),
-    });
-    if (error) throw error;
+    await updateTransaction(supabase, transactionId, draft);
     await setBudgetExclusions(supabase, transactionId, excludedBudgetIds);
   });
 }
 
 export function useDeleteTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useCopyMutation(async () => {
-    const { error } = await supabase.rpc("delete_transaction", { transaction_id: transactionId });
-    if (error) throw error;
-  });
+  return useCopyMutation(() => deleteTransaction(supabase, transactionId));
 }
 
 export function useRestoreTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useCopyMutation(async () => {
-    const { error } = await supabase.rpc("restore_transaction", { transaction_id: transactionId });
-    if (error) throw error;
-  });
-}
-
-// A draft may still hold what another type used; only what its own type uses is saved.
-function draftArgs(draft: TransactionDraft) {
-  const isTransfer = draft.type === "transfer";
-  return {
-    transaction_type: draft.type,
-    transaction_date: draft.date,
-    title: draft.title,
-    note: draft.note,
-    account: draft.accountId,
-    amount: draft.amount,
-    category: isTransfer ? null : draft.categoryId,
-    to_account: isTransfer ? draft.toAccountId : null,
-    to_amount: isTransfer ? draft.toAmount : null,
-  };
+  return useCopyMutation(() => restoreTransaction(supabase, transactionId));
 }
 
 const pageSize = 50;
@@ -119,8 +96,6 @@ const pageSize = 50;
 type Exclusions = { excludedBudgetIds: string[] };
 
 export type Transaction = Database["public"]["Views"]["transaction_details"]["Row"];
-
-export type TransactionType = Database["public"]["Enums"]["transaction_type"];
 
 // Each part narrows the list further; dates are inclusive.
 export type TransactionFilter = {
@@ -130,19 +105,6 @@ export type TransactionFilter = {
   from?: string;
   to?: string;
   search?: string;
-};
-
-// Amounts in minor units of the account they leave or reach, always above zero.
-export type TransactionDraft = {
-  type: TransactionType;
-  date: string;
-  title: string;
-  note: string;
-  accountId: string;
-  amount: number;
-  categoryId: string | null;
-  toAccountId: string | null;
-  toAmount: number | null;
 };
 
 export type TitleSuggestion =

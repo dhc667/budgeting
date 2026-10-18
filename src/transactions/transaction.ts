@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import type { Category } from "../categories/category-queries";
-import type { Transaction, TransactionDraft, TransactionType } from "./transaction-queries";
+import type { Transaction } from "./transaction-queries";
 
 export function transactionLabel(
   transaction: Pick<Transaction, "title" | "category_id">,
@@ -46,39 +46,9 @@ export function signedAmount({ amount, direction }: ShownAmount): number {
   }
 }
 
-// A transaction's postings have one of the shapes `transaction_type` names, unless a category
-// changed kind since: money leaving into an income category then edits as income.
-export function draftOf(transaction: Transaction, categories: Category[]): TransactionDraft {
-  const type = transaction.type ?? typeFromCategory(transaction, categories);
-  const leaves = type === "expense" || type === "transfer";
-  return {
-    type,
-    date: transaction.date,
-    title: transaction.title ?? "",
-    note: transaction.note ?? "",
-    accountId: (leaves ? transaction.from_account_id : transaction.to_account_id) ?? "",
-    amount: (leaves ? transaction.from_amount : transaction.to_amount) ?? 0,
-    categoryId: transaction.category_id,
-    toAccountId: type === "transfer" ? transaction.to_account_id : null,
-    toAmount: type === "transfer" ? transaction.to_amount : null,
-  };
-}
-
 // The accounts a transaction already uses, which it keeps even once archived.
 export function accountsOf(transaction: Transaction): string[] {
   return [transaction.from_account_id, transaction.to_account_id].filter((id) => id !== null);
-}
-
-function typeFromCategory(transaction: Transaction, categories: Category[]): TransactionType {
-  const category = categories.find(({ id }) => id === transaction.category_id);
-  switch (category?.kind) {
-    case "income":
-      return "income";
-    case "expense":
-      return transaction.to_account_id === null ? "expense" : "refund";
-    case undefined:
-      return "transfer";
-  }
 }
 
 function sideOf(accountId: string | null, amount: number | null, currency: string | null) {
