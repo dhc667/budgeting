@@ -2,6 +2,7 @@ import { type KeyboardEvent, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAccounts } from "../accounts/account-queries";
 import { useCategories } from "../categories/category-queries";
+import { useCounterparties } from "../counterparties/counterparty-queries";
 import { inputClass } from "../ui/Field";
 import type { TitleSuggestion } from "./transaction-queries";
 import { TransactionSummary } from "./TransactionList";
@@ -21,6 +22,7 @@ export function TitleField({ value, onChange, suggestions, onPick }: TitleFieldP
   const listId = useId();
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
+  const { data: counterparties = [] } = useCounterparties();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const matches = matching(value, suggestions);
@@ -106,6 +108,7 @@ export function TitleField({ value, onChange, suggestions, onPick }: TitleFieldP
                 transaction={suggestion}
                 accounts={accounts}
                 categories={categories}
+                counterparties={counterparties}
               />
             </li>
           ))}

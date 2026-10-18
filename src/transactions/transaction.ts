@@ -1,15 +1,18 @@
 import type { TFunction } from "i18next";
 import type { Category } from "../categories/category-queries";
+import type { Counterparty } from "../counterparties/read-counterparties";
 import type { Transaction } from "./transaction-queries";
 
 export function transactionLabel(
-  transaction: Pick<Transaction, "title" | "category_id">,
+  transaction: Pick<Transaction, "title" | "category_id" | "counterparty_id">,
   categories: Category[],
+  counterparties: Counterparty[],
   t: TFunction,
 ): string {
   if (transaction.title !== null) return transaction.title;
   const category = categories.find(({ id }) => id === transaction.category_id);
-  return category?.name ?? t("transactions.transfer");
+  const counterparty = counterparties.find(({ id }) => id === transaction.counterparty_id);
+  return category?.name ?? counterparty?.name ?? t("transactions.transfer");
 }
 
 // Seen from one account, a transfer leaves or reaches it. Seen whole, it only moves money between

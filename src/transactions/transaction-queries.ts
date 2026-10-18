@@ -102,6 +102,7 @@ export type TransactionFilter = {
   spaceIds?: string[];
   accountIds?: string[];
   categoryIds?: string[];
+  counterpartyIds?: string[];
   from?: string;
   to?: string;
   search?: string;

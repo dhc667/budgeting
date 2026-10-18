@@ -282,9 +282,10 @@ export const ledgerAccountKind = pgEnum("ledger_account_kind", [
   "expense",
   "income",
   "opening_balance",
+  "counterparty",
 ]);
 
-// Money accounts and categories alike (ADR 0002). The app reads money accounts through the
+// Money accounts, categories and counterparties alike (ADR 0002). The app reads money accounts through the
 // `accounts` view, and adds them with `create_account`.
 export const ledgerAccounts = pgTable(
   "ledger_accounts",
@@ -372,6 +373,8 @@ export const transactionType = pgEnum("transaction_type", [
   "refund",
   "income",
   "transfer",
+  "given",
+  "received",
 ]);
 
 // Written only by Postgres functions, which keep each transaction's postings balanced.

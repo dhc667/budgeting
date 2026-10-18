@@ -42,6 +42,7 @@ async function listTransactions(argv: string[]) {
     space: { type: "string" },
     account: { type: "string" },
     category: { type: "string" },
+    counterparty: { type: "string" },
     from: { type: "string" },
     to: { type: "string" },
     search: { type: "string" },
@@ -57,6 +58,7 @@ async function listTransactions(argv: string[]) {
     query = query.or(`from_account_id.eq.${id},to_account_id.eq.${id}`);
   }
   if (values.category) query = query.eq("category_id", values.category);
+  if (values.counterparty) query = query.eq("counterparty_id", values.counterparty);
   if (values.from) query = query.gte("date", day(values.from, "--from"));
   if (values.to) query = query.lte("date", day(values.to, "--to"));
   if (values.search) query = query.ilike("search_text", `%${likeEscaped(values.search.trim())}%`);
@@ -95,6 +97,7 @@ async function addOne(argv: string[]) {
     toAccountId: values["to-account"] ?? null,
     toAmount:
       values["to-amount"] === undefined ? null : minorUnits(values["to-amount"], "--to-amount"),
+    counterpartyId: values.counterparty ?? null,
   };
   const { supabase } = await signedIn(values.env);
   const id = randomUUID();
@@ -124,6 +127,7 @@ async function changeOne(argv: string[]) {
       values["to-amount"] === undefined
         ? current.toAmount
         : minorUnits(values["to-amount"], "--to-amount"),
+    counterpartyId: values.counterparty ?? current.counterpartyId,
   });
   print(await transaction(supabase, id));
 }
@@ -162,7 +166,7 @@ function likeEscaped(text: string): string {
 }
 
 const columns =
-  "id, type, date, title, note, from_account_id, from_amount, from_currency, to_account_id, to_amount, to_currency, category_id, space_ids, one_sided, created_at, created_by";
+  "id, type, date, title, note, from_account_id, from_amount, from_currency, to_account_id, to_amount, to_currency, category_id, counterparty_id, space_ids, one_sided, created_at, created_by";
 
 const draftOptions = {
   type: { type: "string" },
@@ -174,4 +178,5 @@ const draftOptions = {
   category: { type: "string" },
   "to-account": { type: "string" },
   "to-amount": { type: "string" },
+  counterparty: { type: "string" },
 } satisfies ParseArgsOptionsConfig;

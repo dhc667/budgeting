@@ -3,11 +3,10 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { localToday } from "../format/days";
 import { useProfile } from "../profile/profile-queries";
-import { spaceName } from "../spaces/space";
-import { type Space, useSpaces } from "../spaces/space-queries";
+import { useSpaces } from "../spaces/space-queries";
+import { SpaceSelect } from "../spaces/SpaceSelect";
 import { BackLink } from "../ui/BackLink";
 import { Card } from "../ui/Card";
-import { SelectField } from "../ui/SelectField";
 import { useCreateAccount } from "./account-queries";
 import { AccountForm } from "./AccountForm";
 
@@ -37,7 +36,14 @@ export function NewAccountScreen() {
             openingDate: localToday(),
           }}
           currencyFixed={false}
-          extraFields={<SpaceSelect spaces={spaces} value={spaceId} onChange={setChosenSpaceId} />}
+          extraFields={
+            <SpaceSelect
+              label={t("accounts.form.space")}
+              spaces={spaces}
+              value={spaceId}
+              onChange={setChosenSpaceId}
+            />
+          }
           submitLabel={t("accounts.new.submit")}
           mutation={createAccount}
           onSave={(details) =>
@@ -49,29 +55,5 @@ export function NewAccountScreen() {
         />
       </Card>
     </div>
-  );
-}
-
-type SpaceSelectProps = {
-  spaces: Space[];
-  value: string;
-  onChange: (spaceId: string) => void;
-};
-
-// Every space is offered, whatever the space picker shows.
-function SpaceSelect({ spaces, value, onChange }: SpaceSelectProps) {
-  const { t } = useTranslation();
-  return (
-    <SelectField
-      label={t("accounts.form.space")}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      {spaces.map((space) => (
-        <option key={space.id} value={space.id}>
-          {spaceName(space, t)}
-        </option>
-      ))}
-    </SelectField>
   );
 }

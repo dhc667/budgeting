@@ -698,7 +698,7 @@ describe("grants", () => {
         transaction_type: "transfer",
         account: checking,
         amount: 100,
-        category: groceries,
+        other_side: groceries,
         to_account: checking,
         to_amount: 100,
         used_before: [],

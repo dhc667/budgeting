@@ -36,10 +36,13 @@ export type Database = Omit<Generated, "public"> & {
       create_category: WithNullableArgs<GeneratedFunctions["create_category"], "parent">;
       update_category: WithNullableArgs<GeneratedFunctions["update_category"], "parent">;
       delete_category: WithNullableArgs<GeneratedFunctions["delete_category"], "move_to">;
-      add_transaction: WithNullableArgs<GeneratedFunctions["add_transaction"], TransactionDetail>;
+      add_transaction: WithNullableArgs<
+        GeneratedFunctions["add_transaction"],
+        TransactionDetail | "counterparty"
+      >;
       update_transaction: WithNullableArgs<
         GeneratedFunctions["update_transaction"],
-        TransactionDetail
+        TransactionDetail | "counterparty"
       >;
       create_recurring_transaction: WithNullableArgs<
         GeneratedFunctions["create_recurring_transaction"],
@@ -104,7 +107,8 @@ type TransactionSide =
   | "to_account_id"
   | "to_amount"
   | "to_currency"
-  | "category_id";
+  | "category_id"
+  | "counterparty_id";
 
 type TransactionDetail = "title" | "note" | "category" | "to_account" | "to_amount";
 

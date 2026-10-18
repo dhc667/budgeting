@@ -534,7 +534,7 @@ isOneToOne: false
                   ]
                 },"transaction_details": {
                   Row: {
-                    "category_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"search_text": string | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
+                    "category_id": string | null,"counterparty_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"search_text": string | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -558,6 +558,12 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["counterparty_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
       columns: ["from_account_id"]
 isOneToOne: false
       referencedRelation: "accounts"
@@ -576,6 +582,12 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["counterparty_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
       columns: ["from_account_id"]
 isOneToOne: false
       referencedRelation: "categories"
@@ -589,6 +601,12 @@ isOneToOne: false
     },{
       foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
       columns: ["category_id"]
+isOneToOne: false
+      referencedRelation: "ledger_accounts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "postings_ledger_account_id_ledger_accounts_id_fk"
+      columns: ["counterparty_id"]
 isOneToOne: false
       referencedRelation: "ledger_accounts"
       referencedColumns: ["id"]
@@ -635,7 +653,7 @@ isOneToOne: false
         isSetofReturn: true
       } },
 "add_transaction":
-{ Args: { "account": string,"amount": number,"category": string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
+{ Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
                            },
 "budget_history":
 { Args: { "budget_id": string }; Returns: {
@@ -685,6 +703,9 @@ isOneToOne: false
 "create_category":
 { Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string,"space": string }; Returns: string
                            },
+"create_counterparty":
+{ Args: { "counterparty_color": Database["public"]['Enums']["color"],"counterparty_name": string,"space": string }; Returns: string
+                           },
 "create_recurring_transaction":
 { Args: { "account": string,"amount": number,"category": string,"ends_on": string,"every": number,"note": string,"record_first": boolean,"starts_on": string,"times": number,"title": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"] }; Returns: string
                            },
@@ -696,6 +717,9 @@ isOneToOne: false
                            },
 "delete_category":
 { Args: { "category_id": string,"move_to": string }; Returns: undefined
+                           },
+"delete_counterparty":
+{ Args: { "counterparty_id": string }; Returns: undefined
                            },
 "delete_recurring_transaction":
 { Args: { "recurring_transaction_id": string }; Returns: undefined
@@ -894,6 +918,7 @@ isOneToOne: false
 "title_suggestions":
 { Args: Record<PropertyKey, never>; Returns: {
               "category_id": string | null,
+"counterparty_id": string | null,
 "created_at": string | null,
 "created_by": string | null,
 "date": string | null,
@@ -937,7 +962,7 @@ isOneToOne: false
         isSetofReturn: true
       } },
 "transaction_sides":
-{ Args: { "account": string,"amount": number,"category": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: {
+{ Args: { "account": string,"amount": number,"other_side": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: {
               "side_account": string,"side_amount": number,"side_currency": string
             }[]
                            },
@@ -955,11 +980,14 @@ isOneToOne: false
 "update_category":
 { Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_id": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string }; Returns: undefined
                            },
+"update_counterparty":
+{ Args: { "counterparty_color": Database["public"]['Enums']["color"],"counterparty_id": string,"counterparty_name": string }; Returns: undefined
+                           },
 "update_recurring_transaction":
 { Args: { "account": string,"amount": number,"category": string,"ends_on": string,"every": number,"note": string,"recurring_transaction_id": string,"restart": boolean,"seen_done": number,"starts_on": string,"times": number,"title": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"] }; Returns: undefined
                            },
 "update_transaction":
-{ Args: { "account": string,"amount": number,"category": string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
+{ Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
                            },
 "usable_account":
 { Args: { "account": string,"used_before": (string)[] }; Returns: {
@@ -983,11 +1011,11 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "write_postings":
-{ Args: { "account": string,"amount": number,"category": string,"to_account": string,"to_amount": number,"transaction": string,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: undefined
+{ Args: { "account": string,"amount": number,"other_side": string,"to_account": string,"to_amount": number,"transaction": string,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: undefined
                            }
           }
           Enums: {
-            "activity_action": "insert"|"update"|"delete"|"restore","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","repeat_unit": "day"|"week"|"month"|"year","transaction_type": "expense"|"refund"|"income"|"transfer"
+            "activity_action": "insert"|"update"|"delete"|"restore","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance"|"counterparty","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","repeat_unit": "day"|"week"|"month"|"year","transaction_type": "expense"|"refund"|"income"|"transfer"|"given"|"received"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1103,7 +1131,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_action": ["insert", "update", "delete", "restore"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"repeat_unit": ["day", "week", "month", "year"],"transaction_type": ["expense", "refund", "income", "transfer"]
+            "activity_action": ["insert", "update", "delete", "restore"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance", "counterparty"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"repeat_unit": ["day", "week", "month", "year"],"transaction_type": ["expense", "refund", "income", "transfer", "given", "received"]
           }
         }
 } as const

@@ -126,6 +126,7 @@ function flowKind(kind: RowOf<"ledger_accounts">["kind"]): CategoryFlow["kind"] 
       return kind;
     case "account":
     case "opening_balance":
+    case "counterparty":
       return null;
   }
 }

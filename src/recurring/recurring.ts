@@ -83,6 +83,7 @@ export function asTransaction(rule: RecurringTransaction, accounts: Account[]): 
     category_id: rule.category_id,
     space_ids: [rule.space_id],
     search_text: "",
+    counterparty_id: null,
   };
 }
 
@@ -95,9 +96,11 @@ function sidesOf(rule: RecurringTransaction, accounts: Account[]): { from?: Side
   const account = sideOf(rule.account_id, rule.amount);
   switch (rule.type) {
     case "expense":
+    case "given":
       return { from: account };
     case "refund":
     case "income":
+    case "received":
       return { to: account };
     case "transfer": {
       const sameCurrency = sideOf(rule.to_account_id, rule.amount)?.currency === account?.currency;

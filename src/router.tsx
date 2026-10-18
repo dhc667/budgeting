@@ -13,6 +13,8 @@ import { CategoryHistoryScreen } from "./categories/CategoryHistoryScreen";
 import { CategoryScreen } from "./categories/CategoryScreen";
 import { CategoryTransactionsScreen } from "./categories/CategoryTransactionsScreen";
 import { NewCategoryScreen } from "./categories/NewCategoryScreen";
+import { CounterpartyScreen } from "./counterparties/CounterpartyScreen";
+import { NewCounterpartyScreen } from "./counterparties/NewCounterpartyScreen";
 import { DashboardScreen } from "./dashboard/DashboardScreen";
 import { ConnectScreen } from "./instance/ConnectScreen";
 import { InstanceGate } from "./instance/InstanceGate";
@@ -87,6 +89,11 @@ export function createAppRouter() {
                           element: <AccountTransactionsScreen />,
                         },
                         { path: "accounts/:accountId/history", element: <AccountHistoryScreen /> },
+                        { path: "counterparties/new", element: <NewCounterpartyScreen /> },
+                        {
+                          path: "counterparties/:counterpartyId",
+                          element: <CounterpartyScreen />,
+                        },
                       ],
                     },
                   ],

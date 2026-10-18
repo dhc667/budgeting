@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { Counterparty } from "../counterparties/read-counterparties";
 import { Link } from "react-router";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { type Category, useCategories } from "../categories/category-queries";
@@ -73,6 +74,7 @@ function RuleRow({ rule, accounts, categories }: RuleRowProps) {
           transaction={asTransaction(rule, accounts)}
           accounts={accounts}
           categories={categories}
+          counterparties={noCounterparties}
         />
       </span>
       <span className="pl-11 text-sm text-zinc-500">
@@ -81,3 +83,6 @@ function RuleRow({ rule, accounts, categories }: RuleRowProps) {
     </Link>
   );
 }
+
+// Recurring transactions never give or receive money.
+const noCounterparties: Counterparty[] = [];

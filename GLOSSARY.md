@@ -62,7 +62,7 @@ A classification of income or expense, belonging to one space. Each category is 
 The transaction that records the money an account already held when it was added to the app. It is not income.
 
 **Transaction**:
-A single financial event: an expense, an income, or a transfer. It happens on a day, never a future one, and may have a title saying what it was for and a note.
+A single financial event: an expense, a refund, an income, a transfer, or money given or received. It happens on a day, never a future one, and may have a title saying what it was for and a note.
 _Avoid_: entry, record
 
 **Expense**:
@@ -76,6 +76,20 @@ A transaction that moves money from a category into an account.
 
 **Transfer**:
 A transaction that moves money between two accounts, possibly in different currencies and different spaces. Only someone who belongs to both spaces can change, delete or restore a transfer between them; anyone else sees just their side, coming from or going to another space.
+
+**Counterparty**:
+Anyone outside the family that money is lent to or borrowed from: a person, a company, anything. It belongs to one space, and what it owes is its debt.
+_Avoid_: contact, debtor, creditor, lender
+
+**Debt**:
+What a counterparty and a space owe each other in one currency: everything given to it minus everything received from it. Above zero, the counterparty owes the space; below zero, the space owes the counterparty; at zero, it is settled. A counterparty has one debt per currency money has moved in, never one per loan.
+_Avoid_: loan, IOU, credit
+
+**Money given**:
+A transaction that moves money out of an account to a counterparty in the same space, whether lending it or paying back what the space owes.
+
+**Money received**:
+A transaction that moves money from a counterparty into an account in the same space, whether borrowing it or being paid back.
 
 **Unsynced transaction**:
 A transaction recorded on a device without a connection that the instance hasn't accepted yet. It counts in that device's balances and can be changed or discarded until it is sent. One the instance refuses stays unsynced, with the reason, until it is fixed or discarded.

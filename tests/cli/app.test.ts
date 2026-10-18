@@ -169,6 +169,45 @@ describe("the app CLI, signed in", () => {
     expect(json(app(["accounts", "list"]))).toMatchObject([{ balance: 0 }, { balance: 5000 }]);
   });
 
+  it("lends to a counterparty and lists what it still owes", async () => {
+    const { email } = await existingUser("Ana");
+    login(email);
+    const cash = idOf(
+      app(["accounts", "add", "--name", "Cash", "--currency", "USD", "--opening-amount", "5000"]),
+    );
+    const charlie = idOf(app(["counterparties", "add", "--name", "Charlie"]));
+
+    app([
+      "transactions",
+      "add",
+      "--type",
+      "given",
+      "--account",
+      cash,
+      "--counterparty",
+      charlie,
+      "--amount",
+      "3000",
+    ]);
+    app([
+      "transactions",
+      "add",
+      "--type",
+      "received",
+      "--account",
+      cash,
+      "--counterparty",
+      charlie,
+      "--amount",
+      "1000",
+    ]);
+
+    expect(json(app(["counterparties", "list"]))).toMatchObject([
+      { id: charlie, name: "Charlie", owed: { USD: 2000 } },
+    ]);
+    expect(balances(app(["accounts", "list"]))).toEqual({ Cash: 3000 });
+  });
+
   it("changes only what an update gives, keeping the rest", async () => {
     const { email } = await existingUser("Ana");
     login(email);

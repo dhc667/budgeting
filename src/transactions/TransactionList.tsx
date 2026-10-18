@@ -4,6 +4,9 @@ import { Link, useLocation } from "react-router";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { CategoryIcon } from "../categories/CategoryIcon";
 import { type Category, useCategories } from "../categories/category-queries";
+import { CounterpartyIcon } from "../counterparties/CounterpartyIcon";
+import { useCounterparties } from "../counterparties/counterparty-queries";
+import type { Counterparty } from "../counterparties/read-counterparties";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
@@ -47,7 +50,8 @@ export function TransactionGroups({ transactions, accountId, empty }: Transactio
   const format = useFormat();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
-  if (!accounts || !categories) return null;
+  const { data: counterparties } = useCounterparties();
+  if (!accounts || !categories || !counterparties) return null;
   if (transactions.length === 0) return <EmptyState>{empty ?? t("transactions.none")}</EmptyState>;
 
   return (
@@ -64,6 +68,7 @@ export function TransactionGroups({ transactions, accountId, empty }: Transactio
                   transaction={transaction}
                   accounts={accounts}
                   categories={categories}
+                  counterparties={counterparties}
                   accountId={accountId}
                 />
               </li>
@@ -79,10 +84,17 @@ type TransactionRowProps = {
   transaction: Transaction;
   accounts: Account[];
   categories: Category[];
+  counterparties: Counterparty[];
   accountId: string | undefined;
 };
 
-function TransactionRow({ transaction, accounts, categories, accountId }: TransactionRowProps) {
+function TransactionRow({
+  transaction,
+  accounts,
+  categories,
+  counterparties,
+  accountId,
+}: TransactionRowProps) {
   const { data: users = [] } = useUsers();
   const { data: spaces = [] } = useSpaces();
   const location = useLocation();
@@ -100,6 +112,7 @@ function TransactionRow({ transaction, accounts, categories, accountId }: Transa
         transaction={transaction}
         accounts={accounts}
         categories={categories}
+        counterparties={counterparties}
         accountId={accountId}
         creator={shared ? displayNameOf(users, transaction.created_by) : null}
       />
@@ -111,6 +124,7 @@ type TransactionSummaryProps = {
   transaction: Transaction;
   accounts: Account[];
   categories: Category[];
+  counterparties: Counterparty[];
   accountId?: string;
   creator?: string | null;
 };
@@ -119,26 +133,29 @@ export function TransactionSummary({
   transaction,
   accounts,
   categories,
+  counterparties,
   accountId,
   creator = null,
 }: TransactionSummaryProps) {
   const { t } = useTranslation();
   const money = useMoney();
   const category = categories.find(({ id }) => id === transaction.category_id);
+  const counterparty = counterparties.find(({ id }) => id === transaction.counterparty_id);
+  const otherSide = category ?? counterparty;
   const nameOf = (id: string | null) =>
     id === null
       ? t("transactions.anotherSpace")
       : (accounts.find((account) => account.id === id)?.name ?? "");
-  const where = category
+  const where = otherSide
     ? nameOf(transaction.from_account_id ?? transaction.to_account_id)
     : `${nameOf(transaction.from_account_id)} → ${nameOf(transaction.to_account_id)}`;
   const amount = shownAmount(transaction, accountId);
 
   return (
     <>
-      {category ? (
-        <CategoryIcon icon={category.icon} color={category.color} />
-      ) : (
+      {category && <CategoryIcon icon={category.icon} color={category.color} />}
+      {counterparty && <CounterpartyIcon color={counterparty.color} />}
+      {!otherSide && (
         <span
           aria-hidden
           className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
@@ -147,9 +164,11 @@ export function TransactionSummary({
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate">{transactionLabel(transaction, categories, t)}</span>
+        <span className="truncate">
+          {transactionLabel(transaction, categories, counterparties, t)}
+        </span>
         <span className="truncate text-sm text-zinc-500">
-          {[category && transaction.title !== null ? category.name : null, where, creator]
+          {[otherSide && transaction.title !== null ? otherSide.name : null, where, creator]
             .filter((part) => part)
             .join(" · ")}
         </span>

@@ -119,9 +119,37 @@ function describeLedgerAccountChange(entry: Activity, actor: string, phrasing: P
     case "expense":
     case "income":
       return describeCategoryChange(entry, actor, phrasing);
+    case "counterparty":
+      return describeCounterpartyChange(entry, actor, phrasing);
     case "opening_balance":
     case undefined:
       return [];
+  }
+}
+
+function describeCounterpartyChange(entry: Activity, actor: string, { t }: Phrasing): string[] {
+  const name = stringAt(entry.new ?? entry.old, "name");
+  switch (entry.action) {
+    case "insert":
+      return [t("activity.counterparty.added", { actor, name })];
+    case "delete":
+      return [t("activity.counterparty.deleted", { actor, name })];
+    case "restore":
+      return [];
+    case "update": {
+      const lines: string[] = [];
+      if (hasChanged(entry, "name"))
+        lines.push(
+          t("activity.counterparty.renamed", {
+            actor,
+            from: stringAt(entry.old, "name"),
+            to: name,
+          }),
+        );
+      if (hasChanged(entry, "color"))
+        lines.push(t("activity.counterparty.recolored", { actor, name }));
+      return lines;
+    }
   }
 }
 

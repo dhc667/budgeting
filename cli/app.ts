@@ -1,6 +1,7 @@
 import { fail, messageOf } from "./fail.ts";
 import { accountCommands } from "./app/accounts.ts";
 import { categoryCommands } from "./app/categories.ts";
+import { counterpartyCommands } from "./app/counterparties.ts";
 import type { Commands } from "./app/command.ts";
 import { sessionCommands } from "./app/session.ts";
 import { spaceCommands } from "./app/spaces.ts";
@@ -38,13 +39,19 @@ Categories (--space defaults to your private space):
       [--parent <id> | --no-parent]
   categories delete <id> [--move-to <id>]      Its transactions move to --move-to
 
+Counterparties: whoever money is lent to or borrowed from (--space defaults to your private space):
+  counterparties list [--space <id>]           With what each owes per currency (below zero, you owe)
+  counterparties add --name <name> [--space <id>] [--color <color>]
+  counterparties update <id> [--name ...] [--color ...]
+  counterparties delete <id>                   Only one that no transaction uses
+
 Transactions:
-  transactions list [--space <id>] [--account <id>] [--category <id>] [--from <date>]
-      [--to <date>] [--search <text>] [--limit <n>]
+  transactions list [--space <id>] [--account <id>] [--category <id>] [--counterparty <id>]
+      [--from <date>] [--to <date>] [--search <text>] [--limit <n>]
   transactions show <id>
-  transactions add --type expense|refund|income|transfer --account <id> --amount <n>
-      [--category <id>] [--to-account <id>] [--to-amount <n>] [--date <date>]
-      [--title <text>] [--note <text>]
+  transactions add --type expense|refund|income|transfer|given|received --account <id>
+      --amount <n> [--category <id>] [--to-account <id>] [--to-amount <n>]
+      [--counterparty <id>] [--date <date>] [--title <text>] [--note <text>]
   transactions update <id> [same options as add]     What isn't given keeps its value
   transactions delete <id> | transactions restore <id>
 
@@ -57,6 +64,7 @@ const commands: Commands = {
   ...spaceCommands,
   ...accountCommands,
   ...categoryCommands,
+  ...counterpartyCommands,
   ...transactionCommands,
 };
 

@@ -274,7 +274,9 @@
       "transfer": "a transfer of {{amount}} from “{{from}}” to “{{to}}”, on {{date}}",
       "transferExchanged": "a transfer of {{amount}} from “{{from}}” to “{{to}}”, received as {{received}}, on {{date}}",
       "transferToOtherSpace": "a transfer of {{amount}} from “{{from}}” to another space, on {{date}}",
-      "transferFromOtherSpace": "a transfer of {{amount}} into “{{to}}” from another space, on {{date}}"
+      "transferFromOtherSpace": "a transfer of {{amount}} into “{{to}}” from another space, on {{date}}",
+      "given": "{{amount}} given from “{{account}}” to “{{counterparty}}”, on {{date}}",
+      "received": "{{amount}} received into “{{account}}” from “{{counterparty}}”, on {{date}}"
     },
     "recurring": {
       "created": "{{actor}} created the recurring transaction “{{label}}”",
@@ -293,6 +295,12 @@
       "changed": "{{actor}} changed the budget “{{name}}”",
       "excluded": "{{actor}} left “{{transaction}}” of {{date}} out of the budget “{{name}}”",
       "included": "{{actor}} counted “{{transaction}}” of {{date}} in the budget “{{name}}” again"
+    },
+    "counterparty": {
+      "added": "{{actor}} added the counterparty “{{name}}”",
+      "renamed": "{{actor}} renamed the counterparty “{{from}}” to “{{to}}”",
+      "recolored": "{{actor}} changed the color of “{{name}}”",
+      "deleted": "{{actor}} deleted the counterparty “{{name}}”"
     }
   },
   "accounts": {
@@ -442,7 +450,8 @@
     "type": {
       "expense": "Expense",
       "income": "Income",
-      "transfer": "Transfer"
+      "transfer": "Transfer",
+      "debt": "Debt"
     },
     "new": {
       "title": "New transaction",
@@ -471,7 +480,15 @@
       "leftOutOf": "Leave out of budgets",
       "countedInAll": "Counted in all its budgets",
       "leftOutOfSome_one": "Left out of {{count}} budget",
-      "leftOutOfSome_other": "Left out of {{count}} budgets"
+      "leftOutOfSome_other": "Left out of {{count}} budgets",
+      "direction": "Which way the money went",
+      "given": "I gave",
+      "givenHint": "Lent it, or paid it back",
+      "received": "I received",
+      "receivedHint": "Borrowed it, or got it back",
+      "counterparty": "Counterparty",
+      "chooseCounterparty": "Choose a counterparty",
+      "noCounterparties": "This account's space has no counterparties yet."
     },
     "oneSided": {
       "toAnotherSpace": "From “{{account}}” to another space",
@@ -502,7 +519,8 @@
       "saveRefused": "Couldn't save this transaction. Its accounts or categories may have changed meanwhile; reload and try again.",
       "saveFailed": "Couldn't save. Check your connection and try again.",
       "deleteFailed": "Couldn't delete this transaction. Check your connection and try again.",
-      "loadFailed": "Couldn't load transactions. Check your connection and try again."
+      "loadFailed": "Couldn't load transactions. Check your connection and try again.",
+      "counterparty": "Choose who the money went to or came from."
     }
   },
   "colors": {
@@ -743,6 +761,47 @@
       "nameBlank": "Give the budget a name.",
       "saveFailed": "Couldn't save. Check your connection and try again.",
       "deleteFailed": "Couldn't delete it. Check your connection and try again."
+    }
+  },
+  "counterparties": {
+    "title": "Debts",
+    "none": "Nobody owes you money, and you owe nobody. Add a person or company you lend to or borrow from.",
+    "add": "Add a counterparty",
+    "details": "Counterparty",
+    "new": {
+      "title": "New counterparty",
+      "submit": "Add counterparty"
+    },
+    "form": {
+      "name": "Name",
+      "nameHint": "A person, a company, anyone you lend money to or borrow it from.",
+      "space": "Space",
+      "save": "Save",
+      "saved": "Saved."
+    },
+    "errors": {
+      "nameBlank": "A counterparty's name can't be blank.",
+      "saveFailed": "Couldn't save. Check your connection and try again.",
+      "deleteFailed": "Couldn't delete this counterparty. Check your connection and try again."
+    },
+    "owesYou": "Owes you {{amount}}",
+    "youOwe": "You owe {{amount}}",
+    "settledIn": "Settled in {{currency}}",
+    "settled": "Settled",
+    "balance": "Balance",
+    "nothingYet": "No money has moved yet.",
+    "give": "I gave {{name}} money",
+    "receive": "{{name}} gave me money",
+    "paidBack": "{{paid}} of {{total}} paid back",
+    "givenAndReceived": "given {{given}}, received {{received}}",
+    "noTransactions": "Nothing given or received yet.",
+    "notFound": "This counterparty doesn't exist, or it's in a space you're not a member of.",
+    "delete": {
+      "title": "Delete counterparty",
+      "hasTransactions": "Money has moved with this counterparty, so it can't be deleted.",
+      "submit": "Delete counterparty",
+      "confirm": "Delete",
+      "confirmTitle": "Delete {{name}}?"
     }
   }
 }
