@@ -129,7 +129,7 @@ function transactionOf(
     note,
     created_by,
     created_at,
-    type: typeOf(visible.length, { sent, received, otherSide: category ?? counterparty }),
+    type: typeOf(visible.length, { sent, received, category, counterparty }),
     one_sided: visible.length < 2,
     from_account_id: sent?.posting.ledger_account_id ?? null,
     from_amount: sent ? -sent.posting.amount : null,
@@ -146,18 +146,27 @@ function transactionOf(
 
 // A single visible posting on a money account is one side of a transfer: an expense, refund or
 // income, or money given or received, stays within one space (ADR 0007), so its other side is in
-// a space the user is not in.
+// a space the user is not in. A forgiven debt passes through its account: in from the counterparty
+// and out to a category, or the other way round.
 function typeOf(
   visibleCount: number,
   sides: {
     sent: VisiblePosting | undefined;
     received: VisiblePosting | undefined;
-    otherSide: VisiblePosting | undefined;
+    category: VisiblePosting | undefined;
+    counterparty: VisiblePosting | undefined;
   },
 ): TransactionType | null {
-  const { sent, received, otherSide } = sides;
+  const { sent, received, category, counterparty } = sides;
   if (visibleCount === 1) return sent || received ? "transfer" : null;
+  if (visibleCount === 4) {
+    if (!sent || !received || !counterparty) return null;
+    if (category?.ledger.kind === "expense") return "forgave";
+    if (category?.ledger.kind === "income") return "forgiven";
+    return null;
+  }
   if (visibleCount !== 2) return null;
+  const otherSide = category ?? counterparty;
   if (sent && received) return "transfer";
   if (!otherSide || !(sent || received)) return null;
   switch (otherSide.ledger.kind) {

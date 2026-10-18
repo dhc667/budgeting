@@ -101,6 +101,20 @@ describe("categories", () => {
     expect(deleteCard.queryByRole("button")).toBeNull();
   });
 
+  it("keeps a built-in category's name, kind and place, and won't delete it", async () => {
+    await openSignedIn(uniqueName("Ana"));
+
+    await openCategory("Private", "Debts forgiven");
+
+    const details = within(screen.getByRole("region", { name: "Details" }));
+    expect(details.queryByLabelText("Name")).toBeNull();
+    expect(details.queryByLabelText("Parent category")).toBeNull();
+    expect(details.getByText(/A built-in category/)).toBeTruthy();
+    const deleteCard = within(screen.getByRole("region", { name: "Delete category" }));
+    expect(deleteCard.getByText("Built-in categories can't be deleted.")).toBeTruthy();
+    expect(deleteCard.queryByRole("button")).toBeNull();
+  });
+
   it("goes back to its space from a new category without adding it", async () => {
     await openSignedIn(uniqueName("Ana"));
     await openSpace("Private");

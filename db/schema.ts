@@ -285,6 +285,13 @@ export const ledgerAccountKind = pgEnum("ledger_account_kind", [
   "counterparty",
 ]);
 
+// Categories every space has, which the app names in its user's language. Only a forgiven debt is
+// recorded in either.
+export const builtInCategory = pgEnum("built_in_category", [
+  "debts_forgiven",
+  "debts_forgiven_to_you",
+]);
+
 // Money accounts, categories and counterparties alike (ADR 0002). The app reads money accounts through the
 // `accounts` view, and adds them with `create_account`.
 export const ledgerAccounts = pgTable(
@@ -303,6 +310,7 @@ export const ledgerAccounts = pgTable(
     // A Lucide icon name. The app draws a fallback for a name it doesn't offer.
     icon: text(),
     parentId: uuid("parent_id").references((): AnyPgColumn => ledgerAccounts.id),
+    builtIn: builtInCategory("built_in"),
     position: integer().notNull().default(0),
     archived: boolean().notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -310,9 +318,16 @@ export const ledgerAccounts = pgTable(
   (t) => [
     index("ledger_accounts_version_idx").on(t.version),
     check(
-      "named_unless_opening_balance",
-      sql`(${t.kind} = 'opening_balance') = (${t.name} is null)`,
+      "named_unless_opening_balance_or_built_in",
+      sql`(${t.kind} = 'opening_balance' or ${t.builtIn} is not null) = (${t.name} is null)`,
     ),
+    check(
+      "built_in_category_of_its_kind",
+      sql`${t.builtIn} is null
+        or (${t.builtIn} = 'debts_forgiven' and ${t.kind} = 'expense')
+        or (${t.builtIn} = 'debts_forgiven_to_you' and ${t.kind} = 'income')`,
+    ),
+    check("built_in_category_unnested", sql`${t.builtIn} is null or ${t.parentId} is null`),
     check("name_not_blank", sql`trim(${t.name}) <> ''`),
     check("currency_only_on_accounts", sql`(${t.kind} = 'account') = (${t.currency} is not null)`),
     check(
@@ -328,6 +343,9 @@ export const ledgerAccounts = pgTable(
     uniqueIndex("one_opening_balance_category_per_space")
       .on(t.spaceId)
       .where(sql`${t.kind} = 'opening_balance'`),
+    uniqueIndex("one_of_each_built_in_category_per_space")
+      .on(t.spaceId, t.builtIn)
+      .where(sql`${t.builtIn} is not null`),
     pgPolicy("members see their spaces' accounts and categories", {
       for: "select",
       to: authenticatedRole,
@@ -375,6 +393,8 @@ export const transactionType = pgEnum("transaction_type", [
   "transfer",
   "given",
   "received",
+  "forgave",
+  "forgiven",
 ]);
 
 // Written only by Postgres functions, which keep each transaction's postings balanced.

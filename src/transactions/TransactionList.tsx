@@ -141,7 +141,9 @@ export function TransactionSummary({
   const money = useMoney();
   const category = categories.find(({ id }) => id === transaction.category_id);
   const counterparty = counterparties.find(({ id }) => id === transaction.counterparty_id);
-  const otherSide = category ?? counterparty;
+  const otherSide = counterparty ?? category;
+  // A forgiven debt has both, and says which built-in category it went to.
+  const forgiveness = counterparty && category ? category.name : null;
   const nameOf = (id: string | null) =>
     id === null
       ? t("transactions.anotherSpace")
@@ -153,8 +155,8 @@ export function TransactionSummary({
 
   return (
     <>
-      {category && <CategoryIcon icon={category.icon} color={category.color} />}
       {counterparty && <CounterpartyIcon color={counterparty.color} />}
+      {category && !counterparty && <CategoryIcon icon={category.icon} color={category.color} />}
       {!otherSide && (
         <span
           aria-hidden
@@ -168,7 +170,12 @@ export function TransactionSummary({
           {transactionLabel(transaction, categories, counterparties, t)}
         </span>
         <span className="truncate text-sm text-zinc-500">
-          {[otherSide && transaction.title !== null ? otherSide.name : null, where, creator]
+          {[
+            forgiveness,
+            otherSide && transaction.title !== null ? otherSide.name : null,
+            where,
+            creator,
+          ]
             .filter((part) => part)
             .join(" · ")}
         </span>

@@ -3,17 +3,19 @@ import type { Json } from "../supabase/database.types";
 import { memberOf } from "../supabase/json";
 import type { RowOf, Rows } from "../sync/copy";
 import { postingsByLedgerAccount } from "../sync/lookups";
-import type { Category, CategoryKind } from "./category-queries";
+import type { Category, CategoryKind, BuiltInCategory } from "./category-queries";
 
-export function readCategories({
-  ledger_accounts,
-  postings,
-}: Pick<Rows, "ledger_accounts" | "postings">): Category[] {
+// A built-in category has no stored name: it is called whatever `builtInName` says.
+export function readCategories(
+  { ledger_accounts, postings }: Pick<Rows, "ledger_accounts" | "postings">,
+  builtInName: (builtIn: BuiltInCategory) => string,
+): Category[] {
   const postingsOf = postingsByLedgerAccount(postings);
 
   return [...ledger_accounts.values()].flatMap((ledgerAccount) => {
-    const { id, space_id, parent_id, name, icon, color, created_at } = ledgerAccount;
+    const { id, space_id, parent_id, icon, color, created_at, built_in } = ledgerAccount;
     const kind = categoryKind(ledgerAccount.kind);
+    const name = built_in === null ? ledgerAccount.name : builtInName(built_in);
     if (kind === null || name === null || icon === null || color === null) return [];
     return [
       {
@@ -25,6 +27,7 @@ export function readCategories({
         icon,
         color,
         created_at,
+        built_in,
         transaction_count: new Set(
           (postingsOf.get(id) ?? []).map(({ transaction_id }) => transaction_id),
         ).size,

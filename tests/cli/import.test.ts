@@ -70,7 +70,9 @@ describe("importing a file into a user's private space", () => {
       "expense/Food",
       "expense/Food/Lunches",
       "expense/Transport",
+      "expense/debts_forgiven",
       "income/Salary",
+      "income/debts_forgiven_to_you",
     ]);
   });
 
@@ -261,11 +263,16 @@ async function newestFirst(client: Client) {
   return data;
 }
 
+// A built-in category, which has no name, goes by its built-in key.
 async function categoryNames(client: Client) {
-  const { data, error } = await client.from("categories").select("id, kind, name, parent_id");
+  const { data, error } = await client
+    .from("categories")
+    .select("id, kind, name, parent_id, built_in");
   if (error) throw error;
   const names = new Map(data.map((c) => [c.id, c.name]));
   return data.map((c) =>
-    [c.kind, c.parent_id ? names.get(c.parent_id) : undefined, c.name].filter(Boolean).join("/"),
+    [c.kind, c.parent_id ? names.get(c.parent_id) : undefined, c.name ?? c.built_in]
+      .filter(Boolean)
+      .join("/"),
   );
 }

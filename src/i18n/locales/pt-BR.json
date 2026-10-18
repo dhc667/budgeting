@@ -276,7 +276,9 @@
       "transferToOtherSpace": "uma transferência de {{amount}} de “{{from}}” para outro espaço, em {{date}}",
       "transferFromOtherSpace": "uma transferência de {{amount}} para “{{to}}” de outro espaço, em {{date}}",
       "given": "{{amount}} dados de “{{account}}” para “{{counterparty}}”, em {{date}}",
-      "received": "{{amount}} recebidos em “{{account}}” de “{{counterparty}}”, em {{date}}"
+      "received": "{{amount}} recebidos em “{{account}}” de “{{counterparty}}”, em {{date}}",
+      "forgave": "{{amount}} que “{{counterparty}}” devia perdoados, por “{{account}}”, em {{date}}",
+      "forgiven": "{{amount}} devidos a “{{counterparty}}” perdoados, por “{{account}}”, em {{date}}"
     },
     "recurring": {
       "created": "{{actor}} criou a transação recorrente “{{label}}”",
@@ -388,7 +390,8 @@
       "kindForSubcategories": "As subcategorias mudam de tipo junto com ela.",
       "icon": "Ícone",
       "save": "Salvar",
-      "saved": "Salvo."
+      "saved": "Salvo.",
+      "builtIn": "Uma categoria embutida: o app a nomeia no seu idioma, e só dívidas perdoadas vão nela. O ícone e a cor você pode mudar."
     },
     "delete": {
       "title": "Excluir categoria",
@@ -402,7 +405,8 @@
       "moveTo": "Mover para",
       "chooseTarget": "Escolha uma categoria",
       "nowhereToMove_one": "{{name}} tem {{count}} movimentação e não há outra categoria do mesmo tipo neste espaço para onde movê-la. Adicione uma primeiro.",
-      "nowhereToMove_other": "{{name}} tem {{count}} movimentações e não há outra categoria do mesmo tipo neste espaço para onde movê-las. Adicione uma primeiro."
+      "nowhereToMove_other": "{{name}} tem {{count}} movimentações e não há outra categoria do mesmo tipo neste espaço para onde movê-las. Adicione uma primeiro.",
+      "builtIn": "Categorias embutidas não podem ser excluídas."
     },
     "errors": {
       "nameBlank": "O nome de uma categoria não pode ficar em branco.",
@@ -410,6 +414,10 @@
       "deleteFailed": "Não foi possível excluir esta categoria. Verifique sua conexão e tente de novo.",
       "saveRefused": "Não foi possível salvar esta alteração. As categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo.",
       "deleteRefused": "Não foi possível excluir esta categoria. As categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo."
+    },
+    "builtIn": {
+      "debtsForgiven": "Dívidas perdoadas",
+      "debtsForgivenToYou": "Dívidas perdoadas a você"
     }
   },
   "transactions": {
@@ -481,7 +489,7 @@
       "countedInAll": "Conta em todos os seus orçamentos",
       "leftOutOfSome_one": "Fora de {{count}} orçamento",
       "leftOutOfSome_other": "Fora de {{count}} orçamentos",
-      "direction": "Para onde foi o dinheiro",
+      "direction": "O que aconteceu",
       "given": "Dei",
       "givenHint": "Emprestei, ou devolvi",
       "received": "Recebi",
@@ -489,7 +497,12 @@
       "counterparty": "Contraparte",
       "chooseCounterparty": "Escolha uma contraparte, ou digite uma nova",
       "newCounterparty": "Adicionar “{{name}}”",
-      "newCounterpartyHint": "“{{name}}” é adicionado como contraparte ao salvar."
+      "newCounterpartyHint": "“{{name}}” é adicionado como contraparte ao salvar.",
+      "forgave": "Perdoei",
+      "forgaveHint": "Não me deve mais",
+      "forgiven": "Fui perdoado",
+      "forgivenHint": "Não devo mais",
+      "wholeDebt": "Tudo o que é devido: {{amount}} {{currency}}"
     },
     "oneSided": {
       "toAnotherSpace": "De “{{account}}” para outro espaço",
@@ -510,6 +523,7 @@
       "accountDeleted": "Não foi possível restaurar: uma conta que ela usava foi excluída.",
       "currencyChanged": "Não foi possível restaurar: uma conta que ela usava agora tem outra moeda.",
       "categoryDeleted": "Não foi possível restaurar: a categoria dela foi excluída.",
+      "counterpartyDeleted": "Não foi possível restaurar: a contraparte dela foi excluída.",
       "refused": "Não foi possível restaurar. Recarregue e tente de novo.",
       "failed": "Não foi possível restaurar. Verifique sua conexão e tente de novo."
     },
@@ -518,6 +532,7 @@
       "category": "Escolha uma categoria.",
       "toAccount": "Escolha a conta para onde vai o dinheiro.",
       "saveRefused": "Não foi possível salvar esta transação. As contas ou categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo.",
+      "moreThanOwed": "É mais do que o devido na moeda desta conta. Uma dívida é perdoada até o que é devido.",
       "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
       "deleteFailed": "Não foi possível excluir esta transação. Verifique sua conexão e tente de novo.",
       "loadFailed": "Não foi possível carregar as transações. Verifique sua conexão e tente de novo.",
@@ -803,6 +818,32 @@
       "submit": "Excluir contraparte",
       "confirm": "Excluir",
       "confirmTitle": "Excluir {{name}}?"
+    },
+    "forgivenSoFar": "perdoado {{amount}}",
+    "forgive": {
+      "open": "Perdoar",
+      "title": "Perdoar dívidas com {{name}}",
+      "details": "O que perdoar",
+      "nothingOwed": "Ninguém deve nada a ninguém.",
+      "asSpending": "Conta como gasto de cada conta, em “{{category}}”. Nenhum dinheiro se move.",
+      "asIncome": "Conta como receita de cada conta, em “{{category}}”. Nenhum dinheiro se move.",
+      "amount": "Perdoar",
+      "amountToYou": "Perdoado a você",
+      "all": "Tudo",
+      "removeLine": "Remover",
+      "split": "Dividir com outra conta",
+      "noAccount": "Não há uma conta aberta em {{currency}} por onde isso passe. Adicione uma, ou desarquive uma, para perdoá-lo.",
+      "leftAfter": "Depois disso: {{owed}}",
+      "overBy": "São {{amount}} a mais do que o devido",
+      "submit": "Perdoar",
+      "errors": {
+        "amount": "Informe valores acima de zero, ou deixe-os vazios.",
+        "account": "Escolha uma conta para cada valor.",
+        "tooMuch": "É mais do que o devido em {{currency}}.",
+        "moreThanOwed": "É mais do que o devido agora; a dívida mudou nesse meio-tempo. Volte e comece de novo.",
+        "nothing": "Informe um valor para perdoar.",
+        "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo."
+      }
     }
   },
   "money": {

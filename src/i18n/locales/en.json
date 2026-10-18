@@ -276,7 +276,9 @@
       "transferToOtherSpace": "a transfer of {{amount}} from “{{from}}” to another space, on {{date}}",
       "transferFromOtherSpace": "a transfer of {{amount}} into “{{to}}” from another space, on {{date}}",
       "given": "{{amount}} given from “{{account}}” to “{{counterparty}}”, on {{date}}",
-      "received": "{{amount}} received into “{{account}}” from “{{counterparty}}”, on {{date}}"
+      "received": "{{amount}} received into “{{account}}” from “{{counterparty}}”, on {{date}}",
+      "forgave": "{{amount}} owed by “{{counterparty}}” forgiven, through “{{account}}”, on {{date}}",
+      "forgiven": "{{amount}} owed to “{{counterparty}}” forgiven, through “{{account}}”, on {{date}}"
     },
     "recurring": {
       "created": "{{actor}} created the recurring transaction “{{label}}”",
@@ -388,7 +390,8 @@
       "kindForSubcategories": "Its subcategories change type with it.",
       "icon": "Icon",
       "save": "Save",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "builtIn": "A built-in category: the app names it in your language, and only forgiven debts go in it. Its icon and color are yours to change."
     },
     "delete": {
       "title": "Delete category",
@@ -402,7 +405,8 @@
       "moveTo": "Move to",
       "chooseTarget": "Choose a category",
       "nowhereToMove_one": "{{name}} has {{count}} transaction, and there's no other category of its type in this space to move it to. Add one first.",
-      "nowhereToMove_other": "{{name}} has {{count}} transactions, and there's no other category of its type in this space to move them to. Add one first."
+      "nowhereToMove_other": "{{name}} has {{count}} transactions, and there's no other category of its type in this space to move them to. Add one first.",
+      "builtIn": "Built-in categories can't be deleted."
     },
     "errors": {
       "nameBlank": "A category's name can't be blank.",
@@ -410,6 +414,10 @@
       "deleteFailed": "Couldn't delete this category. Check your connection and try again.",
       "saveRefused": "Couldn't save this change. The categories may have changed meanwhile; reload and try again.",
       "deleteRefused": "Couldn't delete this category. The categories may have changed meanwhile; reload and try again."
+    },
+    "builtIn": {
+      "debtsForgiven": "Debts forgiven",
+      "debtsForgivenToYou": "Debts forgiven to you"
     }
   },
   "transactions": {
@@ -481,7 +489,7 @@
       "countedInAll": "Counted in all its budgets",
       "leftOutOfSome_one": "Left out of {{count}} budget",
       "leftOutOfSome_other": "Left out of {{count}} budgets",
-      "direction": "Which way the money went",
+      "direction": "What happened",
       "given": "I gave",
       "givenHint": "Lent it, or paid it back",
       "received": "I received",
@@ -489,7 +497,12 @@
       "counterparty": "Counterparty",
       "chooseCounterparty": "Choose a counterparty, or type a new one",
       "newCounterparty": "Add “{{name}}”",
-      "newCounterpartyHint": "“{{name}}” is added as a counterparty when you save."
+      "newCounterpartyHint": "“{{name}}” is added as a counterparty when you save.",
+      "forgave": "I forgave",
+      "forgaveHint": "They don't owe it anymore",
+      "forgiven": "I was forgiven",
+      "forgivenHint": "I don't owe it anymore",
+      "wholeDebt": "All that's owed: {{amount}} {{currency}}"
     },
     "oneSided": {
       "toAnotherSpace": "From “{{account}}” to another space",
@@ -510,6 +523,7 @@
       "accountDeleted": "Couldn't restore it: an account it used has been deleted.",
       "currencyChanged": "Couldn't restore it: an account it used now holds another currency.",
       "categoryDeleted": "Couldn't restore it: its category has been deleted.",
+      "counterpartyDeleted": "Couldn't restore it: its counterparty has been deleted.",
       "refused": "Couldn't restore it. Reload and try again.",
       "failed": "Couldn't restore it. Check your connection and try again."
     },
@@ -518,6 +532,7 @@
       "category": "Choose a category.",
       "toAccount": "Choose the account the money goes to.",
       "saveRefused": "Couldn't save this transaction. Its accounts or categories may have changed meanwhile; reload and try again.",
+      "moreThanOwed": "That's more than is owed in this account's currency. A debt can be forgiven up to what's owed.",
       "saveFailed": "Couldn't save. Check your connection and try again.",
       "deleteFailed": "Couldn't delete this transaction. Check your connection and try again.",
       "loadFailed": "Couldn't load transactions. Check your connection and try again.",
@@ -803,6 +818,32 @@
       "submit": "Delete counterparty",
       "confirm": "Delete",
       "confirmTitle": "Delete {{name}}?"
+    },
+    "forgivenSoFar": "forgiven {{amount}}",
+    "forgive": {
+      "open": "Forgive",
+      "title": "Forgive debts with {{name}}",
+      "details": "What to forgive",
+      "nothingOwed": "Nothing is owed either way.",
+      "asSpending": "Counts as spending from each account, in “{{category}}”. No money moves.",
+      "asIncome": "Counts as income to each account, in “{{category}}”. No money moves.",
+      "amount": "Forgive",
+      "amountToYou": "Forgiven to you",
+      "all": "All",
+      "removeLine": "Remove",
+      "split": "Split across another account",
+      "noAccount": "There's no open account in {{currency}} for this to go through. Add one, or unarchive one, to forgive it.",
+      "leftAfter": "After this: {{owed}}",
+      "overBy": "That's {{amount}} more than is owed",
+      "submit": "Forgive",
+      "errors": {
+        "amount": "Enter amounts above zero, or leave them empty.",
+        "account": "Choose an account for each amount.",
+        "tooMuch": "That's more than is owed in {{currency}}.",
+        "moreThanOwed": "That's more than is owed now; the debt changed meanwhile. Go back and start again.",
+        "nothing": "Enter an amount to forgive.",
+        "saveFailed": "Couldn't save. Check your connection and try again."
+      }
     }
   },
   "money": {

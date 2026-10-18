@@ -10,6 +10,7 @@ import {
   sql,
   uniqueEmail,
 } from "../support/local-instance.ts";
+import { addRates } from "../support/rates.ts";
 
 afterAll(() => sql.end());
 
@@ -79,15 +80,18 @@ describe("profiles", () => {
   });
 
   it("lets a user edit their own name and display currency", async () => {
+    // A display currency needs a recent rate, and the instance starts a run with none.
+    await addRates("XPB");
+
     const { error } = await ana
       .from("profiles")
-      .update({ display_name: "Ana María", display_currency: "EUR" })
+      .update({ display_name: "Ana María", display_currency: "XPB" })
       .eq("id", anaId);
 
     expect(error).toBeNull();
     const [profile] =
       await sql`select display_name, display_currency from profiles where id = ${anaId}`;
-    expect(profile).toEqual({ display_name: "Ana María", display_currency: "EUR" });
+    expect(profile).toEqual({ display_name: "Ana María", display_currency: "XPB" });
   });
 
   it("does not let a user edit someone else's profile", async () => {

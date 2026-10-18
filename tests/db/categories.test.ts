@@ -596,17 +596,19 @@ async function categoryOf(user: User, categoryId: string) {
   return data;
 }
 
+// The ones its members can change: built-in categories are in forgiveness.test.ts.
 async function categoriesOf(user: User, spaceId: string) {
   const { data, error } = await user.client
     .from("categories")
     .select("*")
     .eq("space_id", spaceId)
+    .is("built_in", null)
     .order("name");
   if (error) throw error;
   return data;
 }
 
-function namesByKind(categories: { kind: string; name: string }[]) {
+function namesByKind(categories: { kind: string; name: string | null }[]) {
   const namesOf = (kind: string) =>
     categories.filter((category) => category.kind === kind).map(({ name }) => name);
   return { expense: namesOf("expense"), income: namesOf("income") };

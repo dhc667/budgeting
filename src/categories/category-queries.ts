@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useSupabase } from "../instance/instance-context";
 import type { Database } from "../supabase/database";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
@@ -7,10 +8,14 @@ import {
   deleteCategory,
   updateCategory,
 } from "./category-writes";
+import { builtInCategoryName } from "./category";
 import { readCategories, readCategoryHistory } from "./read-categories";
 
 export function useCategories() {
-  return useCopyQuery(["categories"], ({ rows }) => readCategories(rows));
+  const { t, i18n } = useTranslation();
+  return useCopyQuery(["categories", i18n.language], ({ rows }) =>
+    readCategories(rows, (builtIn) => builtInCategoryName(builtIn, t)),
+  );
 }
 
 export function useCategoryHistory(categoryId: string) {
@@ -38,6 +43,11 @@ export function useDeleteCategory(categoryId: string) {
   return useCopyMutation((moveTo: string | null) => deleteCategory(supabase, categoryId, moveTo));
 }
 
-export type Category = Database["public"]["Views"]["categories"]["Row"];
+// Always named: a built-in category is called whatever the app's language calls it.
+export type Category = Omit<Database["public"]["Views"]["categories"]["Row"], "name"> & {
+  name: string;
+};
 
 export type CategoryKind = Category["kind"];
+
+export type BuiltInCategory = NonNullable<Category["built_in"]>;

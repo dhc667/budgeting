@@ -13,13 +13,15 @@ export function tabOf(type: TransactionType): Tab {
       return "transfer";
     case "given":
     case "received":
+    case "forgave":
+    case "forgiven":
       return "debt";
   }
 }
 
 export function typeOf(
   tab: Tab,
-  { refund, received }: { refund: boolean; received: boolean },
+  { refund, debt }: { refund: boolean; debt: DebtType },
 ): TransactionType {
   switch (tab) {
     case "expense":
@@ -28,8 +30,27 @@ export function typeOf(
     case "transfer":
       return tab;
     case "debt":
-      return received ? "received" : "given";
+      return debt;
   }
+}
+
+export function debtTypeOf(type: TransactionType): DebtType | null {
+  switch (type) {
+    case "given":
+    case "received":
+    case "forgave":
+    case "forgiven":
+      return type;
+    case "expense":
+    case "refund":
+    case "income":
+    case "transfer":
+      return null;
+  }
+}
+
+export function isForgiveness(type: TransactionType): boolean {
+  return type === "forgave" || type === "forgiven";
 }
 
 export function categoryKindOf(tab: Tab): CategoryKind | null {
@@ -58,6 +79,8 @@ export function tabName(tab: Tab, t: TFunction): string {
 }
 
 export type Tab = "expense" | "income" | "transfer" | "debt";
+
+export type DebtType = Extract<TransactionType, "given" | "received" | "forgave" | "forgiven">;
 
 export const tabs: readonly Tab[] = ["expense", "income", "transfer", "debt"];
 

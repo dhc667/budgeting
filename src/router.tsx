@@ -14,6 +14,7 @@ import { CategoryScreen } from "./categories/CategoryScreen";
 import { CategoryTransactionsScreen } from "./categories/CategoryTransactionsScreen";
 import { NewCategoryScreen } from "./categories/NewCategoryScreen";
 import { CounterpartyScreen } from "./counterparties/CounterpartyScreen";
+import { ForgiveScreen } from "./counterparties/ForgiveScreen";
 import { NewCounterpartyScreen } from "./counterparties/NewCounterpartyScreen";
 import { DashboardScreen } from "./dashboard/DashboardScreen";
 import { ConnectScreen } from "./instance/ConnectScreen";
@@ -93,6 +94,10 @@ export function createAppRouter() {
                         {
                           path: "counterparties/:counterpartyId",
                           element: <CounterpartyScreen />,
+                        },
+                        {
+                          path: "counterparties/:counterpartyId/forgive",
+                          element: <ForgiveScreen />,
                         },
                       ],
                     },

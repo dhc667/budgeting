@@ -9,7 +9,10 @@ export type Database = Omit<Generated, "public"> & {
         Row: NotNullExcept<GeneratedViews["accounts"]["Row"], "opening_date">;
       };
       categories: Omit<GeneratedViews["categories"], "Row"> & {
-        Row: Omit<NotNullExcept<GeneratedViews["categories"]["Row"], "parent_id">, "kind"> & {
+        Row: Omit<
+          NotNullExcept<GeneratedViews["categories"]["Row"], "parent_id" | "built_in" | "name">,
+          "kind"
+        > & {
           kind: "expense" | "income";
         };
       };

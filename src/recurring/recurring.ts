@@ -102,6 +102,10 @@ function sidesOf(rule: RecurringTransaction, accounts: Account[]): { from?: Side
     case "income":
     case "received":
       return { to: account };
+    // No rule forgives a debt, but a forgiven debt reaches and leaves its account.
+    case "forgave":
+    case "forgiven":
+      return { from: account, to: account };
     case "transfer": {
       const sameCurrency = sideOf(rule.to_account_id, rule.amount)?.currency === account?.currency;
       return {

@@ -13,6 +13,7 @@ describe("category flows", () => {
         postings: [...move("buy", bank, food, 100), ...move("return", food, bank, 30)],
       }),
       ["space-1"],
+      builtInName,
     );
 
     expect(flows).toEqual([
@@ -28,6 +29,7 @@ describe("category flows", () => {
         postings: [...move("a", bank, food, 100), ...move("b", bank, snacks, 25)],
       }),
       ["space-1"],
+      builtInName,
     );
 
     expect(
@@ -45,9 +47,25 @@ describe("category flows", () => {
         postings: [...move("pay", salary, bank, 500), ...move("back", bank, salary, 50)],
       }),
       ["space-1"],
+      builtInName,
     );
 
     expect(flows).toEqual([expect.objectContaining({ kind: "income", net: 450 })]);
+  });
+
+  it("counts a forgiven debt in its built-in category, under the name it's given", () => {
+    const flows = readCategoryFlows(
+      rows({
+        txs: [tx("forgave")],
+        postings: [...move("forgave", dad, bank, 300), ...move("forgave", bank, forgiven, 300)],
+      }),
+      ["space-1"],
+      builtInName,
+    );
+
+    expect(flows.map(({ kind, category, net }) => [kind, category.name, net])).toEqual([
+      ["expense", "built-in debts_forgiven", 300],
+    ]);
   });
 
   it("leaves out opening balances and transfers", () => {
@@ -57,6 +75,7 @@ describe("category flows", () => {
         postings: [...move("open", opening, bank, 1_000), ...move("move", bank, savings, 200)],
       }),
       ["space-1"],
+      builtInName,
     );
 
     expect(flows).toEqual([]);
@@ -72,13 +91,13 @@ describe("category flows", () => {
       ],
     });
 
-    expect(readCategoryFlows(all, ["space-1"]).map(({ currency, net }) => [currency, net])).toEqual(
-      [
-        ["USD", 100],
-        ["EUR", 40],
-      ],
-    );
-    expect(readCategoryFlows(all, ["space-2"]).map(({ net }) => net)).toEqual([70]);
+    expect(
+      readCategoryFlows(all, ["space-1"], builtInName).map(({ currency, net }) => [currency, net]),
+    ).toEqual([
+      ["USD", 100],
+      ["EUR", 40],
+    ]);
+    expect(readCategoryFlows(all, ["space-2"], builtInName).map(({ net }) => net)).toEqual([70]);
   });
 });
 
@@ -123,6 +142,7 @@ const ledger = (id: string, kind: Ledger["kind"], overrides: Partial<Ledger> = {
   color: kind === "opening_balance" ? null : "blue",
   icon: kind === "expense" || kind === "income" ? "tag" : null,
   parent_id: null,
+  built_in: null,
   position: 0,
   archived: false,
   created_at: "2026-01-01T00:00:00+00:00",
@@ -139,6 +159,8 @@ const food = ledger("food", "expense");
 const snacks = ledger("snacks", "expense", { parent_id: "food" });
 const abroad = ledger("abroad", "expense", { space_id: "space-2" });
 const salary = ledger("salary", "income");
+const dad = ledger("dad", "counterparty", { color: "blue" });
+const forgiven = ledger("forgiven", "expense", { name: null, built_in: "debts_forgiven" });
 
 function rows({ txs, postings }: { txs: RowOf<"transactions">[]; postings: Posting[] }) {
   return {
@@ -152,6 +174,8 @@ function rows({ txs, postings }: { txs: RowOf<"transactions">[]; postings: Posti
       snacks,
       abroad,
       salary,
+      dad,
+      forgiven,
     ]),
     transactions: keyed(txs),
     postings: keyed(postings),
@@ -186,6 +210,10 @@ function move(
     currency,
     version: 1,
   }));
+}
+
+function builtInName(builtIn: string): string {
+  return `built-in ${builtIn}`;
 }
 
 function keyed<Row extends { id: string }>(items: Row[]): ReadonlyMap<string, Row> {

@@ -191,7 +191,10 @@ function describeCategoryChange(
   actor: string,
   { categories, t }: Phrasing,
 ): string[] {
-  const name = stringAt(entry.new ?? entry.old, "name");
+  // A built-in category has no stored name, and is never deleted.
+  const name =
+    stringAt(entry.new ?? entry.old, "name") ??
+    categories.find(({ id }) => id === entry.row_id)?.name;
   switch (entry.action) {
     case "insert":
       return [t("activity.category.added", { actor, name })];

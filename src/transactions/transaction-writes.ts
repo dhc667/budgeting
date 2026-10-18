@@ -68,7 +68,8 @@ function draftArgs(draft: TransactionDraft) {
   };
 }
 
-// Where the money comes from or goes to, besides the account the draft names.
+// Where the money comes from or goes to, besides the account the draft names. A forgiven debt also
+// goes to a built-in category, which the instance picks.
 export function otherSideOf(type: TransactionType): "category" | "toAccount" | "counterparty" {
   switch (type) {
     case "expense":
@@ -79,19 +80,24 @@ export function otherSideOf(type: TransactionType): "category" | "toAccount" | "
       return "toAccount";
     case "given":
     case "received":
+    case "forgave":
+    case "forgiven":
       return "counterparty";
   }
 }
 
+// A forgiven debt both reaches and leaves its account, by the same amount.
 function leavesAccount(type: TransactionType): boolean {
   switch (type) {
     case "expense":
     case "transfer":
     case "given":
+    case "forgave":
       return true;
     case "refund":
     case "income":
     case "received":
+    case "forgiven":
       return false;
   }
 }
