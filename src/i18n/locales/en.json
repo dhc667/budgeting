@@ -21,9 +21,10 @@
       "thisMonth": "This month",
       "lastMonth": "Last month",
       "thisYear": "This year",
+      "allTime": "All time",
       "total": "Total spent",
       "none": "No spending in this period.",
-      "chart": "Spending by category bar chart"
+      "chart": "Spending by category pie chart"
     },
     "incomeExpense": {
       "title": "Income vs. expense",

@@ -21,9 +21,10 @@
       "thisMonth": "Este mês",
       "lastMonth": "Mês passado",
       "thisYear": "Este ano",
+      "allTime": "Tudo",
       "total": "Total gasto",
       "none": "Nenhum gasto neste período.",
-      "chart": "Gráfico de barras dos gastos por categoria"
+      "chart": "Gráfico de pizza dos gastos por categoria"
     },
     "incomeExpense": {
       "title": "Receitas e despesas",

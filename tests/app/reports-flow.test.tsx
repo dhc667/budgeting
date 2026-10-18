@@ -62,6 +62,32 @@ describe("spending by category", () => {
     await user.clear(card.getByLabelText("To"));
     await user.type(card.getByLabelText("To"), daysAgo(0));
     expect(totalOf(card)).toBe("$90.00");
+
+    await user.click(card.getByRole("button", { name: "All time" }));
+    expect(amountOf(card, "Groceries")).toBe("$110.00");
+    expect(totalOf(card)).toBe("$130.00");
+    expect(card.getByRole("button", { name: "All time", pressed: true })).toBeTruthy();
+  });
+
+  it("picks out one category at a time, its share beside it", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "1000" });
+    await recordTransaction({ amount: "75", category: "Groceries" });
+    await recordTransaction({ amount: "25", category: "Transport" });
+    await openReports();
+
+    const card = await spendingCard();
+    const groceries = card.getByRole("button", { name: /^Groceries/ });
+    const transport = card.getByRole("button", { name: /^Transport/ });
+    expect(within(groceries).getByText("75%")).toBeTruthy();
+
+    await user.click(groceries);
+    expect(groceries.getAttribute("aria-pressed")).toBe("true");
+    await user.click(transport);
+    expect(groceries.getAttribute("aria-pressed")).toBe("false");
+    expect(transport.getAttribute("aria-pressed")).toBe("true");
+    await user.click(transport);
+    expect(transport.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("converts each transaction at the rate of its own day, and says what it couldn't convert", async () => {

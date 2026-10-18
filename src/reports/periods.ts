@@ -13,6 +13,13 @@ export function thisYear(today: string): DateRange {
   return { from: `${year}-01-01`, to: `${year}-12-31` };
 }
 
+export const allTime: DateRange = { from: "", to: "" };
+
+// An empty bound leaves its side open, as clearing a date field does.
+export function inPeriod(day: string, { from, to }: DateRange): boolean {
+  return (from === "" || day >= from) && (to === "" || day <= to);
+}
+
 export function monthKey(day: string): string {
   return day.slice(0, 7);
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LatestRates, RateHistory } from "../rates/convert";
 import { netWorth } from "../rates/net-worth";
 import type { DisplayConversion } from "../rates/convert-dated";
+import { allTime } from "./periods";
 import { incomeVsExpense, netWorthSeries, spendingByCategory } from "./report-math";
 import type { AccountMovement, CategoryFlow } from "./read-reports";
 
@@ -57,6 +58,35 @@ describe("spending by category", () => {
 
     expect(result.categories.map(({ name }) => name)).toEqual(["Last", "First"]);
     expect(result.total).toBe(110);
+  });
+
+  it("leaves a side of the period open when its bound is empty", () => {
+    const flows = [
+      flow({ categoryId: "old", categoryName: "Old", net: 1, day: "2020-01-01" }),
+      flow({ categoryId: "new", categoryName: "New", net: 10, day: "2030-01-01" }),
+    ];
+
+    expect(spendingByCategory(flows, { from: "", to: "2026-01-01" }, display).total).toBe(1);
+    expect(spendingByCategory(flows, { from: "2026-01-01", to: "" }, display).total).toBe(10);
+    expect(spendingByCategory(flows, allTime, display).total).toBe(11);
+  });
+
+  it("shares the spending out among the categories, none to one refunded more than it spent", () => {
+    const result = spendingByCategory(
+      [
+        flow({ categoryId: "rent", categoryName: "Rent", net: 300 }),
+        flow({ categoryId: "food", categoryName: "Food", net: 100 }),
+        flow({ categoryId: "gift", categoryName: "Gift", net: -200 }),
+      ],
+      period,
+      display,
+    );
+
+    expect(result.categories.map(({ name, share }) => [name, share])).toEqual([
+      ["Rent", 0.75],
+      ["Food", 0.25],
+      ["Gift", 0],
+    ]);
   });
 
   it("converts each flow at the rate of its own day", () => {
@@ -214,6 +244,8 @@ function flow(overrides: Partial<CategoryFlow>): CategoryFlow {
     kind: "expense",
     categoryId: "food",
     categoryName: "Food",
+    categoryIcon: "utensils",
+    categoryColor: "orange",
     spaceId: "space-1",
     net: 0,
     ...overrides,

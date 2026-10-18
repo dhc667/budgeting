@@ -21,9 +21,10 @@
       "thisMonth": "Este mes",
       "lastMonth": "Mes pasado",
       "thisYear": "Este año",
+      "allTime": "Todo",
       "total": "Total gastado",
       "none": "No hay gastos en este período.",
-      "chart": "Gráfico de barras del gasto por categoría"
+      "chart": "Gráfico circular del gasto por categoría"
     },
     "incomeExpense": {
       "title": "Ingresos y gastos",

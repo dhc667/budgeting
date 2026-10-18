@@ -1,3 +1,4 @@
+import type { Color } from "../colors/colors";
 import { keyOfId, type RowOf, type Rows } from "../sync/copy";
 import { ledgerAccountsBySpace, postingsByLedgerAccount } from "../sync/lookups";
 
@@ -11,6 +12,8 @@ export type CategoryFlow = {
   kind: "expense" | "income";
   categoryId: string;
   categoryName: string;
+  categoryIcon: string;
+  categoryColor: Color;
   spaceId: string;
   // Net of refunds. Positive for spending on an expense category and for money earned on an
   // income one, whichever way the postings run.
@@ -32,7 +35,7 @@ export function readCategoryFlows(rows: ReportRows, spaceIds: readonly string[])
   for (const ledger of ledgersIn(rows, spaceIds)) {
     const kind = flowKind(ledger.kind);
     const top = topLevel(ledger, rows.ledger_accounts);
-    if (kind === null || top?.name == null) continue;
+    if (kind === null || top?.name == null || top.icon === null || top.color === null) continue;
     for (const posting of postingsOn.get(ledger.id) ?? []) {
       const transaction = rows.transactions.get(keyOfId(posting.transaction_id));
       if (!transaction) continue;
@@ -43,6 +46,8 @@ export function readCategoryFlows(rows: ReportRows, spaceIds: readonly string[])
         kind,
         categoryId: top.id,
         categoryName: top.name,
+        categoryIcon: top.icon,
+        categoryColor: top.color,
         spaceId: top.space_id,
         net: 0,
       };

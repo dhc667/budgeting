@@ -21,6 +21,22 @@ export const swatchClass: Record<Color, string> = {
   slate: "bg-slate-500",
 };
 
+// The swatches' colours, for filling chart shapes, which take no class.
+export const swatchFill: Record<Color, string> = {
+  red: "var(--color-red-500)",
+  orange: "var(--color-orange-500)",
+  amber: "var(--color-amber-500)",
+  lime: "var(--color-lime-500)",
+  green: "var(--color-green-600)",
+  teal: "var(--color-teal-500)",
+  cyan: "var(--color-cyan-500)",
+  blue: "var(--color-blue-500)",
+  indigo: "var(--color-indigo-500)",
+  violet: "var(--color-violet-500)",
+  pink: "var(--color-pink-500)",
+  slate: "var(--color-slate-500)",
+};
+
 export function colorName(color: Color, t: TFunction): string {
   switch (color) {
     case "red":
