@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
 import * as z from "zod";
-import { color } from "../db/schema.ts";
+import { Constants } from "../src/supabase/database.types.ts";
 import { defined } from "./defined.ts";
 
 // Everything goes through the app's own functions, acting as the user, in one database
@@ -239,7 +239,7 @@ const categorySpec = z.strictObject({
   name: z.string().trim().min(1),
   // A Lucide icon name; the app draws a fallback for one it doesn't offer.
   icon: z.string().min(1),
-  color: z.enum(color.enumValues),
+  color: z.enum(Constants.public.Enums.color),
 });
 
 const category = categorySpec.extend({
@@ -250,7 +250,7 @@ const category = categorySpec.extend({
 const account = z.strictObject({
   name: z.string().trim().min(1),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  color: z.enum(color.enumValues),
+  color: z.enum(Constants.public.Enums.color),
   opening: z.strictObject({ amount: z.int(), date: day }).optional(),
 });
 

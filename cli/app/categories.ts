@@ -1,5 +1,5 @@
 import type { ParseArgsOptionsConfig } from "node:util";
-import { color } from "../../db/schema.ts";
+import { Constants } from "../../src/supabase/database.types.ts";
 import {
   type CategoryDetails,
   createCategory,
@@ -58,7 +58,10 @@ async function addCategory(argv: string[]) {
     name: required(values.name, "--name"),
     kind: choice(required(values.kind, "--kind"), kinds, "--kind"),
     icon: values.icon ?? "tag",
-    color: values.color === undefined ? "blue" : choice(values.color, color.enumValues, "--color"),
+    color:
+      values.color === undefined
+        ? "blue"
+        : choice(values.color, Constants.public.Enums.color, "--color"),
     parentId: values.parent ?? null,
   });
   print(await category(supabase, id));
@@ -84,7 +87,7 @@ async function changeCategory(argv: string[]) {
     color:
       values.color === undefined
         ? current.color
-        : choice(values.color, color.enumValues, "--color"),
+        : choice(values.color, Constants.public.Enums.color, "--color"),
     parentId: values["no-parent"] ? null : (values.parent ?? current.parent_id),
   };
   await updateCategory(supabase, id, details);

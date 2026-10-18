@@ -1,5 +1,5 @@
 import type { ParseArgsOptionsConfig } from "node:util";
-import { color } from "../../db/schema.ts";
+import { Constants } from "../../src/supabase/database.types.ts";
 import {
   type AccountDetails,
   archiveAccount,
@@ -58,7 +58,10 @@ async function addAccount(argv: string[]) {
   const id = await createAccount(supabase, spaceId, {
     name: required(values.name, "--name"),
     currency: currency(required(values.currency, "--currency")),
-    color: values.color === undefined ? "blue" : choice(values.color, color.enumValues, "--color"),
+    color:
+      values.color === undefined
+        ? "blue"
+        : choice(values.color, Constants.public.Enums.color, "--color"),
     openingAmount:
       values["opening-amount"] === undefined
         ? 0
@@ -83,7 +86,7 @@ async function changeAccount(argv: string[]) {
     color:
       values.color === undefined
         ? current.color
-        : choice(values.color, color.enumValues, "--color"),
+        : choice(values.color, Constants.public.Enums.color, "--color"),
     openingAmount:
       values["opening-amount"] === undefined
         ? current.opening_balance
