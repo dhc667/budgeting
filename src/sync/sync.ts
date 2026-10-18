@@ -45,7 +45,7 @@ export function createCopySync(options: CopySyncOptions): CopySync {
     try {
       const store = await open();
       for (;;) {
-        const changes = await fetchChanges(copy?.version ?? 0);
+        const changes = await fetchChanges(copy?.version ?? 0, copy?.rateCurrencies ?? []);
         if (closed) return;
         const applied = applyPull(copy, changes, schemaVersion);
         switch (applied.outcome) {
@@ -95,6 +95,7 @@ export type CopySync = {
 export type CopySyncOptions = {
   name: string;
   schemaVersion: number;
-  fetchChanges: (since: number) => Promise<Changes>;
+  // The currencies whose full rate history the copy holds.
+  fetchChanges: (since: number, heldCurrencies: readonly string[]) => Promise<Changes>;
   publish: (copy: LocalCopy | null) => void;
 };

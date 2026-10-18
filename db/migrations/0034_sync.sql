@@ -106,9 +106,9 @@ grant select on public.deleted_rows to authenticated;
 --
 -- Exchange rates are instance-wide and the provider publishes a rate for every currency each day,
 -- so only the history of the currencies the user uses is sent; any other currency sends just its
--- latest rate. Starting to use a currency writes no rate row, so a device whose `rate_currencies`
--- changed must start over to receive that currency's history.
-create or replace function public.changes_since(since bigint)
+-- latest rate. Starting to use a currency writes no rate row, so the history of a used currency the
+-- device doesn't hold yet (`held_currencies`) is sent whatever its version.
+create or replace function public.changes_since(since bigint, held_currencies text[])
 returns jsonb
 language plpgsql
 stable
@@ -125,6 +125,9 @@ declare
     union select currency from public.budgets
     union select display_currency from public.profiles where id = auth.uid()
   );
+  newly_used_currencies text[] := array(
+    select unnest(used_currencies) except select unnest(held_currencies)
+  );
   found_rows jsonb;
   changed jsonb := '{}';
 begin
@@ -137,14 +140,15 @@ begin
     where namespace.nspname = 'public' and trigger.tgfoid = 'public.set_version'::regproc
   loop
     execute format(
-      'select coalesce(jsonb_agg(to_jsonb(t)), ''[]'') from public.%I as t where t.version >= $1 and %s',
+      'select coalesce(jsonb_agg(to_jsonb(t)), ''[]'') from public.%I as t where %s',
       synced_table,
       case synced_table
         when 'exchange_rates' then
-          't.currency = any ($2) or t.date = (select max(date) from public.exchange_rates where currency = t.currency)'
-        else 'true'
+          '(t.version >= $1 and (t.currency = any ($2) or t.date = (select max(date) from public.exchange_rates where currency = t.currency)))
+            or t.currency = any ($3)'
+        else 't.version >= $1'
       end
-    ) into found_rows using from_version, used_currencies;
+    ) into found_rows using from_version, used_currencies, newly_used_currencies;
     changed := changed || jsonb_build_object(synced_table, found_rows);
   end loop;
 
@@ -165,7 +169,7 @@ begin
   );
 end;
 $$;
-grant execute on function public.changes_since(bigint) to authenticated;
+grant execute on function public.changes_since(bigint, text[]) to authenticated;
 --> statement-breakpoint
 -- `version` moves on every write, so keeping it would make a no-op look like a change.
 create or replace function public.log_activity()

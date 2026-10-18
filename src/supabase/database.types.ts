@@ -668,7 +668,7 @@ isOneToOne: false
 { Args: { "transaction": string }; Returns: boolean
                            },
 "changes_since":
-{ Args: { "since": number }; Returns: Json
+{ Args: { "held_currencies": (string)[],"since": number }; Returns: Json
                            },
 "check_invite_code":
 { Args: { "event": Json }; Returns: Json

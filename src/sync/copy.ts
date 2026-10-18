@@ -1,16 +1,9 @@
 import type { Database } from "../supabase/database";
 
 export function applyPull(copy: LocalCopy | null, pull: Changes, schemaVersion: number): Applied {
-  // Joining or leaving a space, or starting to use a currency, changes what is visible without
-  // writing rows, so the copy can't be brought up to date by this pull: the caller drops it and
-  // pulls from 0.
-  if (
-    copy &&
-    !pull.reset &&
-    !(sameSet(copy.spaceIds, pull.space_ids) && sameSet(copy.rateCurrencies, pull.rate_currencies))
-  ) {
-    return { outcome: "repull" };
-  }
+  // Joining or leaving a space changes what is visible without writing rows, so the copy can't be
+  // brought up to date by this pull: the caller drops it and pulls from 0.
+  if (copy && !pull.reset && spacesChanged(copy, pull)) return { outcome: "repull" };
 
   const kept = copy && !pull.reset ? copy : null;
   const startedOver = kept === null;
@@ -23,7 +16,9 @@ export function applyPull(copy: LocalCopy | null, pull: Changes, schemaVersion: 
     for (const row of pull.rows[table]) tables.write(table, rowKey(table, row), row);
   }
   tables.dropTransactionsWithoutPostings();
-  if (pull.rows.exchange_rates.length > 0) tables.dropSupersededRates(pull.rate_currencies);
+  if (pull.rows.exchange_rates.length > 0 || (kept && currenciesChanged(kept, pull))) {
+    tables.dropSupersededRates(pull.rate_currencies);
+  }
 
   const delta: Delta = { startedOver, removed: tables.removed, written: tables.written };
   return {
@@ -38,6 +33,14 @@ export function applyPull(copy: LocalCopy | null, pull: Changes, schemaVersion: 
     delta,
     changed: startedOver || delta.removed.length > 0 || tables.hasWrites(),
   };
+}
+
+function spacesChanged(copy: LocalCopy, pull: Changes): boolean {
+  return !sameSet(copy.spaceIds, pull.space_ids);
+}
+
+function currenciesChanged(copy: LocalCopy, pull: Changes): boolean {
+  return !sameSet(copy.rateCurrencies, pull.rate_currencies);
 }
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -129,7 +132,8 @@ class Tables {
   }
 
   // The server sends only the latest rate of a currency the user doesn't use, so yesterday's is
-  // superseded by today's without anything telling the device to forget it.
+  // superseded by today's, and the history of a currency that fell out of use is left behind,
+  // without anything telling the device to forget them.
   dropSupersededRates(usedCurrencies: readonly string[]) {
     const used = new Set(usedCurrencies);
     const newest = new Map<string, string>();
