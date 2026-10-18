@@ -2,17 +2,14 @@ import { type Activity, newestFirst } from "../activity/activity";
 import type { Json } from "../supabase/database.types";
 import { memberOf } from "../supabase/json";
 import type { RowOf, Rows } from "../sync/copy";
+import { postingsByLedgerAccount } from "../sync/lookups";
 import type { Category, CategoryKind } from "./category-queries";
 
 export function readCategories({
   ledger_accounts,
   postings,
 }: Pick<Rows, "ledger_accounts" | "postings">): Category[] {
-  const transactionsOf = new Map<string, Set<string>>();
-  for (const { ledger_account_id, transaction_id } of postings.values()) {
-    const transactions = transactionsOf.get(ledger_account_id) ?? new Set<string>();
-    transactionsOf.set(ledger_account_id, transactions.add(transaction_id));
-  }
+  const postingsOf = postingsByLedgerAccount(postings);
 
   return [...ledger_accounts.values()].flatMap((ledgerAccount) => {
     const { id, space_id, parent_id, name, icon, color, created_at } = ledgerAccount;
@@ -28,7 +25,9 @@ export function readCategories({
         icon,
         color,
         created_at,
-        transaction_count: transactionsOf.get(id)?.size ?? 0,
+        transaction_count: new Set(
+          (postingsOf.get(id) ?? []).map(({ transaction_id }) => transaction_id),
+        ).size,
       },
     ];
   });

@@ -3,6 +3,7 @@ import { groupBy } from "../group-by";
 import type { Json } from "../supabase/database.types";
 import { memberOf } from "../supabase/json";
 import { keyOfId, type RowOf, type Rows } from "../sync/copy";
+import { postingsByTransaction } from "../sync/lookups";
 import type {
   TitleSuggestion,
   Transaction,
@@ -31,10 +32,11 @@ export function readRecentTransactions(
 export function readTransaction(rows: TransactionRows, id: string): Transaction | null {
   const transaction = rows.transactions.get(keyOfId(id));
   if (!transaction) return null;
-  const postings = [...rows.postings.values()].filter(
-    ({ transaction_id }) => transaction_id === id,
+  return transactionOf(
+    transaction,
+    postingsByTransaction(rows.postings).get(id) ?? [],
+    rows.ledger_accounts,
   );
-  return transactionOf(transaction, postings, rows.ledger_accounts);
 }
 
 // A transaction's activity is logged once in each space it touched; those entries are one change.
@@ -89,7 +91,7 @@ function readAllTransactions({
   postings,
   ledger_accounts,
 }: TransactionRows): Transaction[] {
-  const postingsOf = groupBy(postings.values(), (posting) => posting.transaction_id);
+  const postingsOf = postingsByTransaction(postings);
   return [...transactions.values()].flatMap((transaction) => {
     const details = transactionOf(
       transaction,
@@ -103,7 +105,7 @@ function readAllTransactions({
 // Null for an opening balance. A transfer from a space the user is not in has only its visible side.
 function transactionOf(
   transaction: RowOf<"transactions">,
-  postings: RowOf<"postings">[],
+  postings: readonly RowOf<"postings">[],
   ledgers: Rows["ledger_accounts"],
 ): Transaction | null {
   const visible = postings.flatMap((posting) => {
