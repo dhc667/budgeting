@@ -21,7 +21,6 @@ import { AppShell } from "./layout/AppShell";
 import { ProfileScreen } from "./profile/ProfileScreen";
 import { RecurringScreen } from "./recurring/RecurringScreen";
 import { RecurringTransactionScreen } from "./recurring/RecurringTransactionScreen";
-import { ReportsScreen } from "./reports/ReportsScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
 import { NewSpaceScreen } from "./spaces/NewSpaceScreen";
 import { SpaceActivityScreen } from "./spaces/SpaceActivityScreen";
@@ -63,7 +62,9 @@ export function createAppRouter() {
                         { path: "budgets/:budgetId", element: <BudgetScreen /> },
                         {
                           path: "reports",
-                          element: <ReportsScreen />,
+                          lazy: async () => ({
+                            Component: (await import("./reports/ReportsScreen")).ReportsScreen,
+                          }),
                         },
                         { path: "profile", element: <ProfileScreen /> },
                         { path: "spaces", element: <SpacesScreen /> },
