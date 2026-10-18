@@ -11,15 +11,15 @@ export function readLatestRates({ exchange_rates }: Pick<Rows, "exchange_rates">
     if (!seen || date > seen.date) latest.set(currency, { date, rate });
   }
 
-  const newest = [...latest.values()].reduce(
-    (newest, { date }) => (date > newest ? date : newest),
-    "",
+  const newest = [...latest.values()].reduce<string | undefined>(
+    (newest, { date }) => (newest === undefined || date > newest ? date : newest),
+    undefined,
   );
-  const staleBefore = newest === "" ? "" : daysAfter(newest, -staleAfterDays);
+  const staleBefore = newest === undefined ? undefined : daysAfter(newest, -staleAfterDays);
   return new Map(
     [...latest].map(([currency, { date, rate }]) => [
       currency,
-      { currency, date, rate, stale: date < staleBefore },
+      { currency, date, rate, stale: staleBefore !== undefined && date < staleBefore },
     ]),
   );
 }

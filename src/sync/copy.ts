@@ -43,6 +43,10 @@ function rowKey(table: SyncedTable, row: Row): string {
   return keyString(table, (column) => Reflect.get(row, column));
 }
 
+export function keyOfId(id: string): string {
+  return JSON.stringify([id]);
+}
+
 function keyOfDeletion(table: SyncedTable, key: Record<string, string>): string {
   return keyString(table, (column) => key[column]);
 }

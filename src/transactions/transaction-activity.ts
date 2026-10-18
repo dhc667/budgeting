@@ -1,6 +1,7 @@
+import { memberOf } from "../supabase/json";
 import type { TFunction } from "i18next";
-import { ledgerAccountKinds, type Phrasing, stringAt, valueAt } from "../spaces/activity";
-import type { Activity } from "../spaces/space-queries";
+import { ledgerAccountKinds, type Phrasing, stringAt } from "../spaces/activity";
+import type { Activity } from "../activity/activity";
 import { Constants, type Enums, type Json } from "../supabase/database.types";
 
 export function describeTransactionChange(
@@ -160,7 +161,7 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
 function snapshotOf(json: Json): Snapshot | null {
   if (json === null) return null;
   return {
-    type: transactionTypes.find((type) => type === valueAt(json, "type")) ?? null,
+    type: transactionTypes.find((type) => type === memberOf(json, "type")) ?? null,
     date: stringAt(json, "date") ?? "",
     title: stringAt(json, "title"),
     note: stringAt(json, "note"),
@@ -173,15 +174,15 @@ function isCategoryKind(kind: Enums<"ledger_account_kind">): boolean {
 }
 
 function postingsOf(snapshot: Json): Posting[] {
-  const postings = valueAt(snapshot, "postings");
+  const postings = memberOf(snapshot, "postings");
   if (!Array.isArray(postings)) return [];
   return postings.flatMap((posting) => {
     const account_kind = ledgerAccountKinds.find(
-      (kind) => kind === valueAt(posting, "account_kind"),
+      (kind) => kind === memberOf(posting, "account_kind"),
     );
     const account_name = stringAt(posting, "account_name") ?? "";
     const currency = stringAt(posting, "currency");
-    const amount = valueAt(posting, "amount");
+    const amount = memberOf(posting, "amount");
     if (account_kind === undefined || currency === null || typeof amount !== "number") return [];
     return [{ account_kind, account_name, currency, amount }];
   });

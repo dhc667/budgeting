@@ -1,8 +1,12 @@
-import type { RowOf, Rows } from "../sync/copy";
+import { type Activity, newestFirst } from "../activity/activity";
+import type { Rows } from "../sync/copy";
 import { isPrivate } from "./space";
-import type { Activity, Space } from "./space-queries";
+import type { Space } from "./space-queries";
 
-export function readSpaces({ spaces, space_members }: Pick<Rows, "spaces" | "space_members">) {
+export function readSpaces({
+  spaces,
+  space_members,
+}: Pick<Rows, "spaces" | "space_members">): Space[] {
   const members = [...space_members.values()];
   return [...spaces.values()]
     .map(({ id, name, private_owner }) => ({
@@ -16,38 +20,11 @@ export function readSpaces({ spaces, space_members }: Pick<Rows, "spaces" | "spa
     .sort(privateFirstThenByName);
 }
 
-export function readSpaceActivity({ activity }: Pick<Rows, "activity">, spaceId: string) {
-  return newestFirst(activity, ({ space_id }) => space_id === spaceId);
-}
-
-export function newestFirst(
-  activity: Rows["activity"],
-  keep: (entry: RowOf<"activity">) => boolean,
+export function readSpaceActivity(
+  { activity }: Pick<Rows, "activity">,
+  spaceId: string,
 ): Activity[] {
-  return [...activity.values()]
-    .filter(keep)
-    .sort((a, b) => b.id - a.id)
-    .map(
-      ({
-        id,
-        table_name,
-        row_id,
-        action,
-        changed_by,
-        changed_at,
-        old,
-        new: updated,
-      }): Activity => ({
-        id,
-        table_name,
-        row_id,
-        action,
-        changed_by,
-        changed_at,
-        old,
-        new: updated,
-      }),
-    );
+  return newestFirst(activity, ({ space_id }) => space_id === spaceId);
 }
 
 function privateFirstThenByName(a: Space, b: Space): number {

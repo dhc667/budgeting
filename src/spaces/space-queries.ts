@@ -66,8 +66,3 @@ export function useRemoveMember() {
 export type Space = Pick<Tables<"spaces">, "id" | "name" | "private_owner"> & {
   members: Pick<Tables<"space_members">, "id" | "user_id">[];
 };
-
-export type Activity = Pick<
-  Tables<"activity">,
-  "id" | "table_name" | "row_id" | "action" | "changed_by" | "changed_at" | "old" | "new"
->;

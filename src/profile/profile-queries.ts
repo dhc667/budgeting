@@ -1,14 +1,13 @@
 import { useSignedInUser } from "../auth/session";
 import { useSupabase } from "../instance/instance-context";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
+import { readProfile, readUsers } from "./read-profiles";
 import type { Tables, TablesUpdate } from "../supabase/database.types";
 
-// Null once a pulled copy no longer holds the signed-in user's profile: the user was deleted.
+// Null once a pulled copy lacks the signed-in user: they were deleted.
 export function useProfile() {
   const user = useSignedInUser();
-  return useCopyQuery(["profile"], ({ rows }): Profile | null => {
-    return [...rows.profiles.values()].find(({ id }) => id === user.id) ?? null;
-  });
+  return useCopyQuery(["profile"], ({ rows }) => readProfile(rows, user.id));
 }
 
 export function useUpdateProfile() {
@@ -21,11 +20,7 @@ export function useUpdateProfile() {
 }
 
 export function useUsers() {
-  return useCopyQuery(["users"], ({ rows }): User[] =>
-    [...rows.profiles.values()]
-      .map(({ id, display_name }) => ({ id, display_name }))
-      .sort((a, b) => a.display_name.localeCompare(b.display_name)),
-  );
+  return useCopyQuery(["users"], ({ rows }) => readUsers(rows));
 }
 
 export function displayNameOf(users: User[], userId: string | null): string | undefined {

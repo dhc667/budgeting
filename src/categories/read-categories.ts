@@ -1,5 +1,6 @@
-import { newestFirst } from "../spaces/read-spaces";
+import { type Activity, newestFirst } from "../activity/activity";
 import type { Json } from "../supabase/database.types";
+import { memberOf } from "../supabase/json";
 import type { RowOf, Rows } from "../sync/copy";
 import type { Category, CategoryKind } from "./category-queries";
 
@@ -35,7 +36,10 @@ export function readCategories({
 
 // The category's own changes, including deletes of other categories that moved their transactions
 // into this one.
-export function readCategoryHistory({ activity }: Pick<Rows, "activity">, categoryId: string) {
+export function readCategoryHistory(
+  { activity }: Pick<Rows, "activity">,
+  categoryId: string,
+): Activity[] {
   return newestFirst(
     activity,
     (entry) =>
@@ -56,11 +60,5 @@ function categoryKind(kind: RowOf<"ledger_accounts">["kind"]): CategoryKind | nu
 }
 
 function movedTo(snapshot: Json | null): Json | undefined {
-  const moved = member(snapshot, "moved_to");
-  return member(moved, "id");
-}
-
-function member(value: Json | null | undefined, key: string): Json | undefined {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
-  return value[key];
+  return memberOf(memberOf(snapshot, "moved_to"), "id");
 }

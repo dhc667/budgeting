@@ -1,5 +1,6 @@
-import { hasChanged, type Phrasing, stringAt, valueAt } from "../spaces/activity";
-import type { Activity } from "../spaces/space-queries";
+import { memberOf } from "../supabase/json";
+import { hasChanged, type Phrasing, stringAt } from "../spaces/activity";
+import type { Activity } from "../activity/activity";
 import type { Json } from "../supabase/database.types";
 import { nextDueDate, type Schedule, units } from "./schedule";
 
@@ -36,9 +37,9 @@ function describeRecurringEdit(
 ): string[] {
   const due = nextDueDate(before.schedule, before.done);
   const dueDetails = { ...details, date: due === null ? "" : day(due) };
-  if (valueAt(entry.new, "recorded") !== undefined)
+  if (memberOf(entry.new, "recorded") !== undefined)
     return [t("activity.recurring.recorded", dueDetails)];
-  if (valueAt(entry.new, "skipped") !== undefined)
+  if (memberOf(entry.new, "skipped") !== undefined)
     return [t("activity.recurring.skipped", dueDetails)];
   if (before.paused !== after.paused)
     return [
@@ -59,10 +60,10 @@ function labelOf(snapshot: Snapshot, { categories, t }: Phrasing): string {
 
 function snapshotOf(row: Json): Snapshot | null {
   const startsOn = stringAt(row, "starts_on");
-  const every = valueAt(row, "every");
+  const every = memberOf(row, "every");
   const unit = units.find((candidate) => candidate === stringAt(row, "unit"));
-  const done = valueAt(row, "done");
-  const times = valueAt(row, "times");
+  const done = memberOf(row, "done");
+  const times = memberOf(row, "times");
   if (startsOn === null || typeof every !== "number" || !unit || typeof done !== "number")
     return null;
   return {
@@ -76,7 +77,7 @@ function snapshotOf(row: Json): Snapshot | null {
       times: typeof times === "number" ? times : null,
     },
     done,
-    paused: valueAt(row, "paused") === true,
+    paused: memberOf(row, "paused") === true,
   };
 }
 

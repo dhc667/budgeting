@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
 import type { Database } from "../supabase/database";
 import { useCopyMutation } from "../sync/copy-query";
-import type { Activity } from "../spaces/space-queries";
+import type { Activity } from "../activity/activity";
 import type { TransactionDraft } from "../transactions/transaction-queries";
 import type { Schedule } from "./schedule";
 

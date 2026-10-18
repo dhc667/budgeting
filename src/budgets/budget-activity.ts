@@ -1,5 +1,6 @@
-import { hasChanged, type Phrasing, stringAt, valueAt } from "../spaces/activity";
-import type { Activity } from "../spaces/space-queries";
+import { memberOf } from "../supabase/json";
+import { hasChanged, type Phrasing, stringAt } from "../spaces/activity";
+import type { Activity } from "../activity/activity";
 
 export function describeBudgetChange(entry: Activity, actor: string, phrasing: Phrasing): string[] {
   const { t } = phrasing;
@@ -21,7 +22,7 @@ function describeBudgetEdit(
   details: { actor: string; name: string | null },
   { t, money, day }: Phrasing,
 ): string[] {
-  const excluded = valueAt(entry.new, "excluded");
+  const excluded = memberOf(entry.new, "excluded");
   if (excluded !== undefined) {
     const date = stringAt(excluded, "date");
     return [
@@ -32,7 +33,7 @@ function describeBudgetEdit(
       }),
     ];
   }
-  const included = valueAt(entry.new, "included");
+  const included = memberOf(entry.new, "included");
   if (included !== undefined) {
     const date = stringAt(included, "date");
     return [
@@ -48,8 +49,8 @@ function describeBudgetEdit(
   if (hasChanged(entry, "name"))
     lines.push(t("activity.budget.renamed", { ...details, from: stringAt(entry.old, "name") }));
   const currency = stringAt(entry.new, "currency") ?? "";
-  const before = valueAt(entry.old, "amount");
-  const after = valueAt(entry.new, "amount");
+  const before = memberOf(entry.old, "amount");
+  const after = memberOf(entry.new, "amount");
   if (hasChanged(entry, "amount") && typeof before === "number" && typeof after === "number")
     lines.push(
       t("activity.budget.limitChanged", {

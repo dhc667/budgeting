@@ -29,6 +29,7 @@ export default defineConfig(
       ],
       "@typescript-eslint/no-unsafe-type-assertion": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
       "no-restricted-syntax": [
         "error",
         {
