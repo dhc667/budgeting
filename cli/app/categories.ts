@@ -34,9 +34,14 @@ async function listCategories(argv: string[]) {
     kind: { type: "string" },
   });
   noPositionals(positionals, "categories list [--space <id>] [--kind expense|income]");
-  const { supabase } = await signedIn(values.env);
-  let query = supabase.from("categories").select(columns).order("kind").order("name");
-  if (values.space) query = query.eq("space_id", values.space);
+  const { supabase, userId } = await signedIn(values.env);
+  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
+  let query = supabase
+    .from("categories")
+    .select(columns)
+    .eq("space_id", spaceId)
+    .order("kind")
+    .order("name");
   if (values.kind) query = query.eq("kind", choice(values.kind, kinds, "--kind"));
   print(await dataOf(query));
 }

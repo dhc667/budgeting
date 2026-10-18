@@ -40,9 +40,9 @@ async function listAccounts(argv: string[]) {
     archived: { type: "boolean", default: false },
   });
   noPositionals(positionals, "accounts list [--space <id>] [--archived]");
-  const { supabase } = await signedIn(values.env);
-  let query = supabase.from("accounts").select(columns).order("position");
-  if (values.space) query = query.eq("space_id", values.space);
+  const { supabase, userId } = await signedIn(values.env);
+  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
+  let query = supabase.from("accounts").select(columns).eq("space_id", spaceId).order("position");
   if (!values.archived) query = query.eq("archived", false);
   print(await dataOf(query));
 }

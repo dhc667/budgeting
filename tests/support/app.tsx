@@ -126,7 +126,7 @@ export async function openNewTransaction() {
 
 export async function choose(picker: string, option: string) {
   await user.click(screen.getByRole("combobox", { name: picker }));
-  await user.click(screen.getByRole("option", { name: option }));
+  await user.click(await screen.findByRole("option", { name: option }));
 }
 
 // Users pile up across test runs, and the member checklist finds them by name.
