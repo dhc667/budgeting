@@ -9,7 +9,9 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance.ts";
+import { addAccount } from "../support/accounts.ts";
 import { daysAgo, today } from "../support/dates.ts";
+import { addRates, rateDays } from "../support/rates.ts";
 
 type Changes = Database["public"]["Functions"]["changes_since"]["Returns"];
 
@@ -34,7 +36,7 @@ beforeEach(async () => {
     signedInUser("Carla"),
   ]);
   familyId = await createSpace(ana, "Family", [ben]);
-  checking = await addAccount(ana, familyId, "Checking", 10_000);
+  checking = await addAccount(ana, familyId, "Checking");
   groceries = await categoryIn(ana, familyId, "Groceries");
 });
 
@@ -80,7 +82,7 @@ describe("exchange rates in a pull", () => {
   });
 
   it("sends the full history of the currency of an account the user can see", async () => {
-    await addAccount(ana, familyId, "Euros", 0, "XSA");
+    await addAccount(ana, familyId, "Euros", { openingAmount: 0, currency: "XSA" });
 
     const pulled = await pull(ben);
 
@@ -109,7 +111,10 @@ describe("exchange rates in a pull", () => {
   });
 
   it("leaves out the history of a currency used only in a space the user isn't in", async () => {
-    await addAccount(ana, (await privateSpaceOf(ana)).id, "Reais", 0, "XSD");
+    await addAccount(ana, (await privateSpaceOf(ana)).id, "Reais", {
+      openingAmount: 0,
+      currency: "XSD",
+    });
 
     const pulled = await pull(ben);
 
@@ -121,7 +126,7 @@ describe("exchange rates in a pull", () => {
     const before = await pull(ben);
     expect(before.rate_currencies).not.toContain("XSA");
 
-    await addAccount(ana, familyId, "Euros", 0, "XSA");
+    await addAccount(ana, familyId, "Euros", { openingAmount: 0, currency: "XSA" });
 
     const after = await pull(ben, before.version, before.rate_currencies);
     expect(after.rate_currencies).toContain("XSA");
@@ -129,7 +134,7 @@ describe("exchange rates in a pull", () => {
   });
 
   it("sends the whole history of a used currency the device doesn't hold, from a recent version", async () => {
-    await addAccount(ana, familyId, "Euros", 0, "XSA");
+    await addAccount(ana, familyId, "Euros", { openingAmount: 0, currency: "XSA" });
     const { version, rate_currencies } = await pull(ben);
 
     const unheld = await pull(
@@ -144,7 +149,7 @@ describe("exchange rates in a pull", () => {
   });
 
   it("ignores the held currencies when the device starts over", async () => {
-    await addAccount(ana, familyId, "Euros", 0, "XSA");
+    await addAccount(ana, familyId, "Euros", { openingAmount: 0, currency: "XSA" });
 
     const pulled = await pull(ben, 1e15, ["XSA"]);
 
@@ -154,15 +159,15 @@ describe("exchange rates in a pull", () => {
 
   it("sends only the rates written since, plus the latest of an unused currency", async () => {
     await addRates("XSE", "XSF");
-    await addAccount(ana, familyId, "Euros", 0, "XSE");
+    await addAccount(ana, familyId, "Euros", { openingAmount: 0, currency: "XSE" });
     const { version, rate_currencies } = await pull(ben);
 
     await sql`insert into public.exchange_rates (date, currency, rate)
       select ${today()}::date, code, 2 from unnest(array['XSE', 'XSF']) as code`;
     const pulled = await pull(ben, version, rate_currencies);
 
-    expect(ratesOf(pulled, "XSE").map(({ date }) => date)).toContain(today());
-    expect(ratesOf(pulled, "XSF").map(({ date }) => date)).toContain(today());
+    expect(ratesOf(pulled, "XSE").map(({ date }) => date)).toEqual([today()]);
+    expect(ratesOf(pulled, "XSF").map(({ date }) => date)).toEqual([today()]);
   });
 });
 
@@ -437,38 +442,8 @@ async function historyOf(user: User, id: string) {
   return data.map(({ action, old, new: next }) => ({ action, old, new: next }));
 }
 
-const rateDays = 5;
-
-async function addRates(...currencies: string[]) {
-  await sql`insert into public.currencies (code, decimals)
-    select code, 2 from unnest(${currencies}::text[]) as code on conflict do nothing`;
-  await sql`insert into public.exchange_rates (date, currency, rate)
-    select (${daysAgo(1)}::date - day), code, 1.5
-    from unnest(${currencies}::text[]) as code, generate_series(0, ${rateDays - 1}) as day
-    on conflict do nothing`;
-}
-
 function ratesOf(pulled: Changes, currency: string) {
   return pulled.rows.exchange_rates.filter((rate) => rate.currency === currency);
-}
-
-async function addAccount(
-  user: User,
-  spaceId: string,
-  name: string,
-  openingAmount: number,
-  currency = "USD",
-) {
-  const { data, error } = await user.client.rpc("create_account", {
-    space: spaceId,
-    account_name: name,
-    account_currency: currency,
-    account_color: "blue",
-    opening_amount: openingAmount,
-    opening_date: today(),
-  });
-  if (error) throw error;
-  return data;
 }
 
 async function categoryIn(user: User, spaceId: string, name: string): Promise<string> {

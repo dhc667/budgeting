@@ -13,7 +13,9 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance";
+import { addAccount } from "../support/accounts";
 import { daysAgo, today } from "../support/dates";
+import { addRates, rateDates } from "../support/rates";
 
 afterAll(() => sql.end());
 
@@ -183,14 +185,14 @@ describe("pulling the local copy", () => {
     await addRates("XPA");
     const device = deviceOf(ben);
     await device.sync.pull();
-    expect(ratesIn(device.copy(), "XPA")).toHaveLength(1);
+    expect(rateDatesIn(device.copy(), "XPA")).toHaveLength(1);
     const { version } = device.copy();
 
-    await addAccount(ana, familyId, "Euros", "XPA");
+    await addAccount(ana, familyId, "Euros", { currency: "XPA" });
     await device.sync.pull();
 
     expect(device.fetchedSince).toEqual([0, version]);
-    expect(ratesIn(device.copy(), "XPA")).toHaveLength(rateDays);
+    expect(rateDatesIn(device.copy(), "XPA")).toEqual(rateDates());
     expect(device.copy().rateCurrencies).toContain("XPA");
   });
 
@@ -199,27 +201,47 @@ describe("pulling the local copy", () => {
     const device = deviceOf(ben);
     await saveDisplayCurrency(ben, "XPA");
     await device.sync.pull();
-    expect(ratesIn(device.copy(), "XPA")).toHaveLength(rateDays);
+    expect(rateDatesIn(device.copy(), "XPA")).toEqual(rateDates());
 
     await saveDisplayCurrency(ben, "USD");
     await device.sync.pull();
 
-    expect(ratesIn(device.copy(), "XPA")).toEqual([today()]);
+    expect(rateDatesIn(device.copy(), "XPA")).toEqual([daysAgo(1)]);
     expect(device.copy().rateCurrencies).not.toContain("XPA");
   });
 
   it("drops the superseded latest rate of a currency the user doesn't use", async () => {
-    await sql`insert into public.currencies (code, decimals) values ('XPB', 2) on conflict do nothing`;
-    await sql`insert into public.exchange_rates (date, currency, rate)
-      values (${daysAgo(1)}, 'XPB', 1.5)`;
+    await addRates("XPB");
     const device = deviceOf(ben);
     await device.sync.pull();
-    expect(ratesIn(device.copy(), "XPB")).toEqual([daysAgo(1)]);
+    expect(rateDatesIn(device.copy(), "XPB")).toEqual([daysAgo(1)]);
 
-    await sql`insert into public.exchange_rates (date, currency, rate) values (${today()}, 'XPB', 1.6)`;
+    await sql`insert into public.exchange_rates (date, currency, rate) values (${today()}, 'XPB', 1.6) on conflict do nothing`;
     await device.sync.pull();
 
-    expect(ratesIn(device.copy(), "XPB")).toEqual([today()]);
+    expect(rateDatesIn(device.copy(), "XPB")).toEqual([today()]);
+  });
+
+  it("keeps showing the old copy while a pull starting over is under way", async () => {
+    const device = deviceOf(ben);
+    await device.sync.pull();
+    const before = device.copy();
+    expect(namesIn(before, "spaces")).toContain("Family");
+    await ana.client
+      .from("space_members")
+      .delete()
+      .match({ space_id: familyId, user_id: ben.userId });
+    const release = device.holdFromScratch();
+
+    const pulling = device.sync.pull();
+    await vi.waitFor(() => expect(device.fetchedSince).toEqual([0, before.version, 0]));
+
+    expect(device.copy()).toBe(before);
+    expect(device.published).not.toContain(null);
+    release.resolve();
+    await pulling;
+    expect(namesIn(device.copy(), "spaces")).not.toContain("Family");
+    expect(device.published).not.toContain(null);
   });
 
   it("keeps the copy when a pull fails", async () => {
@@ -330,10 +352,15 @@ function deviceOf(user: User, version = schemaVersion) {
   let running = 0;
   const published: (LocalCopy | null)[] = [];
   const fetchedSince: number[] = [];
+  let holding: ReturnType<typeof deferred> | null = null;
   const device = {
     published,
     fetchedSince,
     failing: false,
+    holdFromScratch() {
+      holding = deferred();
+      return holding;
+    },
     maxConcurrent: 0,
     copy() {
       const latest = device.published.at(-1);
@@ -346,6 +373,7 @@ function deviceOf(user: User, version = schemaVersion) {
       publish: (copy) => device.published.push(copy),
       async fetchChanges(since, held): Promise<Changes> {
         device.fetchedSince.push(since);
+        if (since === 0) await holding?.promise;
         running += 1;
         device.maxConcurrent = Math.max(device.maxConcurrent, running);
         try {
@@ -391,33 +419,11 @@ function postingsOf(copy: LocalCopy, transactionId: string) {
   );
 }
 
-const rateDays = 4;
-
-async function addRates(currency: string) {
-  await sql`insert into public.currencies (code, decimals) values (${currency}, 2) on conflict do nothing`;
-  await sql`insert into public.exchange_rates (date, currency, rate)
-    select ${today()}::date - day, ${currency}, 1.5 from generate_series(0, ${rateDays - 1}) as day
-    on conflict do nothing`;
-}
-
-function ratesIn(copy: LocalCopy, currency: string): unknown[] {
+function rateDatesIn(copy: LocalCopy, currency: string): string[] {
   return [...copy.rows.exchange_rates.values()]
     .filter((rate) => rate.currency === currency)
     .map(({ date }) => date)
     .sort();
-}
-
-async function addAccount(user: User, spaceId: string, name: string, currency = "USD") {
-  const { data, error } = await user.client.rpc("create_account", {
-    space: spaceId,
-    account_name: name,
-    account_currency: currency,
-    account_color: "blue",
-    opening_amount: 10_000,
-    opening_date: today(),
-  });
-  if (error) throw error;
-  return data;
 }
 
 async function saveDisplayCurrency(user: User, currency: string) {
