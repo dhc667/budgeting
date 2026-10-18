@@ -9,6 +9,17 @@ export function newestFirst(
   return newestEntriesFirst([...activity.values()].filter(keep));
 }
 
+export function historyOf(
+  activity: Rows["activity"],
+  table: RowOf<"activity">["table_name"],
+  rowId: string,
+): Activity[] {
+  return newestFirst(
+    activity,
+    ({ table_name, row_id }) => table_name === table && row_id === rowId,
+  );
+}
+
 export function newestEntriesFirst(entries: RowOf<"activity">[]): Activity[] {
   return entries.sort((a, b) => b.id - a.id).map(({ space_id, version, ...entry }) => entry);
 }

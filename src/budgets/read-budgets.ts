@@ -1,7 +1,13 @@
-import { type Activity, newestFirst } from "../activity/activity";
-import { groupBy } from "../group-by";
+import { type Activity, historyOf } from "../activity/activity";
 import type { RateHistory } from "../rates/convert";
-import type { RowOf, Rows } from "../sync/copy";
+import { keyOfId, type RowOf, type Rows } from "../sync/copy";
+import {
+  exclusionsByBudget,
+  ledgerAccountsBySpace,
+  postingsByLedgerAccount,
+  postingsByTransaction,
+  ratesByCurrency,
+} from "../sync/lookups";
 
 export type SpendingRow = { spent_on: string; currency: string; amount: number };
 
@@ -11,73 +17,75 @@ export function readBudgets({ budgets }: Pick<Rows, "budgets">): RowOf<"budgets"
   );
 }
 
+type BudgetRows = Pick<
+  Rows,
+  "budgets" | "ledger_accounts" | "postings" | "transactions" | "budget_exclusions"
+>;
+
 // Refunds come in negative, so this is net spending.
-export function readBudgetSpending(
-  rows: Pick<
-    Rows,
-    "budgets" | "ledger_accounts" | "postings" | "transactions" | "budget_exclusions"
-  >,
-  budgetId: string,
-): SpendingRow[] {
-  const budget = [...rows.budgets.values()].find(({ id }) => id === budgetId);
+export function readBudgetSpending(rows: BudgetRows, budgetId: string): SpendingRow[] {
+  const budget = rows.budgets.get(keyOfId(budgetId));
   if (!budget) return [];
 
-  const categoryIds = categoriesOf(budget, rows.ledger_accounts);
   const excluded = new Set(
-    [...rows.budget_exclusions.values()]
-      .filter((exclusion) => exclusion.budget_id === budget.id)
-      .map(({ transaction_id }) => transaction_id),
+    (exclusionsByBudget(rows.budget_exclusions).get(budget.id) ?? []).map(
+      ({ transaction_id }) => transaction_id,
+    ),
   );
-  const postings = [...rows.postings.values()];
-  const postingsOf = groupBy(postings, (posting) => posting.transaction_id);
-  const paidFrom = budget.account_ids;
+  const postingsOf = postingsByTransaction(rows.postings);
+  const postingsOnLedger = postingsByLedgerAccount(rows.postings);
 
   const totals = new Map<string, SpendingRow>();
-  for (const posting of postings) {
-    if (!categoryIds.has(posting.ledger_account_id)) continue;
-    const transaction = rows.transactions.get(JSON.stringify([posting.transaction_id]));
-    if (!transaction || excluded.has(transaction.id)) continue;
-    if (transaction.date < budget.starts_on) continue;
-    if (budget.ends_on !== null && transaction.date > budget.ends_on) continue;
-    if (
-      paidFrom !== null &&
-      !(postingsOf.get(transaction.id) ?? []).some(({ ledger_account_id }) =>
-        paidFrom.includes(ledger_account_id),
-      )
-    ) {
-      continue;
-    }
+  for (const categoryId of countedCategoryIds(budget, rows.ledger_accounts)) {
+    for (const posting of postingsOnLedger.get(categoryId) ?? []) {
+      const transaction = rows.transactions.get(keyOfId(posting.transaction_id));
+      if (!transaction || excluded.has(transaction.id)) continue;
+      if (!isWithinDates(budget, transaction.date)) continue;
+      if (!isPaidFromListedAccount(budget, postingsOf.get(transaction.id) ?? [])) continue;
 
-    const key = JSON.stringify([transaction.date, posting.currency]);
-    const total = totals.get(key) ?? {
-      spent_on: transaction.date,
-      currency: posting.currency,
-      amount: 0,
-    };
-    total.amount += posting.amount;
-    totals.set(key, total);
+      const key = JSON.stringify([transaction.date, posting.currency]);
+      const total = totals.get(key) ?? {
+        spent_on: transaction.date,
+        currency: posting.currency,
+        amount: 0,
+      };
+      total.amount += posting.amount;
+      totals.set(key, total);
+    }
   }
   return [...totals.values()].sort(
     (a, b) => a.spent_on.localeCompare(b.spent_on) || a.currency.localeCompare(b.currency),
   );
 }
 
+function isWithinDates(budget: RowOf<"budgets">, date: string): boolean {
+  return date >= budget.starts_on && (budget.ends_on === null || date <= budget.ends_on);
+}
+
+// Any posting of the transaction on a listed account.
+function isPaidFromListedAccount(
+  { account_ids }: RowOf<"budgets">,
+  postings: readonly RowOf<"postings">[],
+): boolean {
+  return (
+    account_ids === null ||
+    postings.some(({ ledger_account_id }) => account_ids.includes(ledger_account_id))
+  );
+}
+
 // All of the space's expense categories when the budget names none; otherwise those it names and
 // their subcategories.
-function categoriesOf(budget: RowOf<"budgets">, ledgers: Rows["ledger_accounts"]): Set<string> {
+function countedCategoryIds(budget: RowOf<"budgets">, ledgers: Rows["ledger_accounts"]): string[] {
   const named = budget.category_ids;
-  return new Set(
-    [...ledgers.values()]
-      .filter(
-        (ledger) =>
-          ledger.space_id === budget.space_id &&
-          ledger.kind === "expense" &&
-          (named === null ||
-            named.includes(ledger.id) ||
-            (ledger.parent_id !== null && named.includes(ledger.parent_id))),
-      )
-      .map(({ id }) => id),
-  );
+  return (ledgerAccountsBySpace(ledgers).get(budget.space_id) ?? [])
+    .filter(
+      (ledger) =>
+        ledger.kind === "expense" &&
+        (named === null ||
+          named.includes(ledger.id) ||
+          (ledger.parent_id !== null && named.includes(ledger.parent_id))),
+    )
+    .map(({ id }) => id);
 }
 
 // Each currency's rates from the one in effect on `firstDay` on, as a day's rate is the latest on
@@ -88,18 +96,12 @@ export function readRateHistory(
   firstDay: string | undefined,
 ): RateHistory {
   if (firstDay === undefined) return new Map();
-  const wanted = new Set(currencies);
-  const byCurrency = groupBy(
-    [...exchange_rates.values()].filter(({ currency }) => wanted.has(currency)),
-    ({ currency }) => currency,
-  );
+  const byCurrency = ratesByCurrency(exchange_rates);
   return new Map(
     currencies.map((code) => {
-      const dated = (byCurrency.get(code) ?? [])
-        .map(({ date, rate }) => ({ date, rate }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-      const inEffect = dated.findLast(({ date }) => date <= firstDay)?.date ?? firstDay;
-      return [code, dated.filter(({ date }) => date >= inEffect)];
+      const dated = byCurrency.get(code) ?? [];
+      const inEffect = dated.findLastIndex(({ date }) => date <= firstDay);
+      return [code, dated.slice(Math.max(inEffect, 0)).map(({ date, rate }) => ({ date, rate }))];
     }),
   );
 }
@@ -108,10 +110,7 @@ export function readBudgetHistory(
   { activity }: Pick<Rows, "activity">,
   budgetId: string,
 ): Activity[] {
-  return newestFirst(
-    activity,
-    ({ table_name, row_id }) => table_name === "budgets" && row_id === budgetId,
-  );
+  return historyOf(activity, "budgets", budgetId);
 }
 
 export function readBudgetExclusions(

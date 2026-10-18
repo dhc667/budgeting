@@ -1,8 +1,8 @@
-import { groupBy } from "../group-by";
 import { type Activity, newestFirst } from "../activity/activity";
 import type { Json } from "../supabase/database.types";
 import { memberOf } from "../supabase/json";
 import type { RowOf, Rows } from "../sync/copy";
+import { postingsByLedgerAccount } from "../sync/lookups";
 import type { Account } from "./account-queries";
 
 type AccountRows = Pick<Rows, "ledger_accounts" | "postings" | "transactions">;
@@ -42,7 +42,7 @@ function hasPostingOn(snapshot: Json | null, accountId: string): boolean {
 }
 
 type AccountIndex = {
-  postingsOf: Map<string, RowOf<"postings">[]>;
+  postingsOf: ReadonlyMap<string, readonly RowOf<"postings">[]>;
   openingTransactionIds: Set<string>;
   dateOf: Map<string, string>;
 };
@@ -55,7 +55,7 @@ function indexAccountRows({ ledger_accounts, postings, transactions }: AccountRo
       .map(({ id }) => id),
   );
   return {
-    postingsOf: groupBy(allPostings, (posting) => posting.ledger_account_id),
+    postingsOf: postingsByLedgerAccount(postings),
     openingTransactionIds: new Set(
       allPostings
         .filter(({ ledger_account_id }) => openingLedgerAccountIds.has(ledger_account_id))
