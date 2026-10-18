@@ -8,7 +8,34 @@
     "addTransaction": "Add transaction",
     "backTo": "Back to {{place}}"
   },
-  "comingSoon": "Coming soon.",
+  "reports": {
+    "title": "Reports",
+    "unconverted": "Not counted, no exchange rate for its day: {{currencies}}",
+    "spending": {
+      "title": "Spending by category",
+      "from": "From",
+      "to": "To",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "thisYear": "This year",
+      "total": "Total spent",
+      "none": "No spending in this period."
+    },
+    "incomeExpense": {
+      "title": "Income vs. expense",
+      "month": "Month",
+      "income": "Income",
+      "expense": "Expense",
+      "difference": "Difference"
+    },
+    "netWorth": {
+      "title": "Net worth over time",
+      "on": "On {{date}}",
+      "today": "Today",
+      "none": "Nothing recorded yet.",
+      "chart": "Net worth line chart, from {{start}} on {{startDate}} to {{end}} today"
+    }
+  },
   "instance": {
     "connectedTo": "Connected to {{host}}.",
     "welcome": {

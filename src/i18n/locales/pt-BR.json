@@ -8,7 +8,34 @@
     "addTransaction": "Adicionar transação",
     "backTo": "Voltar para {{place}}"
   },
-  "comingSoon": "Em breve.",
+  "reports": {
+    "title": "Relatórios",
+    "unconverted": "Não contado, sem taxa de câmbio para o dia: {{currencies}}",
+    "spending": {
+      "title": "Gastos por categoria",
+      "from": "De",
+      "to": "Até",
+      "thisMonth": "Este mês",
+      "lastMonth": "Mês passado",
+      "thisYear": "Este ano",
+      "total": "Total gasto",
+      "none": "Nenhum gasto neste período."
+    },
+    "incomeExpense": {
+      "title": "Receitas e despesas",
+      "month": "Mês",
+      "income": "Receitas",
+      "expense": "Despesas",
+      "difference": "Diferença"
+    },
+    "netWorth": {
+      "title": "Patrimônio líquido ao longo do tempo",
+      "on": "Em {{date}}",
+      "today": "Hoje",
+      "none": "Nada registrado ainda.",
+      "chart": "Gráfico de linha do patrimônio líquido, de {{start}} em {{startDate}} a {{end}} hoje"
+    }
+  },
   "instance": {
     "connectedTo": "Conectado a {{host}}.",
     "welcome": {

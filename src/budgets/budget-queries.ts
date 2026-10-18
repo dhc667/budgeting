@@ -105,7 +105,7 @@ function convertSpending(
 // The daily sync fetches rates back to the oldest transaction, but only once a day: one dated
 // before every other, recorded since, waits until tomorrow unless asked now. Asked once per day and
 // currency, as a provider without that history would otherwise be asked on every render.
-function useBackfillMissingRates(missing: { currency: string; day: string }[]) {
+export function useBackfillMissingRates(missing: { currency: string; day: string }[]) {
   const queryClient = useQueryClient();
   const asked = missing
     .map(({ currency, day }) => `${currency} ${day}`)
