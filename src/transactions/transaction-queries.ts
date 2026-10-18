@@ -58,7 +58,7 @@ export function useTitleSuggestions() {
 // already added, and adds nothing twice.
 export function useAddTransaction() {
   const supabase = useSupabase();
-  return useTransactionMutation(
+  return useCopyMutation(
     async ({ id, excludedBudgetIds, ...draft }: TransactionDraft & Exclusions & { id: string }) => {
       const { error } = await supabase.rpc("add_transaction", {
         transaction_id: id,
@@ -72,21 +72,19 @@ export function useAddTransaction() {
 
 export function useUpdateTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useTransactionMutation(
-    async ({ excludedBudgetIds, ...draft }: TransactionDraft & Exclusions) => {
-      const { error } = await supabase.rpc("update_transaction", {
-        transaction_id: transactionId,
-        ...draftArgs(draft),
-      });
-      if (error) throw error;
-      await setBudgetExclusions(supabase, transactionId, excludedBudgetIds);
-    },
-  );
+  return useCopyMutation(async ({ excludedBudgetIds, ...draft }: TransactionDraft & Exclusions) => {
+    const { error } = await supabase.rpc("update_transaction", {
+      transaction_id: transactionId,
+      ...draftArgs(draft),
+    });
+    if (error) throw error;
+    await setBudgetExclusions(supabase, transactionId, excludedBudgetIds);
+  });
 }
 
 export function useDeleteTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useTransactionMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.rpc("delete_transaction", { transaction_id: transactionId });
     if (error) throw error;
   });
@@ -94,16 +92,10 @@ export function useDeleteTransaction(transactionId: string) {
 
 export function useRestoreTransaction(transactionId: string) {
   const supabase = useSupabase();
-  return useTransactionMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.rpc("restore_transaction", { transaction_id: transactionId });
     if (error) throw error;
   });
-}
-
-// A transaction moves balances, counts in its category and shows in its spaces' activity, all of
-// which are read from the copy; budgets still read the instance.
-function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
-  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 // A draft may still hold what another type used; only what its own type uses is saved.

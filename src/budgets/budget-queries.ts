@@ -1,16 +1,15 @@
-import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { localToday } from "../format/days";
 import type { Currency } from "../format/format";
 import { useSupabase } from "../instance/instance-context";
 import { useCurrencies } from "../money/currency-queries";
 import { convertOn, type RateHistory } from "../rates/convert";
-import type { Activity } from "../activity/activity";
 import type { Space } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
 import type { Repeat } from "../recurring/schedule";
 import type { Database } from "../supabase/database";
-import { useCopyMutation } from "../sync/copy-query";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import {
   type BudgetPlan,
   budgetPeriods,
@@ -18,21 +17,17 @@ import {
   type DaySpending,
   type PeriodProgress,
 } from "./periods";
+import {
+  readBudgetExclusions,
+  readBudgetHistory,
+  readBudgetSpending,
+  readBudgets,
+  readRateHistory,
+  type SpendingRow,
+} from "./read-budgets";
 
 export function useBudgets() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["budgets"],
-    async queryFn(): Promise<Budget[]> {
-      const { data, error } = await supabase
-        .from("budgets")
-        .select("*")
-        .order("name")
-        .order("created_at");
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["budgets"], ({ rows }) => readBudgets(rows));
 }
 
 export function shownBudgets(
@@ -66,72 +61,20 @@ export function useBudgetProgress(budget: Budget): BudgetProgress | undefined {
 }
 
 function useBudgetSpending(budget: Budget) {
-  const supabase = useSupabase();
-  return useQuery({
-    // The whole budget, so that an edit to what it covers reads it again.
-    queryKey: ["budgets", "spending", budget],
-    queryFn: () =>
-      allRows<SpendingRow>((from, to) =>
-        supabase.rpc("budget_spending", { budget_id: budget.id }).range(from, to),
-      ),
-  });
+  return useCopyQuery(["budgets", budget.id, "spending"], ({ rows }) =>
+    readBudgetSpending(rows, budget.id),
+  );
 }
 
-// Each currency's rates from the one in effect on its first day of spending on, as a day's rate is
-// the latest on or before it.
 function useRateHistory(spending: SpendingRow[], budgetCurrency: string) {
-  const supabase = useSupabase();
   const codes = [...new Set([budgetCurrency, ...spending.map(({ currency }) => currency)])]
     .filter((code) => code !== "USD")
     .sort();
   const firstDay = spending[0]?.spent_on;
-  return useQuery({
-    queryKey: ["rate-history", codes, firstDay],
-    async queryFn(): Promise<RateHistory> {
-      if (firstDay === undefined) return new Map();
-      const histories = await Promise.all(
-        codes.map(async (code) => [code, await ratesSince(supabase, code, firstDay)] as const),
-      );
-      return new Map(histories);
-    },
-  });
-}
-
-async function ratesSince(supabase: AppSupabase, currency: string, day: string) {
-  const { data, error } = await supabase
-    .from("exchange_rates")
-    .select("date")
-    .eq("currency", currency)
-    .lte("date", day)
-    .order("date", { ascending: false })
-    .limit(1);
-  if (error) throw error;
-  const from = data[0]?.date ?? day;
-  return allRows<{ date: string; rate: number }>((start, end) =>
-    supabase
-      .from("exchange_rates")
-      .select("date, rate")
-      .eq("currency", currency)
-      .gte("date", from)
-      .order("date")
-      .range(start, end),
+  return useCopyQuery(["rate-history", codes, firstDay], ({ rows }) =>
+    readRateHistory(rows, codes, firstDay),
   );
 }
-
-// Each response holds at most a page; asks for the next until one comes back short.
-async function allRows<Row>(
-  page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: Error | null }>,
-): Promise<Row[]> {
-  const rows: Row[] = [];
-  for (;;) {
-    const { data, error } = await page(rows.length, rows.length + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data ?? []));
-    if ((data ?? []).length < pageSize) return rows;
-  }
-}
-
-const pageSize = 1000;
 
 function convertSpending(
   spending: SpendingRow[],
@@ -190,20 +133,14 @@ function askedFor(queryClient: QueryClient): Set<string> {
 const askedByClient = new WeakMap<QueryClient, Set<string>>();
 
 export function useBudgetHistory(budgetId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["budgets", budgetId, "history"],
-    async queryFn(): Promise<Activity[]> {
-      const { data, error } = await supabase.rpc("budget_history", { budget_id: budgetId });
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["budgets", budgetId, "history"], ({ rows }) =>
+    readBudgetHistory(rows, budgetId),
+  );
 }
 
 export function useCreateBudget() {
   const supabase = useSupabase();
-  return useBudgetMutation(async ({ spaceId, ...details }: BudgetDetails & { spaceId: string }) => {
+  return useCopyMutation(async ({ spaceId, ...details }: BudgetDetails & { spaceId: string }) => {
     const { data, error } = await supabase
       .from("budgets")
       .insert({ space_id: spaceId, ...detailsColumns(details) })
@@ -216,7 +153,7 @@ export function useCreateBudget() {
 
 export function useUpdateBudget(budgetId: string) {
   const supabase = useSupabase();
-  return useBudgetMutation(async (details: BudgetDetails) => {
+  return useCopyMutation(async (details: BudgetDetails) => {
     const { error } = await supabase
       .from("budgets")
       .update(detailsColumns(details))
@@ -227,7 +164,7 @@ export function useUpdateBudget(budgetId: string) {
 
 export function useDeleteBudget(budgetId: string) {
   const supabase = useSupabase();
-  return useBudgetMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.from("budgets").delete().eq("id", budgetId);
     if (error) throw error;
   });
@@ -235,18 +172,9 @@ export function useDeleteBudget(budgetId: string) {
 
 // Which budgets a transaction is left out of. Only its own spaces' budgets can hold it.
 export function useBudgetExclusions(transactionId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["budgets", "exclusions", transactionId],
-    async queryFn(): Promise<string[]> {
-      const { data, error } = await supabase
-        .from("budget_exclusions")
-        .select("budget_id")
-        .eq("transaction_id", transactionId);
-      if (error) throw error;
-      return data.map(({ budget_id }) => budget_id);
-    },
-  });
+  return useCopyQuery(["budgets", "exclusions", transactionId], ({ rows }) =>
+    readBudgetExclusions(rows, transactionId),
+  );
 }
 
 export async function setBudgetExclusions(
@@ -259,11 +187,6 @@ export async function setBudgetExclusions(
     budget_ids: budgetIds,
   });
   if (error) throw error;
-}
-
-// Budget changes show up in their space's activity too.
-function useBudgetMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 function detailsColumns(details: BudgetDetails) {
@@ -320,8 +243,6 @@ export type BudgetDetails = BudgetPlan & {
   categoryIds: string[] | null;
   accountIds: string[] | null;
 };
-
-type SpendingRow = Database["public"]["Functions"]["budget_spending"]["Returns"][number];
 
 export type BudgetProgress = {
   // Oldest first, the last holding today unless the budget hasn't started or has ended.
