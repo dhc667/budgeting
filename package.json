@@ -22,7 +22,8 @@
     "db:stop": "supabase stop",
     "db:generate": "drizzle-kit generate",
     "db:types": "supabase gen types typescript --local --schema public > src/supabase/database.types.ts",
-    "instance": "node cli/instance.ts"
+    "instance": "node cli/instance.ts",
+    "app": "node cli/app.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@inquirer/prompts": "^8.7.3",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",

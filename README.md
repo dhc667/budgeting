@@ -111,6 +111,23 @@ psql --single-transaction --variable ON_ERROR_STOP=1 \
 
 Devices keep their connection to the old project, so scan a new `invite` or `link` QR on each one.
 
+## Using the app from the command line
+
+`pnpm app` does what the app does, signed in as one of its users. It uses only the publishable key,
+so it has exactly the rights that user has on their phone; `instance` commands are for whoever
+runs the instance, `app` commands for anyone with an account.
+
+```bash
+pnpm app login                     # asks for email and password
+pnpm app accounts list
+pnpm app transactions add --type expense --account <id> --amount 1250 --category <id>
+```
+
+Commands print JSON. Amounts are whole numbers in the currency's minor units: 1250 is 12.50 USD.
+The session is saved beside the env file, in `.env.instance.session`, readable only by you;
+`pnpm app logout` ends it without signing out other devices. Run `pnpm app --help` for every
+command.
+
 ## Development
 
 Local development runs a Supabase stack in Docker.
