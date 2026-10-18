@@ -29,7 +29,7 @@ beforeEach(async () => {
   localStorage.clear();
   await sql`insert into public.currencies (code, decimals)
     values (${shifting}, 2), (${unrated}, 2) on conflict do nothing`;
-  await sql`delete from public.exchange_rates where currency = ${shifting}`;
+  await sql`delete from public.exchange_rates where currency in (${shifting}, ${unrated})`;
   await sql`insert into public.exchange_rates (date, currency, rate) values
     (${daysAgo(10)}, ${shifting}, 2), (${daysAgo(2)}, ${shifting}, 4)`;
 });
