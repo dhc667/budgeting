@@ -59,6 +59,34 @@ describe("searching transactions", () => {
     expect(list.queryByRole("link", { name: /Plumber/ })).toBeNull();
     expect(list.queryByRole("button", { name: "Show more" })).toBeNull();
   });
+
+  it("starts over at one page whenever the search changes, even back to an earlier one", async () => {
+    const ana = await budgetOf(uniqueName("Ana"));
+    const account = await ana.account(ana.privateSpace, "Checking");
+    const category = await ana.category(ana.privateSpace, "Home");
+    await Promise.all(
+      Array.from({ length: 52 }, (_, week) =>
+        ana.expense({ account, category, title: `Rent ${week + 1}`, date: daysAgo(1 + week * 7) }),
+      ),
+    );
+    await ana.expense({ account, category, title: "Plumber" });
+    await ana.open();
+    await openTransactions();
+    const search = screen.getByRole("searchbox", { name: "Search" });
+    await user.type(search, "rent");
+    const list = within(screen.getByRole("main"));
+    await waitFor(() => expect(list.queryByRole("link", { name: /Plumber/ })).toBeNull());
+    await user.click(list.getByRole("button", { name: "Show more" }));
+    await waitFor(() => expect(list.queryAllByRole("link", { name: /^Rent/ })).toHaveLength(52));
+
+    await user.clear(search);
+    await waitFor(() => expect(list.queryByRole("link", { name: /Plumber/ })).not.toBeNull());
+    await user.type(search, "rent");
+
+    await waitFor(() => expect(list.queryByRole("link", { name: /Plumber/ })).toBeNull());
+    expect(list.getAllByRole("link", { name: /^Rent/ })).toHaveLength(50);
+    expect(list.getByRole("button", { name: "Show more" })).toBeTruthy();
+  });
 });
 
 describe("filtering transactions", () => {

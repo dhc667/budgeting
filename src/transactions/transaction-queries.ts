@@ -14,24 +14,25 @@ import type { Database } from "../supabase/database";
 
 export function useTransactions(filter: TransactionFilter) {
   const filterKey = JSON.stringify(filter);
-  const [asked, setAsked] = useState({ filterKey, count: pageSize });
-  const count = asked.filterKey === filterKey ? asked.count : pageSize;
+  const [paging, setPaging] = useState({ filterKey, count: pageSize });
+  if (paging.filterKey !== filterKey) setPaging({ filterKey, count: pageSize });
+  const count = paging.filterKey === filterKey ? paging.count : pageSize;
   const result = useCopyQuery(["transactions", "list", filter, count], ({ rows }) => {
     const matching = readTransactions(rows, filter);
     return { transactions: matching.slice(0, count), hasMore: matching.length > count };
   });
   return {
     ...result,
-    showMore: () => setAsked({ filterKey, count: count + pageSize }),
+    showMore: () => setPaging({ filterKey, count: count + pageSize }),
   };
 }
 
 // Waits for the spaces to show, rather than first asking for those of no space at all.
 export function useRecentTransactions(spaceIds: string[] | undefined, count: number) {
-  const result = useCopyQuery(["transactions", "recent", spaceIds, count], ({ rows }) =>
-    readRecentTransactions(rows, spaceIds ?? [], count),
+  return useCopyQuery(
+    ["transactions", "recent", spaceIds, count],
+    ({ rows }) => spaceIds && readRecentTransactions(rows, spaceIds, count),
   );
-  return spaceIds === undefined ? { ...result, data: undefined } : result;
 }
 
 export function useTransaction(transactionId: string) {
