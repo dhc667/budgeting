@@ -1,8 +1,11 @@
-import { render, screen, within } from "@testing-library/react";
+import { configure, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { App } from "../../src/App";
 import { defined, existingUser, password, signInLink } from "./local-instance";
+
+// The default second isn't enough for a screen waiting on the database while other files run.
+configure({ asyncUtilTimeout: 5000 });
 
 export const user = userEvent.setup();
 
