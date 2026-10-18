@@ -12,39 +12,41 @@ import { swatchFill } from "../colors/colors";
 import { useFormat } from "../format/use-format";
 import { ChartFrame } from "./ChartFrame";
 import { noAnimation } from "./chart-style";
-import type { CategorySpending } from "./report-math";
+import type { CategoryAmount } from "./report-math";
 
-// After Cashew's: an icon on each slice wide enough to hold one, and the chosen slice pulled out
-// with its share beside its icon. The list beside it is how a keyboard chooses a slice.
-export function SpendingPie({
-  categories,
-  selected,
-  onSelect,
+// After Cashew's: an icon on each slice wide enough to hold one, the chosen slice pulled out with
+// its share beside its icon, and a faint ring around the hole. The list below it is how a keyboard
+// chooses a slice.
+export function CategoryPie({
+  slices: amounts,
+  chosen,
+  onChoose,
 }: {
-  categories: readonly CategorySpending[];
-  selected: string | null;
-  onSelect: (categoryId: string) => void;
+  slices: readonly CategoryAmount[];
+  chosen: string | null;
+  onChoose: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  const slices = categories.filter(({ share }) => share > 0);
-  const isSelected = (index: number) => slices[index]?.categoryId === selected;
+  const slices = amounts.filter(({ share }) => share > 0);
+  const isChosen = (index: number) => slices[index]?.id === chosen;
 
-  function select(index: number) {
+  function choose(index: number) {
     const slice = slices[index];
-    if (slice) onSelect(slice.categoryId);
+    if (slice) onChoose(slice.id);
   }
 
   return (
-    <ChartFrame height={size.height}>
-      <PieChart aria-label={t("reports.spending.chart")}>
+    <ChartFrame className="aspect-[10/11] max-h-[28rem]">
+      <PieChart aria-label={t("reports.byCategory.chart")} accessibilityLayer={false}>
         <Pie
           data={slices}
           dataKey="share"
           nameKey="name"
           startAngle={45}
           endAngle={-315}
-          outerRadius={size.radius}
-          stroke="var(--chart-surface)"
+          innerRadius={percentOf(size.hole)}
+          outerRadius={percentOf(1)}
+          stroke="var(--chart-background)"
           strokeWidth={2}
           rootTabIndex={-1}
           className="cursor-pointer"
@@ -52,28 +54,40 @@ export function SpendingPie({
             <Sector
               {...props}
               fill={swatchFill[slices[props.index]?.color ?? "slate"]}
-              fillOpacity={isSelected(props.index) ? 0.8 : 0.5}
-              outerRadius={props.outerRadius + (isSelected(props.index) ? size.pulledOut : 0)}
+              fillOpacity={isChosen(props.index) ? 0.8 : 0.5}
+              outerRadius={props.outerRadius + (isChosen(props.index) ? size.pulledOut : 0)}
             />
           )}
           label={({ index, cx, cy, midAngle = 0, outerRadius }: PieLabelRenderProps) => {
             const slice = slices[index];
             if (!slice) return null;
-            const chosen = isSelected(index);
-            if (!chosen && slice.share < size.iconFrom) return null;
-            const radius = (outerRadius + (chosen ? size.pulledOut : 0)) * size.iconAt;
+            const pulledOut = isChosen(index);
+            if (!pulledOut && slice.share < size.iconFrom) return null;
+            const radius = (outerRadius + (pulledOut ? size.pulledOut : 0)) * size.iconAt;
             return (
               <Badge
                 slice={slice}
                 at={onCircle(cx, cy, radius, midAngle)}
                 shareAbove={Math.sin((midAngle * Math.PI) / 180) > 0}
-                chosen={chosen}
-                onClick={() => onSelect(slice.categoryId)}
+                chosen={pulledOut}
+                onClick={() => onChoose(slice.id)}
               />
             );
           }}
           labelLine={false}
-          onClick={(_, index) => select(index)}
+          onClick={(_, index) => choose(index)}
+          {...noAnimation}
+        />
+        <Pie
+          data={[{ ring: 1 }]}
+          dataKey="ring"
+          innerRadius={percentOf(size.hole)}
+          outerRadius={percentOf(size.ring)}
+          fill="var(--chart-background)"
+          fillOpacity={0.2}
+          stroke="none"
+          rootTabIndex={-1}
+          className="pointer-events-none"
           {...noAnimation}
         />
       </PieChart>
@@ -88,7 +102,7 @@ function Badge({
   chosen,
   onClick,
 }: {
-  slice: CategorySpending;
+  slice: CategoryAmount;
   at: { x: number; y: number };
   shareAbove: boolean;
   chosen: boolean;
@@ -104,7 +118,7 @@ function Badge({
       style={{ transform: `translate(${at.x}px, ${at.y}px) scale(${chosen ? 1.3 : 1})` }}
       onClick={onClick}
     >
-      <circle r={size.icon} fill={fill} stroke="var(--chart-surface)" strokeWidth={3} />
+      <circle r={size.icon} fill={fill} stroke="var(--chart-background)" strokeWidth={3} />
       {createElement(iconFor(slice.icon), {
         x: -size.icon / 2,
         y: -size.icon / 2,
@@ -120,7 +134,7 @@ function Badge({
             width={shareWidth(share)}
             height={size.shareHeight}
             rx={5}
-            fill="var(--chart-surface)"
+            fill="var(--chart-background)"
             stroke={fill}
             strokeWidth={1.5}
           />
@@ -145,14 +159,21 @@ function onCircle(cx: number, cy: number, radius: number, angle: number) {
   return { x: cx + radius * Math.cos(radians), y: cy - radius * Math.sin(radians) };
 }
 
+// Of the largest circle the chart holds.
+function percentOf(radius: number): string {
+  return `${radius * size.radius * 100}%`;
+}
+
 function shareWidth(share: string): number {
   return share.length * 6 + 10;
 }
 
-// The height leaves room above and below the pie for a pulled-out slice's icon and share.
+// The frame is taller than wide, leaving room above and below the pie for a pulled-out slice's
+// share. The hole and the ring around it are Cashew's, as fractions of the radius.
 const size = {
-  height: 320,
-  radius: 100,
+  radius: 0.8,
+  hole: 0.4,
+  ring: 0.525,
   pulledOut: 8,
   iconAt: 0.98,
   iconFrom: 0.05,

@@ -14,17 +14,25 @@
     "errors": {
       "loadFailed": "Não foi possível carregar os relatórios. Verifique sua conexão e tente de novo."
     },
-    "spending": {
-      "title": "Gastos por categoria",
+    "byCategory": {
+      "title": "Por categoria",
       "from": "De",
       "to": "Até",
       "thisMonth": "Este mês",
       "lastMonth": "Mês passado",
       "thisYear": "Este ano",
       "allTime": "Tudo",
-      "total": "Total gasto",
-      "none": "Nenhum gasto neste período.",
-      "chart": "Gráfico de pizza dos gastos por categoria"
+      "kind": "Tipo",
+      "expense": "Despesas",
+      "income": "Receitas",
+      "totalSpent": "Total gasto",
+      "totalEarned": "Total recebido",
+      "noSpending": "Nenhum gasto neste período.",
+      "noIncome": "Nenhuma receita neste período.",
+      "chart": "Gráfico de pizza por categoria",
+      "clear": "Limpar a categoria escolhida",
+      "subcategories": "Mostrar subcategorias",
+      "transactions": "Transações"
     },
     "incomeExpense": {
       "title": "Receitas e despesas",

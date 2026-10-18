@@ -7,9 +7,9 @@ import { ErrorText } from "../ui/ErrorText";
 import { IncomeVsExpense } from "./IncomeVsExpense";
 import { NetWorthChart } from "./NetWorthChart";
 import { lastMonths, thisMonth } from "./periods";
-import { incomeVsExpense, spendingByCategory } from "./report-math";
+import { categoryTotals, incomeVsExpense } from "./report-math";
 import { type ReportData, useReportData } from "./report-queries";
-import { SpendingByCategory } from "./SpendingByCategory";
+import { ByCategory, type FlowKind } from "./ByCategory";
 
 const monthsShown = 12;
 
@@ -29,19 +29,22 @@ export function ReportsScreen() {
 // The rates sync is nudged once for the whole screen, whichever report lacked a rate.
 function Reports({ data }: { data: ReportData }) {
   const [period, setPeriod] = useState(() => thisMonth(localToday()));
-  const spending = spendingByCategory(data.flows, period, data.conversion);
+  const [kind, setKind] = useState<FlowKind>("expense");
+  const byCategory = categoryTotals(data.flows, kind, period, data.conversion);
   const incomeExpense = useMemo(
     () => incomeVsExpense(data.flows, lastMonths(monthsShown, localToday()), data.conversion),
     [data.flows, data.conversion],
   );
   useBackfillMissingRates(
-    earliestMissing(spending.missing, incomeExpense.missing, data.netWorth.missing),
+    earliestMissing(byCategory.missing, incomeExpense.missing, data.netWorth.missing),
   );
 
   return (
     <>
-      <SpendingByCategory
-        report={spending}
+      <ByCategory
+        report={byCategory}
+        kind={kind}
+        onKindChange={setKind}
         period={period}
         onPeriodChange={setPeriod}
         data={data}

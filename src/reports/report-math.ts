@@ -1,4 +1,3 @@
-import type { Color } from "../colors/colors";
 import { daysAfter, type DateRange } from "../format/days";
 import { groupBy } from "../group-by";
 import {
@@ -8,44 +7,82 @@ import {
   type MissingRate,
 } from "../rates/convert-dated";
 import { inPeriod, monthKey } from "./periods";
-import type { AccountMovement, CategoryFlow } from "./read-reports";
+import type { AccountMovement, CategoryFlow, FlowCategory } from "./read-reports";
 
-export function spendingByCategory(
+export function categoryTotals(
   flows: readonly CategoryFlow[],
+  kind: CategoryFlow["kind"],
   period: DateRange,
   conversion: DisplayConversion,
-): SpendingReport {
+): CategoryReport {
   const missing: MissingRate[] = [];
-  const byCategory = new Map<string, Omit<CategorySpending, "share">>();
+  const totals = new Map<string, Totaling>();
 
   for (const flow of flows) {
-    if (flow.kind !== "expense" || !inPeriod(flow.day, period)) continue;
+    if (flow.kind !== kind || !inPeriod(flow.day, period)) continue;
     const amount = inDisplayCurrency(flow.net, flow.currency, flow.day, conversion, missing);
     if (amount === undefined) continue;
-    const spending = byCategory.get(flow.categoryId) ?? {
-      categoryId: flow.categoryId,
-      name: flow.categoryName,
-      icon: flow.categoryIcon,
-      color: flow.categoryColor,
-      spaceId: flow.spaceId,
+    const total = totals.get(flow.category.id) ?? {
+      ...flow.category,
       amount: 0,
+      own: 0,
+      subcategories: new Map<string, Amount>(),
     };
-    spending.amount += amount;
-    byCategory.set(flow.categoryId, spending);
+    total.amount += amount;
+    if (flow.subcategory === null) {
+      total.own += amount;
+    } else {
+      const subcategory = total.subcategories.get(flow.subcategory.id) ?? {
+        ...flow.subcategory,
+        amount: 0,
+      };
+      subcategory.amount += amount;
+      total.subcategories.set(flow.subcategory.id, subcategory);
+    }
+    totals.set(flow.category.id, total);
   }
 
-  const sorted = [...byCategory.values()].sort(
-    (a, b) => b.amount - a.amount || a.name.localeCompare(b.name),
-  );
-  const spent = sorted.reduce((sum, { amount }) => sum + Math.max(amount, 0), 0);
+  return report([...totals.values()].sort(biggestFirst), earliestMissing(missing));
+}
+
+function report(totals: readonly Totaling[], missing: MissingRate[]): CategoryReport {
+  const sliced = totals.map(({ own, subcategories, ...category }) => [
+    { ...category, amount: own },
+    ...subcategories.values(),
+  ]);
+  const ofSlices = spent(sliced.flat());
+  const ofCategories = spent(totals);
+
   return {
-    total: sorted.reduce((sum, { amount }) => sum + amount, 0),
-    categories: sorted.map((category) => ({
-      ...category,
-      share: spent > 0 ? Math.max(category.amount, 0) / spent : 0,
+    total: totals.reduce((sum, { amount }) => sum + amount, 0),
+    categories: totals.map(({ own, subcategories, ...category }) => ({
+      ...withShare(category, ofCategories),
+      subcategories: slices([...subcategories.values()], ofSlices),
     })),
-    missing: earliestMissing(missing),
+    subcategorySlices: sliced.flatMap((amounts) => slices(amounts, ofSlices)),
+    missing,
   };
+}
+
+function slices(amounts: readonly Amount[], of: number): CategoryAmount[] {
+  return amounts
+    .filter(({ amount }) => amount !== 0)
+    .sort(biggestFirst)
+    .map((amount) => withShare(amount, of));
+}
+
+function withShare<T extends Amount>(amount: T, of: number): T & { share: number } {
+  return { ...amount, share: of > 0 ? Math.max(amount.amount, 0) / of : 0 };
+}
+
+// Only what was spent counts, so the shares add up to 1. A category refunded more than it spent
+// takes none.
+function spent(amounts: readonly Amount[]): number {
+  return amounts.reduce((sum, { amount }) => sum + Math.max(amount, 0), 0);
+}
+
+function biggestFirst(a: Amount, b: Amount): number {
+  return b.amount - a.amount || a.name.localeCompare(b.name);
 }
 
 export function incomeVsExpense(
@@ -123,23 +160,23 @@ function inDisplayCurrency(
   }
 }
 
-export type SpendingReport = {
+export type CategoryReport = {
   total: number;
-  categories: CategorySpending[];
+  // Top-level, biggest first.
+  categories: CategoryTotal[];
+  // Each subcategory, and what each category took outside its subcategories, grouped by category
+  // in the order of `categories`. That last carries the category's own id.
+  subcategorySlices: CategoryAmount[];
   missing: MissingRate[];
 };
 
-export type CategorySpending = {
-  categoryId: string;
-  name: string;
-  icon: string;
-  color: Color;
-  spaceId: string;
-  amount: number;
-  // Of what the categories that spent anything spent, so the shares add up to 1. A category
-  // refunded more than it spent takes none.
-  share: number;
-};
+export type CategoryTotal = CategoryAmount & { subcategories: CategoryAmount[] };
+
+export type CategoryAmount = FlowCategory & { amount: number; share: number };
+
+type Amount = FlowCategory & { amount: number };
+
+type Totaling = Amount & { own: number; subcategories: Map<string, Amount> };
 
 export type IncomeExpenseReport = { months: MonthFlow[]; missing: MissingRate[] };
 

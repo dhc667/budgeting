@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { LatestRates, RateHistory } from "../rates/convert";
 import { netWorth } from "../rates/net-worth";
+import type { DateRange } from "../format/days";
 import type { DisplayConversion } from "../rates/convert-dated";
 import { allTime } from "./periods";
-import { incomeVsExpense, netWorthSeries, spendingByCategory } from "./report-math";
-import type { AccountMovement, CategoryFlow } from "./read-reports";
+import { categoryTotals, incomeVsExpense, netWorthSeries } from "./report-math";
+import type { AccountMovement, CategoryFlow, FlowCategory } from "./read-reports";
 
 const usd = { code: "USD", decimals: 2 };
 const currencies = [usd, { code: "EUR", decimals: 2 }, { code: "CUP", decimals: 2 }];
@@ -24,13 +25,13 @@ describe("spending by category", () => {
   const period = { from: "2026-01-01", to: "2026-01-31" };
 
   it("totals each category over the period, biggest first, net of refunds", () => {
-    const result = spendingByCategory(
+    const result = spending(
       [
-        flow({ categoryId: "food", categoryName: "Food", net: 100 }),
-        flow({ categoryId: "food", categoryName: "Food", net: -30, day: "2026-01-20" }),
-        flow({ categoryId: "rent", categoryName: "Rent", net: 500, day: "2026-01-31" }),
-        flow({ categoryId: "fun", categoryName: "Fun", net: 40, day: "2026-02-01" }),
-        flow({ categoryId: "pay", kind: "income", net: 900 }),
+        flow({ category: "Food", net: 100 }),
+        flow({ category: "Food", net: -30, day: "2026-01-20" }),
+        flow({ category: "Rent", net: 500, day: "2026-01-31" }),
+        flow({ category: "Fun", net: 40, day: "2026-02-01" }),
+        flow({ category: "Pay", kind: "income", net: 900 }),
       ],
       period,
       display,
@@ -45,12 +46,12 @@ describe("spending by category", () => {
   });
 
   it("counts a day exactly on either end of the period, and none outside it", () => {
-    const result = spendingByCategory(
+    const result = spending(
       [
-        flow({ categoryId: "before", categoryName: "Before", net: 1, day: "2025-12-31" }),
-        flow({ categoryId: "first", categoryName: "First", net: 10, day: "2026-01-01" }),
-        flow({ categoryId: "last", categoryName: "Last", net: 100, day: "2026-01-31" }),
-        flow({ categoryId: "after", categoryName: "After", net: 1_000, day: "2026-02-01" }),
+        flow({ category: "Before", net: 1, day: "2025-12-31" }),
+        flow({ category: "First", net: 10, day: "2026-01-01" }),
+        flow({ category: "Last", net: 100, day: "2026-01-31" }),
+        flow({ category: "After", net: 1_000, day: "2026-02-01" }),
       ],
       period,
       display,
@@ -62,21 +63,21 @@ describe("spending by category", () => {
 
   it("leaves a side of the period open when its bound is empty", () => {
     const flows = [
-      flow({ categoryId: "old", categoryName: "Old", net: 1, day: "2020-01-01" }),
-      flow({ categoryId: "new", categoryName: "New", net: 10, day: "2030-01-01" }),
+      flow({ category: "Old", net: 1, day: "2020-01-01" }),
+      flow({ category: "New", net: 10, day: "2030-01-01" }),
     ];
 
-    expect(spendingByCategory(flows, { from: "", to: "2026-01-01" }, display).total).toBe(1);
-    expect(spendingByCategory(flows, { from: "2026-01-01", to: "" }, display).total).toBe(10);
-    expect(spendingByCategory(flows, allTime, display).total).toBe(11);
+    expect(spending(flows, { from: "", to: "2026-01-01" }, display).total).toBe(1);
+    expect(spending(flows, { from: "2026-01-01", to: "" }, display).total).toBe(10);
+    expect(spending(flows, allTime, display).total).toBe(11);
   });
 
   it("shares the spending out among the categories, none to one refunded more than it spent", () => {
-    const result = spendingByCategory(
+    const result = spending(
       [
-        flow({ categoryId: "rent", categoryName: "Rent", net: 300 }),
-        flow({ categoryId: "food", categoryName: "Food", net: 100 }),
-        flow({ categoryId: "gift", categoryName: "Gift", net: -200 }),
+        flow({ category: "Rent", net: 300 }),
+        flow({ category: "Food", net: 100 }),
+        flow({ category: "Gift", net: -200 }),
       ],
       period,
       display,
@@ -89,8 +90,62 @@ describe("spending by category", () => {
     ]);
   });
 
+  it("totals income the same way, when asked for it", () => {
+    const flows = [
+      flow({ category: "Salary", kind: "income", net: 900 }),
+      flow({ category: "Rent", net: 500 }),
+    ];
+
+    const result = categoryTotals(flows, "income", period, display);
+
+    expect(result.categories.map(({ name, amount }) => [name, amount])).toEqual([["Salary", 900]]);
+    expect(result.total).toBe(900);
+  });
+
+  it("counts a subcategory in its category, and lists it under it", () => {
+    const result = spending(
+      [
+        flow({ category: "Food", net: 100 }),
+        flow({ category: "Food", subcategory: "Snacks", net: 300 }),
+        flow({ category: "Food", subcategory: "Coffee", net: 200 }),
+        flow({ category: "Rent", net: 400 }),
+      ],
+      period,
+      display,
+    );
+
+    expect(result.categories.map(({ name, amount, share }) => [name, amount, share])).toEqual([
+      ["Food", 600, 0.6],
+      ["Rent", 400, 0.4],
+    ]);
+    expect(result.categories[0]?.subcategories.map(({ name, share }) => [name, share])).toEqual([
+      ["Snacks", 0.3],
+      ["Coffee", 0.2],
+    ]);
+  });
+
+  it("slices by subcategory, each category keeping a slice for what it took outside them", () => {
+    const result = spending(
+      [
+        flow({ category: "Food", net: 100 }),
+        flow({ category: "Food", subcategory: "Snacks", net: 300 }),
+        flow({ category: "Rent", net: 400 }),
+        flow({ category: "Fun", subcategory: "Games", net: 200 }),
+      ],
+      period,
+      display,
+    );
+
+    expect(result.subcategorySlices.map(({ id, name, share }) => [id, name, share])).toEqual([
+      ["snacks", "Snacks", 0.3],
+      ["food", "Food", 0.1],
+      ["rent", "Rent", 0.4],
+      ["games", "Games", 0.2],
+    ]);
+  });
+
   it("converts each flow at the rate of its own day", () => {
-    const result = spendingByCategory(
+    const result = spending(
       [
         flow({ currency: "EUR", net: 100, day: "2026-01-10" }),
         flow({ currency: "EUR", net: 100, day: "2026-02-10" }),
@@ -103,7 +158,7 @@ describe("spending by category", () => {
   });
 
   it("leaves out a currency without a rate on the day, naming its first such day", () => {
-    const result = spendingByCategory(
+    const result = spending(
       [
         flow({ net: 100 }),
         flow({ currency: "CUP", net: 7_000, day: "2026-01-20" }),
@@ -237,19 +292,30 @@ describe("net worth over time", () => {
   });
 });
 
-function flow(overrides: Partial<CategoryFlow>): CategoryFlow {
+// What was spent in the period, with the arguments in the order of every call below.
+function spending(flows: CategoryFlow[], period: DateRange, conversion: DisplayConversion) {
+  return categoryTotals(flows, "expense", period, conversion);
+}
+
+type FlowOverrides = Partial<Omit<CategoryFlow, "category" | "subcategory">> & {
+  category?: string;
+  subcategory?: string;
+};
+
+function flow({ category = "Food", subcategory, ...overrides }: FlowOverrides): CategoryFlow {
   return {
     day: "2026-01-10",
     currency: "USD",
     kind: "expense",
-    categoryId: "food",
-    categoryName: "Food",
-    categoryIcon: "utensils",
-    categoryColor: "orange",
-    spaceId: "space-1",
+    category: named(category),
+    subcategory: subcategory === undefined ? null : named(subcategory),
     net: 0,
     ...overrides,
   };
+}
+
+function named(name: string): FlowCategory {
+  return { id: name.toLowerCase(), name, icon: "tag", color: "blue", spaceId: "space-1" };
 }
 
 function move(overrides: Partial<AccountMovement>): AccountMovement {

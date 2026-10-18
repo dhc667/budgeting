@@ -14,17 +14,25 @@
     "errors": {
       "loadFailed": "No se pudieron cargar los reportes. Revisa tu conexión e inténtalo de nuevo."
     },
-    "spending": {
-      "title": "Gastos por categoría",
+    "byCategory": {
+      "title": "Por categoría",
       "from": "Desde",
       "to": "Hasta",
       "thisMonth": "Este mes",
       "lastMonth": "Mes pasado",
       "thisYear": "Este año",
       "allTime": "Todo",
-      "total": "Total gastado",
-      "none": "No hay gastos en este período.",
-      "chart": "Gráfico circular del gasto por categoría"
+      "kind": "Tipo",
+      "expense": "Gastos",
+      "income": "Ingresos",
+      "totalSpent": "Total gastado",
+      "totalEarned": "Total ingresado",
+      "noSpending": "No hay gastos en este período.",
+      "noIncome": "No hay ingresos en este período.",
+      "chart": "Gráfico circular por categoría",
+      "clear": "Quitar la categoría elegida",
+      "subcategories": "Mostrar subcategorías",
+      "transactions": "Movimientos"
     },
     "incomeExpense": {
       "title": "Ingresos y gastos",
