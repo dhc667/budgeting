@@ -95,14 +95,15 @@ export function parseAmount(
   return negative && minorUnits !== 0 ? -minorUnits : minorUnits;
 }
 
+// Built once: a chart formats every day it plots.
+const deviceDateFormat = new Intl.DateTimeFormat(undefined, {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
 export function formatDate(date: Date, format: DateFormat | null): string {
-  if (!format) {
-    return new Intl.DateTimeFormat(undefined, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(date);
-  }
+  if (!format) return deviceDateFormat.format(date);
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = String(date.getFullYear());

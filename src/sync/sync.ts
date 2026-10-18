@@ -44,6 +44,7 @@ export function createCopySync(options: CopySyncOptions): CopySync {
   async function pullOnce() {
     try {
       const store = await open();
+      if (closed) return;
       for (;;) {
         const changes = await fetchChanges(copy?.version ?? 0, copy?.rateCurrencies ?? []);
         if (closed) return;

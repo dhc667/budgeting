@@ -64,12 +64,19 @@ async function load(
   };
 }
 
-async function readAll<Row>(
-  store: AsyncIterable<{ key: string; value: Row }>,
-): Promise<Map<string, Row>> {
-  const rows = new Map<string, Row>();
-  for await (const cursor of store) rows.set(cursor.key, cursor.value);
-  return rows;
+// One request for the keys and one for the rows, which come in the same key order. A cursor
+// would take a round trip per row.
+async function readAll<Row>(store: {
+  getAllKeys: () => Promise<string[]>;
+  getAll: () => Promise<Row[]>;
+}): Promise<Map<string, Row>> {
+  const [keys, rows] = await Promise.all([store.getAllKeys(), store.getAll()]);
+  return new Map(
+    keys.flatMap((key, index) => {
+      const row = rows[index];
+      return row === undefined ? [] : [[key, row] as const];
+    }),
+  );
 }
 
 async function save(db: IDBPDatabase<CopySchema>, copy: LocalCopy, delta: Delta) {
