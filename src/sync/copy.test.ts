@@ -125,18 +125,16 @@ describe("applying a pull", () => {
     );
   });
 
-  it("asks to pull again from the start when the currencies in use differ, whatever the order", () => {
-    const first = applied(null, pull({ rateCurrencies: ["EUR", "USD"] })).copy;
+  it("applies a pull whose currencies in use differ, and prunes a currency that fell out of use", () => {
+    const first = applied(
+      null,
+      pull({ rateCurrencies: ["EUR", "USD"], rows: { exchange_rates: [eurYesterday, eurToday] } }),
+    ).copy;
 
-    expect(applyPull(first, pull({ rateCurrencies: ["USD", "EUR"] }), schemaVersion).outcome).toBe(
-      "applied",
-    );
-    expect(applyPull(first, pull({ rateCurrencies: ["USD"] }), schemaVersion).outcome).toBe(
-      "repull",
-    );
-    expect(
-      applyPull(first, pull({ rateCurrencies: ["EUR", "USD", "GBP"] }), schemaVersion).outcome,
-    ).toBe("repull");
+    const { copy } = applied(first, pull({ rateCurrencies: ["USD"] }));
+
+    expect(rowsOf(copy, "exchange_rates")).toEqual([eurToday]);
+    expect(copy.rateCurrencies).toEqual(["USD"]);
   });
 
   it("keeps only the newest rate of a currency that isn't in use", () => {

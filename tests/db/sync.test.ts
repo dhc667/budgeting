@@ -123,19 +123,43 @@ describe("exchange rates in a pull", () => {
 
     await addAccount(ana, familyId, "Euros", 0, "XSA");
 
-    const after = await pull(ben, before.version);
+    const after = await pull(ben, before.version, before.rate_currencies);
     expect(after.rate_currencies).toContain("XSA");
-    expect(ratesOf(await pull(ben), "XSA")).toHaveLength(rateDays);
+    expect(ratesOf(after, "XSA")).toHaveLength(rateDays);
+  });
+
+  it("sends the whole history of a used currency the device doesn't hold, from a recent version", async () => {
+    await addAccount(ana, familyId, "Euros", 0, "XSA");
+    const { version, rate_currencies } = await pull(ben);
+
+    const unheld = await pull(
+      ben,
+      version,
+      rate_currencies.filter((code) => code !== "XSA"),
+    );
+    const held = await pull(ben, version, rate_currencies);
+
+    expect(ratesOf(unheld, "XSA")).toHaveLength(rateDays);
+    expect(ratesOf(held, "XSA")).toEqual([]);
+  });
+
+  it("ignores the held currencies when the device starts over", async () => {
+    await addAccount(ana, familyId, "Euros", 0, "XSA");
+
+    const pulled = await pull(ben, 1e15, ["XSA"]);
+
+    expect(pulled.reset).toBe(true);
+    expect(ratesOf(pulled, "XSA")).toHaveLength(rateDays);
   });
 
   it("sends only the rates written since, plus the latest of an unused currency", async () => {
     await addRates("XSE", "XSF");
     await addAccount(ana, familyId, "Euros", 0, "XSE");
-    const { version } = await pull(ben);
+    const { version, rate_currencies } = await pull(ben);
 
     await sql`insert into public.exchange_rates (date, currency, rate)
       select ${today()}::date, code, 2 from unnest(array['XSE', 'XSF']) as code`;
-    const pulled = await pull(ben, version);
+    const pulled = await pull(ben, version, rate_currencies);
 
     expect(ratesOf(pulled, "XSE").map(({ date }) => date)).toContain(today());
     expect(ratesOf(pulled, "XSF").map(({ date }) => date)).toContain(today());
@@ -366,8 +390,11 @@ describe("the activity record", () => {
   });
 });
 
-async function pull(user: User, since = 0): Promise<Changes> {
-  const { data, error } = await user.client.rpc("changes_since", { since });
+async function pull(user: User, since = 0, held: string[] = []): Promise<Changes> {
+  const { data, error } = await user.client.rpc("changes_since", {
+    since,
+    held_currencies: held,
+  });
   if (error) throw error;
   return data;
 }

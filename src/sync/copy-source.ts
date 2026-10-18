@@ -8,8 +8,11 @@ export function copyName(instance: Instance, userId: string): string {
 }
 
 export function changesFrom(supabase: AppSupabase) {
-  return async (since: number): Promise<Changes> => {
-    const { data, error } = await supabase.rpc("changes_since", { since });
+  return async (since: number, heldCurrencies: readonly string[]): Promise<Changes> => {
+    const { data, error } = await supabase.rpc("changes_since", {
+      since,
+      held_currencies: [...heldCurrencies],
+    });
     if (error) throw error;
     return data;
   };

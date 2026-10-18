@@ -179,7 +179,7 @@ describe("pulling the local copy", () => {
     expect(idsIn(reopened.copy(), "currencies")).not.toContain("ZZZ");
   });
 
-  it("pulls everything again when an account in a new currency makes its history visible", async () => {
+  it("brings the history of a currency that comes into use without pulling everything again", async () => {
     await addRates("XPA");
     const device = deviceOf(ben);
     await device.sync.pull();
@@ -189,9 +189,23 @@ describe("pulling the local copy", () => {
     await addAccount(ana, familyId, "Euros", "XPA");
     await device.sync.pull();
 
-    expect(device.fetchedSince).toEqual([0, version, 0]);
+    expect(device.fetchedSince).toEqual([0, version]);
     expect(ratesIn(device.copy(), "XPA")).toHaveLength(rateDays);
     expect(device.copy().rateCurrencies).toContain("XPA");
+  });
+
+  it("keeps only the latest rate of a currency that falls out of use", async () => {
+    await addRates("XPA");
+    const device = deviceOf(ben);
+    await saveDisplayCurrency(ben, "XPA");
+    await device.sync.pull();
+    expect(ratesIn(device.copy(), "XPA")).toHaveLength(rateDays);
+
+    await saveDisplayCurrency(ben, "USD");
+    await device.sync.pull();
+
+    expect(ratesIn(device.copy(), "XPA")).toEqual([today()]);
+    expect(device.copy().rateCurrencies).not.toContain("XPA");
   });
 
   it("drops the superseded latest rate of a currency the user doesn't use", async () => {
@@ -290,10 +304,10 @@ describe("pulling the local copy", () => {
       name,
       schemaVersion,
       publish: () => undefined,
-      async fetchChanges(since) {
+      async fetchChanges(since, held) {
         entered.resolve();
         await release.promise;
-        return real(since);
+        return real(since, held);
       },
     });
     const pulls = [sync.pull(), sync.pull()];
@@ -330,13 +344,13 @@ function deviceOf(user: User, version = schemaVersion) {
       name: copyName(instance, user.userId),
       schemaVersion: version,
       publish: (copy) => device.published.push(copy),
-      async fetchChanges(since): Promise<Changes> {
+      async fetchChanges(since, held): Promise<Changes> {
         device.fetchedSince.push(since);
         running += 1;
         device.maxConcurrent = Math.max(device.maxConcurrent, running);
         try {
           if (device.failing) throw new Error("offline");
-          return await real(since);
+          return await real(since, held);
         } finally {
           running -= 1;
         }
@@ -404,6 +418,14 @@ async function addAccount(user: User, spaceId: string, name: string, currency = 
   });
   if (error) throw error;
   return data;
+}
+
+async function saveDisplayCurrency(user: User, currency: string) {
+  const { error } = await user.client
+    .from("profiles")
+    .update({ display_currency: currency })
+    .eq("id", user.userId);
+  if (error) throw error;
 }
 
 async function addExpense(user: User, amount: number): Promise<string> {
