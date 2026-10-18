@@ -35,8 +35,7 @@
       "title": "Patrimônio líquido ao longo do tempo",
       "on": "Em {{date}}",
       "today": "Hoje",
-      "none": "Nada registrado ainda.",
-      "chart": "Gráfico de linha do patrimônio líquido, de {{start}} em {{startDate}} a {{end}} hoje"
+      "none": "Nada registrado ainda."
     }
   },
   "instance": {

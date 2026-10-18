@@ -135,7 +135,6 @@ describe("net worth over time", () => {
     await openReports();
     const card = within(await screen.findByRole("region", { name: "Net worth over time" }));
     expect((await card.findByText("Today")).nextSibling?.textContent).toBe("$1,015.00");
-    expect(card.getByRole("img", { name: /to \$1,015\.00 today$/ })).toBeTruthy();
     expect(card.getByText(`Not counted, no exchange rate for its day: ${unrated}`)).toBeTruthy();
   });
 

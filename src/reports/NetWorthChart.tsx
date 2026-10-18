@@ -1,5 +1,15 @@
 import { useTranslation } from "react-i18next";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { accountsInSpaces, useAccounts } from "../accounts/account-queries";
+import type { Currency } from "../format/format";
 import { useFormat } from "../format/use-format";
 import { netWorth } from "../rates/net-worth";
 import { useLatestRates } from "../rates/rate-queries";
@@ -41,14 +51,7 @@ export function NetWorthChart({ data }: { data: ReportData }) {
               <dd className="text-2xl font-semibold tabular-nums">{money(last.total)}</dd>
             </div>
           </dl>
-          <NetWorthLine
-            points={points}
-            label={t("reports.netWorth.chart", {
-              start: money(first.total),
-              startDate: format.day(first.day),
-              end: money(last.total),
-            })}
-          />
+          <NetWorthLine points={points} currency={currency} />
         </>
       ) : (
         <EmptyState>{t("reports.netWorth.none")}</EmptyState>
@@ -59,36 +62,28 @@ export function NetWorthChart({ data }: { data: ReportData }) {
   );
 }
 
-const width = 600;
-const height = 160;
-const padding = 4;
-
-function NetWorthLine({ points, label }: { points: NetWorthPoint[]; label: string }) {
-  const totals = points.map(({ total }) => total);
-  const low = Math.min(...totals);
-  const span = Math.max(...totals) - low;
-  const x = (index: number) =>
-    points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
-  const y = (total: number) =>
-    span === 0 ? height / 2 : height - padding - ((total - low) / span) * (height - 2 * padding);
-  const path = points.map(({ total }, index) => `${x(index)},${y(total)}`).join(" ");
+function NetWorthLine({ points, currency }: { points: NetWorthPoint[]; currency: Currency }) {
+  const format = useFormat();
+  const money = (amount: number) => format.money(amount, currency);
 
   return (
-    <svg
-      role="img"
-      aria-label={label}
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      className="h-40 w-full text-emerald-600 dark:text-emerald-400"
-    >
-      <polyline
-        points={path}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
+    <ResponsiveContainer width="100%" height={160}>
+      <LineChart data={points}>
+        <CartesianGrid vertical={false} stroke="var(--color-zinc-200)" />
+        <XAxis dataKey="day" tickFormatter={format.day} minTickGap={32} />
+        <YAxis width="auto" tickFormatter={money} domain={["auto", "auto"]} />
+        <Tooltip
+          labelFormatter={(day) => (typeof day === "string" ? format.day(day) : day)}
+          formatter={(total) => money(Number(total))}
+        />
+        <Line
+          dataKey="total"
+          stroke="var(--color-emerald-600)"
+          strokeWidth={2}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }

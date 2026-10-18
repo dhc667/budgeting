@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { localToday } from "../format/days";
+import type { Currency } from "../format/format";
 import { useFormat } from "../format/use-format";
 import { spaceName } from "../spaces/space";
 import { Card, EmptyState } from "../ui/Card";
@@ -40,12 +42,13 @@ export function SpendingByCategory({
               {format.money(total, data.conversion.currency)}
             </span>
           </p>
+          <SpendingBars categories={categories} currency={data.conversion.currency} />
           <ul className="flex flex-col gap-3">
             {categories.map((category) => {
               const space = data.spaces.find(({ id }) => id === category.spaceId);
               const share = total > 0 ? Math.max(category.amount, 0) / total : 0;
               return (
-                <li key={category.categoryId} className="flex flex-col gap-1">
+                <li key={category.categoryId}>
                   <p className="flex items-baseline justify-between gap-3">
                     <span className="truncate">
                       {category.name}
@@ -58,12 +61,6 @@ export function SpendingByCategory({
                       <span className="ml-2 text-xs text-zinc-500">{format.percent(share)}</span>
                     </span>
                   </p>
-                  <div aria-hidden className="h-2 rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <div
-                      className="h-full rounded-full bg-emerald-500"
-                      style={{ width: `${share * 100}%` }}
-                    />
-                  </div>
                 </li>
               );
             })}
@@ -72,6 +69,33 @@ export function SpendingByCategory({
       )}
       <Unconverted missing={missing} />
     </Card>
+  );
+}
+
+function SpendingBars({
+  categories,
+  currency,
+}: {
+  categories: SpendingReport["categories"];
+  currency: Currency;
+}) {
+  const format = useFormat();
+  const money = (amount: number) => format.money(amount, currency);
+
+  return (
+    <ResponsiveContainer width="100%" height={categories.length * 32 + 32}>
+      <BarChart data={categories} layout="vertical">
+        <XAxis type="number" tickFormatter={money} />
+        <YAxis type="category" dataKey="name" width="auto" />
+        <Tooltip formatter={(amount) => money(Number(amount))} />
+        <Bar
+          dataKey="amount"
+          fill="var(--color-emerald-500)"
+          isAnimationActive={false}
+          barSize={12}
+        />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
