@@ -151,7 +151,7 @@ export type RowOf<T extends SyncedTable> = Changes["rows"][T][number];
 
 type Row = RowOf<SyncedTable>;
 
-type Rows = { [T in SyncedTable]: ReadonlyMap<string, RowOf<T>> };
+export type Rows = { [T in SyncedTable]: ReadonlyMap<string, RowOf<T>> };
 
 export type Meta = {
   version: number;

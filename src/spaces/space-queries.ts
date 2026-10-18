@@ -1,44 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { shownLanguage } from "../i18n/languages";
 import { useSupabase } from "../instance/instance-context";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import type { Tables } from "../supabase/database.types";
-import { isPrivate } from "./space";
+import { readSpaceActivity, readSpaces } from "./read-spaces";
 
 export function useSpaces() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["spaces"],
-    async queryFn(): Promise<Space[]> {
-      const { data, error } = await supabase
-        .from("spaces")
-        .select("id, name, private_owner, members:space_members(id, user_id)");
-      if (error) throw error;
-      return data.sort(privateFirstThenByName);
-    },
-  });
+  return useCopyQuery(["spaces"], ({ rows }) => readSpaces(rows));
 }
 
 export function useSpaceActivity(spaceId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["spaces", spaceId, "activity"],
-    async queryFn(): Promise<Activity[]> {
-      const { data, error } = await supabase
-        .from("activity")
-        .select("id, table_name, row_id, action, changed_by, changed_at, old, new")
-        .eq("space_id", spaceId)
-        .order("id", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["spaces", spaceId, "activity"], ({ rows }) =>
+    readSpaceActivity(rows, spaceId),
+  );
 }
 
 export function useCreateSpace() {
   const supabase = useSupabase();
   const { i18n } = useTranslation();
-  return useSpaceMutation(async ({ name, memberIds }: { name: string; memberIds: string[] }) => {
+  return useCopyMutation(async ({ name, memberIds }: { name: string; memberIds: string[] }) => {
     const { data, error } = await supabase.rpc("create_space", {
       space_name: name,
       member_ids: memberIds,
@@ -51,7 +31,7 @@ export function useCreateSpace() {
 
 export function useRenameSpace(spaceId: string) {
   const supabase = useSupabase();
-  return useSpaceMutation(async (name: string) => {
+  return useCopyMutation(async (name: string) => {
     const { error } = await supabase.from("spaces").update({ name }).eq("id", spaceId);
     if (error) throw error;
   });
@@ -59,7 +39,7 @@ export function useRenameSpace(spaceId: string) {
 
 export function useDeleteSpace(spaceId: string) {
   const supabase = useSupabase();
-  return useSpaceMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.from("spaces").delete().eq("id", spaceId);
     if (error) throw error;
   });
@@ -67,7 +47,7 @@ export function useDeleteSpace(spaceId: string) {
 
 export function useAddMember(spaceId: string) {
   const supabase = useSupabase();
-  return useSpaceMutation(async (userId: string) => {
+  return useCopyMutation(async (userId: string) => {
     const { error } = await supabase
       .from("space_members")
       .insert({ space_id: spaceId, user_id: userId });
@@ -77,29 +57,10 @@ export function useAddMember(spaceId: string) {
 
 export function useRemoveMember() {
   const supabase = useSupabase();
-  return useSpaceMutation(async (membershipId: string) => {
+  return useCopyMutation(async (membershipId: string) => {
     const { error } = await supabase.from("space_members").delete().eq("id", membershipId);
     if (error) throw error;
   });
-}
-
-// A space comes with its categories and takes them when it's deleted.
-function useSpaceMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["spaces"] }),
-        queryClient.invalidateQueries({ queryKey: ["categories"] }),
-      ]),
-  });
-}
-
-function privateFirstThenByName(a: Space, b: Space): number {
-  if (isPrivate(a)) return -1;
-  if (isPrivate(b)) return 1;
-  return (a.name ?? "").localeCompare(b.name ?? "");
 }
 
 export type Space = Pick<Tables<"spaces">, "id" | "name" | "private_owner"> & {

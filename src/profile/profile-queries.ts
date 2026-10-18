@@ -1,51 +1,31 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSignedInUser } from "../auth/session";
 import { useSupabase } from "../instance/instance-context";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import type { Tables, TablesUpdate } from "../supabase/database.types";
 
+// Null once a pulled copy no longer holds the signed-in user's profile: the user was deleted.
 export function useProfile() {
-  const supabase = useSupabase();
   const user = useSignedInUser();
-  return useQuery({
-    queryKey: ["profile"],
-    async queryFn() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
+  return useCopyQuery(["profile"], ({ rows }): Profile | null => {
+    return [...rows.profiles.values()].find(({ id }) => id === user.id) ?? null;
   });
 }
 
 export function useUpdateProfile() {
   const supabase = useSupabase();
   const user = useSignedInUser();
-  const queryClient = useQueryClient();
-  return useMutation({
-    async mutationFn(changes: ProfileChanges) {
-      const { error } = await supabase.from("profiles").update(changes).eq("id", user.id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profile"] }),
+  return useCopyMutation(async (changes: ProfileChanges) => {
+    const { error } = await supabase.from("profiles").update(changes).eq("id", user.id);
+    if (error) throw error;
   });
 }
 
 export function useUsers() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["users"],
-    async queryFn(): Promise<User[]> {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .order("display_name");
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["users"], ({ rows }): User[] =>
+    [...rows.profiles.values()]
+      .map(({ id, display_name }) => ({ id, display_name }))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name)),
+  );
 }
 
 export function displayNameOf(users: User[], userId: string | null): string | undefined {

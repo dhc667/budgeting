@@ -1,14 +1,9 @@
-import {
-  keepPreviousData,
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { setBudgetExclusions } from "../budgets/budget-queries";
 import { useSupabase } from "../instance/instance-context";
 import type { Activity } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
+import { useCopyMutation } from "../sync/copy-query";
 import type { Database } from "../supabase/database";
 
 export function useTransactions(filter: TransactionFilter) {
@@ -134,18 +129,10 @@ export function useRestoreTransaction(transactionId: string) {
   });
 }
 
-// A transaction moves balances, counts in its category and budgets, and shows in its spaces' activity.
+// A transaction moves balances, counts in its category and shows in its spaces' activity, all of
+// which are read from the copy; budgets and the transaction lists still read the instance.
 function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () =>
-      Promise.all(
-        ["transactions", "accounts", "categories", "budgets", "spaces"].map((key) =>
-          queryClient.invalidateQueries({ queryKey: [key] }),
-        ),
-      ),
-  });
+  return useCopyMutation(mutationFn, [["transactions"], ["budgets"]]);
 }
 
 function selectTransactions(supabase: AppSupabase, filter: TransactionFilter) {

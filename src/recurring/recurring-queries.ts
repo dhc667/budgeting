@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
 import type { Database } from "../supabase/database";
+import { useCopyMutation } from "../sync/copy-query";
 import type { Activity } from "../spaces/space-queries";
 import type { TransactionDraft } from "../transactions/transaction-queries";
 import type { Schedule } from "./schedule";
@@ -122,16 +123,7 @@ export function useSkipUpcoming() {
 
 // Recording one moves balances, so everything a transaction touches is read again.
 function useRecurringMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () =>
-      Promise.all(
-        ["recurring", "transactions", "accounts", "categories", "budgets", "spaces"].map((key) =>
-          queryClient.invalidateQueries({ queryKey: [key] }),
-        ),
-      ),
-  });
+  return useCopyMutation(mutationFn, [["recurring"], ["transactions"], ["budgets"]]);
 }
 
 // A draft may still hold what another type used; only what its own type uses is saved.
