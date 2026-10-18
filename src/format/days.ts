@@ -1,3 +1,5 @@
+// Shared with the app CLI, which runs under Node's type stripping: keep this file free of imports.
+
 // Days travel as ISO dates (`2026-10-15`), as Postgres stores them, and are read in local time:
 // `new Date("2026-10-15")` would be midnight UTC, the day before west of Greenwich.
 export function localToday(): string {

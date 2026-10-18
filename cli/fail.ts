@@ -3,6 +3,11 @@ export function fail(message: string): never {
   process.exit(1);
 }
 
+// supabase-js hands back its errors as plain objects, not Error instances.
 export function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String(error.message);
+  }
+  return String(error);
 }
