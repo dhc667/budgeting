@@ -137,11 +137,26 @@ describe("spending by category", () => {
     );
 
     expect(result.subcategorySlices.map(({ id, name, share }) => [id, name, share])).toEqual([
-      ["snacks", "Snacks", 0.3],
-      ["food", "Food", 0.1],
       ["rent", "Rent", 0.4],
+      ["snacks", "Snacks", 0.3],
       ["games", "Games", 0.2],
+      ["food", "Food", 0.1],
     ]);
+  });
+
+  it("orders subcategory slices by their own amounts, not their category's", () => {
+    const result = spending(
+      [
+        flow({ category: "A", subcategory: "B", net: 5 }),
+        flow({ category: "A", subcategory: "C", net: 5 }),
+        flow({ category: "D", net: 6 }),
+      ],
+      period,
+      display,
+    );
+
+    expect(result.categories.map(({ name }) => name)).toEqual(["A", "D"]);
+    expect(result.subcategorySlices.map(({ name }) => name)).toEqual(["D", "B", "C"]);
   });
 
   it("converts each flow at the rate of its own day", () => {
