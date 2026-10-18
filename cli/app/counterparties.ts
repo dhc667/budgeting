@@ -1,4 +1,4 @@
-import { color } from "../../db/schema.ts";
+import { Constants } from "../../src/supabase/database.types.ts";
 import {
   createCounterparty,
   deleteCounterparty,
@@ -68,7 +68,10 @@ async function addCounterparty(argv: string[]) {
   const spaceId = await spaceOrPrivate(supabase, userId, values.space);
   const id = await createCounterparty(supabase, spaceId, {
     name: required(values.name, "--name"),
-    color: values.color === undefined ? "slate" : choice(values.color, color.enumValues, "--color"),
+    color:
+      values.color === undefined
+        ? "slate"
+        : choice(values.color, Constants.public.Enums.color, "--color"),
   });
   print(await counterparty(supabase, id));
 }
@@ -87,7 +90,7 @@ async function changeCounterparty(argv: string[]) {
     color:
       values.color === undefined
         ? current.color
-        : choice(values.color, color.enumValues, "--color"),
+        : choice(values.color, Constants.public.Enums.color, "--color"),
   });
   print(await counterparty(supabase, id));
 }

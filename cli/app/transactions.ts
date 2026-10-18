@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ParseArgsOptionsConfig } from "node:util";
-import { transactionType } from "../../db/schema.ts";
+import { Constants } from "../../src/supabase/database.types.ts";
 import { localToday } from "../../src/format/days.ts";
 import type { AppSupabase } from "../../src/supabase/client.ts";
 import {
@@ -87,7 +87,11 @@ async function addOne(argv: string[]) {
     "transactions add --type <type> --account <id> --amount <n> [options]",
   );
   const draft: TransactionDraft = {
-    type: choice(required(values.type, "--type"), transactionType.enumValues, "--type"),
+    type: choice(
+      required(values.type, "--type"),
+      Constants.public.Enums.transaction_type,
+      "--type",
+    ),
     date: values.date === undefined ? localToday() : day(values.date, "--date"),
     title: values.title ?? "",
     note: values.note ?? "",
@@ -115,7 +119,7 @@ async function changeOne(argv: string[]) {
     type:
       values.type === undefined
         ? current.type
-        : choice(values.type, transactionType.enumValues, "--type"),
+        : choice(values.type, Constants.public.Enums.transaction_type, "--type"),
     date: values.date === undefined ? current.date : day(values.date, "--date"),
     title: values.title ?? current.title,
     note: values.note ?? current.note,
