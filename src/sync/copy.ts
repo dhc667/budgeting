@@ -1,9 +1,14 @@
 import type { Database } from "../supabase/database";
 
 export function applyPull(copy: LocalCopy | null, pull: Changes, schemaVersion: number): Applied {
-  // Joining or leaving a space changes what is visible without writing rows, so the copy can't be
-  // brought up to date by this pull: the caller drops it and pulls from 0.
-  if (copy && !pull.reset && !sameSet(copy.spaceIds, pull.space_ids)) {
+  // Joining or leaving a space, or starting to use a currency, changes what is visible without
+  // writing rows, so the copy can't be brought up to date by this pull: the caller drops it and
+  // pulls from 0.
+  if (
+    copy &&
+    !pull.reset &&
+    !(sameSet(copy.spaceIds, pull.space_ids) && sameSet(copy.rateCurrencies, pull.rate_currencies))
+  ) {
     return { outcome: "repull" };
   }
 
@@ -18,6 +23,7 @@ export function applyPull(copy: LocalCopy | null, pull: Changes, schemaVersion: 
     for (const row of pull.rows[table]) tables.write(table, rowKey(table, row), row);
   }
   tables.dropTransactionsWithoutPostings();
+  if (pull.rows.exchange_rates.length > 0) tables.dropSupersededRates(pull.rate_currencies);
 
   const delta: Delta = { startedOver, removed: tables.removed, written: tables.written };
   return {
@@ -25,6 +31,7 @@ export function applyPull(copy: LocalCopy | null, pull: Changes, schemaVersion: 
     copy: {
       version: pull.version,
       spaceIds: pull.space_ids,
+      rateCurrencies: pull.rate_currencies,
       schemaVersion,
       rows: tables.rows(),
     },
@@ -121,6 +128,21 @@ class Tables {
     for (const id of unmatched) this.remove("transactions", JSON.stringify([id]));
   }
 
+  // The server sends only the latest rate of a currency the user doesn't use, so yesterday's is
+  // superseded by today's without anything telling the device to forget it.
+  dropSupersededRates(usedCurrencies: readonly string[]) {
+    const used = new Set(usedCurrencies);
+    const newest = new Map<string, string>();
+    for (const { currency, date } of this.current("exchange_rates").values()) {
+      if (used.has(currency)) continue;
+      const known = newest.get(currency);
+      if (known === undefined || date > known) newest.set(currency, date);
+    }
+    for (const [key, { currency, date }] of [...this.current("exchange_rates")]) {
+      if (!used.has(currency) && date !== newest.get(currency)) this.remove("exchange_rates", key);
+    }
+  }
+
   hasWrites(): boolean {
     return Object.values(this.written).some((rows) => rows.size > 0);
   }
@@ -160,6 +182,7 @@ export type Rows = { [T in SyncedTable]: ReadonlyMap<string, RowOf<T>> };
 export type Meta = {
   version: number;
   spaceIds: readonly string[];
+  rateCurrencies: readonly string[];
   schemaVersion: number;
 };
 

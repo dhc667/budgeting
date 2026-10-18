@@ -70,6 +70,7 @@ type Changes = {
   version: number;
   reset: boolean;
   space_ids: string[];
+  rate_currencies: string[];
   rows: { [Table in SyncedTable]: GeneratedTables[Table]["Row"][] };
   deleted: { table: SyncedTable; key: Record<string, string> }[];
 };

@@ -103,6 +103,11 @@ grant select on public.deleted_rows to authenticated;
 --
 -- A key can be in both `deleted` and `rows`: a restored transaction keeps its id. `rows` holds what
 -- exists at the snapshot, so a device applies `deleted` first, then `rows`.
+--
+-- Exchange rates are instance-wide and the provider publishes a rate for every currency each day,
+-- so only the history of the currencies the user uses is sent; any other currency sends just its
+-- latest rate. Starting to use a currency writes no rate row, so a device whose `rate_currencies`
+-- changed must start over to receive that currency's history.
 create or replace function public.changes_since(since bigint)
 returns jsonb
 language plpgsql
@@ -115,6 +120,11 @@ declare
   starting_over boolean := since > pg_snapshot_xmax(snapshot)::text::bigint;
   from_version bigint := case when starting_over then 0 else since end;
   synced_table text;
+  used_currencies text[] := array(
+    select currency from public.ledger_accounts where kind = 'account'
+    union select currency from public.budgets
+    union select display_currency from public.profiles where id = auth.uid()
+  );
   found_rows jsonb;
   changed jsonb := '{}';
 begin
@@ -127,9 +137,14 @@ begin
     where namespace.nspname = 'public' and trigger.tgfoid = 'public.set_version'::regproc
   loop
     execute format(
-      'select coalesce(jsonb_agg(to_jsonb(t)), ''[]'') from public.%I as t where t.version >= $1',
-      synced_table
-    ) into found_rows using from_version;
+      'select coalesce(jsonb_agg(to_jsonb(t)), ''[]'') from public.%I as t where t.version >= $1 and %s',
+      synced_table,
+      case synced_table
+        when 'exchange_rates' then
+          't.currency = any ($2) or t.date = (select max(date) from public.exchange_rates where currency = t.currency)'
+        else 'true'
+      end
+    ) into found_rows using from_version, used_currencies;
     changed := changed || jsonb_build_object(synced_table, found_rows);
   end loop;
 
@@ -137,6 +152,7 @@ begin
     'version', pg_snapshot_xmin(snapshot)::text::bigint,
     'reset', starting_over,
     'space_ids', coalesce((select jsonb_agg(id) from public.my_space_ids() as id), '[]'),
+    'rate_currencies', to_jsonb(used_currencies),
     'rows', changed,
     'deleted', coalesce(
       (

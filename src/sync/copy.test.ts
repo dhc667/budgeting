@@ -60,12 +60,16 @@ describe("applying a pull", () => {
   it("tells rows with composite keys apart by every column of the key", () => {
     const first = applied(
       null,
-      pull({ rows: { exchange_rates: [eurToday, eurYesterday, usdToday] } }),
+      pull({
+        rateCurrencies: ["EUR", "USD"],
+        rows: { exchange_rates: [eurToday, eurYesterday, usdToday] },
+      }),
     ).copy;
 
     const { copy } = applied(
       first,
       pull({
+        rateCurrencies: ["EUR", "USD"],
         rows: { exchange_rates: [{ ...eurToday, rate: 2 }] },
         deleted: [{ table: "exchange_rates", key: { date: "2026-01-01", currency: "USD" } }],
       }),
@@ -121,6 +125,51 @@ describe("applying a pull", () => {
     );
   });
 
+  it("asks to pull again from the start when the currencies in use differ, whatever the order", () => {
+    const first = applied(null, pull({ rateCurrencies: ["EUR", "USD"] })).copy;
+
+    expect(applyPull(first, pull({ rateCurrencies: ["USD", "EUR"] }), schemaVersion).outcome).toBe(
+      "applied",
+    );
+    expect(applyPull(first, pull({ rateCurrencies: ["USD"] }), schemaVersion).outcome).toBe(
+      "repull",
+    );
+    expect(
+      applyPull(first, pull({ rateCurrencies: ["EUR", "USD", "GBP"] }), schemaVersion).outcome,
+    ).toBe("repull");
+  });
+
+  it("keeps only the newest rate of a currency that isn't in use", () => {
+    const first = applied(
+      null,
+      pull({ rateCurrencies: ["USD"], rows: { exchange_rates: [eurYesterday, usdToday] } }),
+    ).copy;
+
+    const { copy, delta } = applied(
+      first,
+      pull({ rateCurrencies: ["USD"], rows: { exchange_rates: [eurToday] } }),
+    );
+
+    expect(rowsOf(copy, "exchange_rates")).toEqual([usdToday, eurToday]);
+    expect(delta.removed).toEqual([
+      { table: "exchange_rates", key: JSON.stringify([eurYesterday.date, "EUR"]) },
+    ]);
+  });
+
+  it("keeps the whole history of a currency in use", () => {
+    const first = applied(
+      null,
+      pull({ rateCurrencies: ["EUR"], rows: { exchange_rates: [eurYesterday] } }),
+    ).copy;
+
+    const { copy } = applied(
+      first,
+      pull({ rateCurrencies: ["EUR"], rows: { exchange_rates: [eurToday] } }),
+    );
+
+    expect(rowsOf(copy, "exchange_rates")).toEqual([eurYesterday, eurToday]);
+  });
+
   it("reports no change for a pull that only moves the version", () => {
     const first = applied(null, pull({ rows: { currencies: [eur] } })).copy;
 
@@ -159,6 +208,7 @@ type PullOptions = {
   version?: number;
   reset?: boolean;
   spaceIds?: string[];
+  rateCurrencies?: string[];
   rows?: Partial<Changes["rows"]>;
   deleted?: Changes["deleted"];
 };
@@ -167,6 +217,7 @@ function pull({
   version = 1,
   reset = false,
   spaceIds = ["space-1"],
+  rateCurrencies = [],
   rows = {},
   deleted = [],
 }: PullOptions = {}): Changes {
@@ -174,6 +225,7 @@ function pull({
     version,
     reset,
     space_ids: spaceIds,
+    rate_currencies: rateCurrencies,
     deleted,
     rows: {
       currencies: [],

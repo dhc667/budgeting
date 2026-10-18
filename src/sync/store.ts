@@ -74,7 +74,7 @@ async function readAll<Row>(
 
 async function save(db: IDBPDatabase<CopySchema>, copy: LocalCopy, delta: Delta) {
   const tx = db.transaction([...syncedTables, metaStore], "readwrite");
-  const { version, spaceIds, schemaVersion } = copy;
+  const { version, spaceIds, rateCurrencies, schemaVersion } = copy;
   await Promise.all([
     ...(delta.startedOver ? syncedTables.map((table) => tx.objectStore(table).clear()) : []),
     ...delta.removed.map(({ table, key }) => tx.objectStore(table).delete(key)),
@@ -94,7 +94,7 @@ async function save(db: IDBPDatabase<CopySchema>, copy: LocalCopy, delta: Delta)
     putAll(tx.objectStore("recurring_transactions"), delta.written.recurring_transactions),
     putAll(tx.objectStore("budgets"), delta.written.budgets),
     putAll(tx.objectStore("budget_exclusions"), delta.written.budget_exclusions),
-    tx.objectStore(metaStore).put({ version, spaceIds, schemaVersion }, metaKey),
+    tx.objectStore(metaStore).put({ version, spaceIds, rateCurrencies, schemaVersion }, metaKey),
     tx.done,
   ]);
 }
