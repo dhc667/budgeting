@@ -7,13 +7,14 @@ import { fakeCurrencyCodes } from "./fake-currencies";
 // timeouts. Cascading from the users empties everything recorded since; the rows migrations seed
 // (currencies, starter categories) stay. Deleted rows and rates have no foreign key to follow, and
 // piled up to tens of thousands of rows that every first pull has to download. So do the made-up
-// currencies tests give rates to.
+// currencies tests give rates to. Those are deleted first: deleting them records deletions too.
 export async function teardown() {
   const sql = postgres(localDatabaseUrl(), { max: 1, onnotice: () => {} });
   try {
     await sql`truncate auth.users cascade`;
-    await sql`truncate public.deleted_rows, public.exchange_rates, public.exchange_rate_history_starts`;
+    await sql`truncate public.exchange_rates, public.exchange_rate_history_starts`;
     await sql`delete from public.currencies where code = any (${fakeCurrencyCodes})`;
+    await sql`truncate public.deleted_rows`;
   } finally {
     await sql.end();
   }
