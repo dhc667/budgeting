@@ -46,11 +46,11 @@ export function categoryTotals(
 }
 
 function report(totals: readonly Totaling[], missing: MissingRate[]): CategoryReport {
-  const sliced = totals.map(({ own, subcategories, ...category }) => [
+  const sliced = totals.flatMap(({ own, subcategories, ...category }) => [
     { ...category, amount: own },
     ...subcategories.values(),
   ]);
-  const ofSlices = spent(sliced.flat());
+  const ofSlices = spent(sliced);
   const ofCategories = spent(totals);
 
   return {
@@ -59,7 +59,7 @@ function report(totals: readonly Totaling[], missing: MissingRate[]): CategoryRe
       ...withShare(category, ofCategories),
       subcategories: slices([...subcategories.values()], ofSlices),
     })),
-    subcategorySlices: sliced.flatMap((amounts) => slices(amounts, ofSlices)),
+    subcategorySlices: slices(sliced, ofSlices),
     missing,
   };
 }
@@ -164,8 +164,8 @@ export type CategoryReport = {
   total: number;
   // Top-level, biggest first.
   categories: CategoryTotal[];
-  // Each subcategory, and what each category took outside its subcategories, grouped by category
-  // in the order of `categories`. That last carries the category's own id.
+  // Each subcategory, and what each category took outside its subcategories, biggest first
+  // whatever their category. That last carries the category's own id.
   subcategorySlices: CategoryAmount[];
   missing: MissingRate[];
 };
