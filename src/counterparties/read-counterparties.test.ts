@@ -23,10 +23,28 @@ describe("reading counterparties", () => {
       name: "Charlie",
       has_transactions: true,
       balances: [
-        { currency: "CUP", given: 0, received: 20_000, owed: -20_000 },
-        { currency: "USD", given: 3_500, received: 1_000, owed: 2_500 },
+        { currency: "CUP", given: 0, received: 20_000, forgiven: 0, owed: -20_000 },
+        { currency: "USD", given: 3_500, received: 1_000, forgiven: 0, owed: 2_500 },
       ],
     });
+  });
+
+  it("keeps debts forgiven apart from money given and received", () => {
+    const [counterparty] = readCounterparties(
+      rows(
+        [charlie, cash, forgiven],
+        [
+          ...moved("loan", cash, charlie, 3_000),
+          ...moved("payback", charlie, cash, 1_000),
+          ...moved("let go", charlie, cash, 500),
+          ...moved("let go", cash, forgiven, 500),
+        ],
+      ),
+    );
+
+    expect(counterparty?.balances).toEqual([
+      { currency: "USD", given: 3_000, received: 1_000, forgiven: 500, owed: 1_500 },
+    ]);
   });
 
   it("has nothing owed either way before any money moves", () => {
@@ -54,6 +72,7 @@ const cash: Ledger = {
   color: "blue",
   icon: null,
   parent_id: null,
+  built_in: null,
   position: 0,
   archived: false,
   created_at: "2026-01-01T00:00:00+00:00",
@@ -67,6 +86,16 @@ const charlie: Ledger = {
   kind: "counterparty",
   name: "Charlie",
   currency: null,
+};
+
+const forgiven: Ledger = {
+  ...cash,
+  id: "forgiven",
+  kind: "expense",
+  name: null,
+  currency: null,
+  icon: "heart",
+  built_in: "debts_forgiven",
 };
 
 function rows(ledgers: Ledger[], postings: Posting[]) {
@@ -83,7 +112,7 @@ function moved(
 ): Posting[] {
   return [
     {
-      id: `${transaction}-from`,
+      id: `${transaction}-${from.id}-out`,
       transaction_id: transaction,
       ledger_account_id: from.id,
       amount: -amount,
@@ -91,7 +120,7 @@ function moved(
       version: 1,
     },
     {
-      id: `${transaction}-to`,
+      id: `${transaction}-${to.id}-in`,
       transaction_id: transaction,
       ledger_account_id: to.id,
       amount,

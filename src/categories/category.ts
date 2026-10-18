@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import type { Category, CategoryKind } from "./category-queries";
+import type { Category, CategoryKind, BuiltInCategory } from "./category-queries";
 
 export const categoryKinds = ["expense", "income"] as const satisfies CategoryKind[];
 
@@ -33,5 +33,14 @@ export function kindName(kind: CategoryKind, t: TFunction): string {
       return t("categories.kind.expense");
     case "income":
       return t("categories.kind.income");
+  }
+}
+
+export function builtInCategoryName(builtIn: BuiltInCategory, t: TFunction): string {
+  switch (builtIn) {
+    case "debts_forgiven":
+      return t("categories.builtIn.debtsForgiven");
+    case "debts_forgiven_to_you":
+      return t("categories.builtIn.debtsForgivenToYou");
   }
 }

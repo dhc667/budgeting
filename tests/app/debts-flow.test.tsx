@@ -7,10 +7,11 @@ import {
   goHome,
   openNewTransaction,
   openSignedIn,
+  picked,
   uniqueName,
   user,
 } from "../support/app";
-import { sql } from "../support/local-instance";
+import { defined, sql } from "../support/local-instance";
 
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
@@ -49,6 +50,7 @@ describe("debts", () => {
 
     await openNewTransaction();
     await user.click(screen.getByRole("tab", { name: "Debt" }));
+    expect(screen.queryByRole("radio", { name: /forgave/ })).toBeNull();
     await user.click(screen.getByRole("radio", { name: /I received/ }));
     await user.type(screen.getByLabelText("Amount"), "250");
     await choose("Account", "Cash");
@@ -84,6 +86,75 @@ describe("debts", () => {
     );
   });
 
+  it("fills in all that's owed when the money pays a debt back", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addCounterparty("Charlie");
+    await user.click(screen.getByRole("link", { name: "I gave Charlie money" }));
+    await user.type(await screen.findByLabelText("Amount"), "30");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+    await screen.findByRole("heading", { name: "Charlie", level: 1 });
+
+    await user.click(screen.getByRole("link", { name: "Charlie gave me money" }));
+    const amount = await screen.findByLabelText<HTMLInputElement>("Amount");
+    expect(amount.value).toBe("30.00");
+    await user.type(amount, "12");
+    expect(amount.value).toBe("12");
+    await user.click(screen.getByRole("button", { name: "All that's owed: 30.00 USD" }));
+    expect(amount.value).toBe("30.00");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    const balance = within(await screen.findByRole("region", { name: "Balance" }));
+    expect(await balance.findByText("Settled in USD")).toBeTruthy();
+  });
+
+  it("takes money paid back into the account the debt went out of", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Bank", openingBalance: "100" });
+    await addCounterparty("Charlie");
+    await addCounterparty("Dora");
+    await give("Charlie", "Cash", "30");
+    await give("Dora", "Bank", "5");
+    await goHome();
+    const debts = within(await screen.findByRole("region", { name: "Debts" }));
+    await user.click(await debts.findByRole("link", { name: /Charlie/ }));
+
+    await user.click(await screen.findByRole("link", { name: "Charlie gave me money" }));
+
+    expect((await screen.findByLabelText<HTMLInputElement>("Amount")).value).toBe("30.00");
+    expect(picked("Account")).toBe("Cash");
+  });
+
+  it("forgives a debt across accounts, which keep their money", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Bank", openingBalance: "100" });
+    await addCounterparty("Charlie");
+    await give("Charlie", "Cash", "30");
+    await give("Charlie", "Bank", "20");
+
+    await user.click(screen.getByRole("link", { name: "Forgive" }));
+    const debt = within(await screen.findByRole("group", { name: "Owes you $50.00" }));
+    const [bank, cash] = debt.getAllByLabelText<HTMLInputElement>("Forgive");
+    expect([bank?.value, cash?.value]).toEqual(["20.00", "30.00"]);
+    await user.clear(defined(cash));
+    await user.type(defined(cash), "10");
+    expect(debt.getByText("After this: Owes you $20.00")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Forgive" }));
+
+    const balance = within(await screen.findByRole("region", { name: "Balance" }));
+    expect(await balance.findByText("Owes you $20.00")).toBeTruthy();
+    expect(balance.getByText(/forgiven \$30\.00/)).toBeTruthy();
+    expect(
+      (await screen.findAllByRole("link", { name: /Debts forgiven · Bank/ }))[0]?.textContent,
+    ).toMatch(/\$20\.00/);
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await accounts.findByRole("link", { name: /Cash/ })).textContent).toMatch(/\$70\.00/);
+    expect(accounts.getByRole("link", { name: /Bank/ }).textContent).toMatch(/\$80\.00/);
+  });
+
   it("deletes a counterparty only while no money has moved with it", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "50" });
@@ -96,6 +167,20 @@ describe("debts", () => {
     expect(debts.queryByRole("link", { name: /Charlie/ })).toBeNull();
   });
 });
+
+async function give(counterparty: string, account: string, amount: string) {
+  await openNewTransaction();
+  await user.click(screen.getByRole("tab", { name: "Debt" }));
+  await user.type(screen.getByLabelText("Amount"), amount);
+  await choose("Account", account);
+  await choose("Counterparty", counterparty);
+  await user.click(screen.getByRole("button", { name: "Add transaction" }));
+  await screen.findByRole("heading", { name: "Transactions", level: 1 });
+  await goHome();
+  const debts = within(await screen.findByRole("region", { name: "Debts" }));
+  await user.click(await debts.findByRole("link", { name: new RegExp(counterparty) }));
+  await screen.findByRole("heading", { name: counterparty, level: 1 });
+}
 
 async function addCounterparty(name: string) {
   await goHome();

@@ -1,3 +1,4 @@
+import type { BuiltInCategory } from "../categories/category-queries";
 import type { Color } from "../colors/colors";
 import { keyOfId, type RowOf, type Rows } from "../sync/copy";
 import { ledgerAccountsBySpace, postingsByLedgerAccount } from "../sync/lookups";
@@ -34,13 +35,18 @@ export type AccountMovement = {
   amount: number;
 };
 
-export function readCategoryFlows(rows: ReportRows, spaceIds: readonly string[]): CategoryFlow[] {
+// A built-in category has no stored name: it is called whatever `builtInName` says.
+export function readCategoryFlows(
+  rows: ReportRows,
+  spaceIds: readonly string[],
+  builtInName: (builtIn: BuiltInCategory) => string,
+): CategoryFlow[] {
   const postingsOn = postingsByLedgerAccount(rows.postings);
   const flows = new Map<string, CategoryFlow>();
 
   for (const ledger of ledgersIn(rows, spaceIds)) {
     const kind = flowKind(ledger.kind);
-    const categories = categoriesOf(ledger, rows.ledger_accounts);
+    const categories = categoriesOf(ledger, rows.ledger_accounts, builtInName);
     if (kind === null || categories === null) continue;
     for (const posting of postingsOn.get(ledger.id) ?? []) {
       const transaction = rows.transactions.get(keyOfId(posting.transaction_id));
@@ -97,26 +103,25 @@ function ledgersIn(
 function categoriesOf(
   ledger: RowOf<"ledger_accounts">,
   ledgers: Rows["ledger_accounts"],
+  builtInName: (builtIn: BuiltInCategory) => string,
 ): Pick<CategoryFlow, "category" | "subcategory"> | null {
   if (ledger.parent_id === null) {
-    const category = flowCategory(ledger);
+    const category = flowCategory(ledger, builtInName);
     return category && { category, subcategory: null };
   }
   const parent = ledgers.get(keyOfId(ledger.parent_id));
-  const category = parent ? flowCategory(parent) : null;
-  const subcategory = flowCategory(ledger);
+  const category = parent ? flowCategory(parent, builtInName) : null;
+  const subcategory = flowCategory(ledger, builtInName);
   return category && subcategory && { category, subcategory };
 }
 
-function flowCategory({
-  id,
-  name,
-  icon,
-  color,
-  space_id,
-}: RowOf<"ledger_accounts">): FlowCategory | null {
-  if (name === null || icon === null || color === null) return null;
-  return { id, name, icon, color, spaceId: space_id };
+function flowCategory(
+  { id, name, built_in, icon, color, space_id }: RowOf<"ledger_accounts">,
+  builtInName: (builtIn: BuiltInCategory) => string,
+): FlowCategory | null {
+  const shownName = built_in === null ? name : builtInName(built_in);
+  if (shownName === null || icon === null || color === null) return null;
+  return { id, name: shownName, icon, color, spaceId: space_id };
 }
 
 function flowKind(kind: RowOf<"ledger_accounts">["kind"]): CategoryFlow["kind"] | null {

@@ -7,6 +7,7 @@ import { budgetsCounting } from "../budgets/coverage";
 import { type Category, useCategories } from "../categories/category-queries";
 import { useCounterparties } from "../counterparties/counterparty-queries";
 import { CounterpartyPicker } from "../counterparties/CounterpartyPicker";
+import { wholeDebtSettledBy } from "../counterparties/owed";
 import type { Counterparty } from "../counterparties/read-counterparties";
 import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
@@ -16,7 +17,7 @@ import type { Schedule } from "../recurring/schedule";
 import { scheduleFrom } from "../recurring/schedule-form";
 import { ScheduleFields } from "../recurring/ScheduleFields";
 import { type Space, useSpaces } from "../spaces/space-queries";
-import { isRaisedException } from "../supabase/errors";
+import { isRaisedException, refusalReason } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
@@ -25,7 +26,15 @@ import { ChecklistField } from "../ui/ChecklistField";
 import type { PickerOption } from "../ui/Picker";
 import { TitleField } from "./TitleField";
 import { AccountPicker, CategoryPicker } from "./TransactionPickers";
-import { categoryKindOf, ruleTabs, tabOf, tabs, typeOf } from "./transaction-tabs";
+import {
+  categoryKindOf,
+  debtTypeOf,
+  isForgiveness,
+  ruleTabs,
+  tabOf,
+  tabs,
+  typeOf,
+} from "./transaction-tabs";
 import { DirectionChoice, TypeTabs } from "./TypeTabs";
 import { type Extras, type TitleSuggestion, useTitleSuggestions } from "./transaction-queries";
 import {
@@ -42,6 +51,9 @@ type TransactionFormProps = {
   submitLabel: string;
   mutation: { isPending: boolean; isSuccess: boolean; error: Error | null };
   saving: Saving;
+  // Fills in all that's owed for a debt the transaction settles. Only for a new one: an edited one
+  // is already part of what's owed.
+  offersWholeDebt?: boolean;
 };
 
 type Saving =
@@ -104,6 +116,7 @@ function LoadedTransactionForm({
   counterparties,
   spaces,
   budgets,
+  offersWholeDebt = false,
 }: LoadedProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -113,13 +126,13 @@ function LoadedTransactionForm({
     const currency = accounts.find(({ id }) => id === accountId)?.currency;
     return currencies.find(({ code }) => code === currency)?.decimals ?? 2;
   };
-  const typedAmount = (amount: number | null, accountId: string | null | undefined) =>
+  const amountText = (amount: number | null, accountId: string | null | undefined) =>
     amount === null || amount <= 0 || !accountId
       ? ""
       : format.amount(amount, decimalsOf(accountId));
   const [tab, setTab] = useState(tabOf(initial.type));
   const [refund, setRefund] = useState(initial.type === "refund");
-  const [received, setReceived] = useState(initial.type === "received");
+  const [debt, setDebt] = useState(debtTypeOf(initial.type) ?? "given");
   const [accountId, setAccountId] = useState(
     accounts.some(({ id }) => id === initial.accountId) ? initial.accountId : accounts[0]?.id,
   );
@@ -130,10 +143,11 @@ function LoadedTransactionForm({
   const [newCounterpartyName, setNewCounterpartyName] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState(initial.toAccountId ?? "");
   const [title, setTitle] = useState(initial.title);
-  const [amount, setAmount] = useState(() => typedAmount(initial.amount, initial.accountId));
-  const [toAmount, setToAmount] = useState(() =>
-    typedAmount(initial.toAmount, initial.toAccountId),
+  // Null until the user gives one, while the form may fill one in for them.
+  const [ownAmount, setOwnAmount] = useState(() =>
+    initial.amount > 0 ? amountText(initial.amount, initial.accountId) : null,
   );
+  const [toAmount, setToAmount] = useState(() => amountText(initial.toAmount, initial.toAccountId));
   const [date, setDate] = useState(initial.date);
   const isRule = saving.kind === "rule";
   const [repeatChecked, setRepeatChecked] = useState(isRule);
@@ -144,12 +158,15 @@ function LoadedTransactionForm({
   );
   const [problem, setProblem] = useState<Problem | null>(null);
 
-  const type = typeOf(tab, { refund, received });
+  const type = typeOf(tab, { refund, debt });
   const account = accounts.find(({ id }) => id === accountId);
   const toAccount = accounts.find(({ id }) => id === toAccountId && id !== accountId);
   const kind = categoryKindOf(tab);
   const offeredCategories = categories.filter(
-    (category) => category.space_id === account?.space_id && category.kind === kind,
+    (category) =>
+      category.space_id === account?.space_id &&
+      category.kind === kind &&
+      category.built_in === null,
   );
   const category =
     offeredCategories.find(({ id }) => id === pickedCategoryId) ??
@@ -159,10 +176,18 @@ function LoadedTransactionForm({
   );
   const newCounterparty =
     newCounterpartyName === null ? null : { id: newCounterpartyId, name: newCounterpartyName };
+  const existingCounterparty = offeredCounterparties.find(({ id }) => id === pickedCounterpartyId);
   const counterparty =
     pickedCounterpartyId === newCounterpartyId
       ? (newCounterparty ?? undefined)
-      : offeredCounterparties.find(({ id }) => id === pickedCounterpartyId);
+      : existingCounterparty;
+  const owed = existingCounterparty?.balances.find(
+    ({ currency }) => currency === account?.currency,
+  )?.owed;
+  const wholeDebt =
+    offersWholeDebt && tab === "debt" && owed !== undefined ? wholeDebtSettledBy(debt, owed) : null;
+  const wholeDebtText = wholeDebt === null ? null : amountText(wholeDebt, accountId);
+  const amount = ownAmount ?? wholeDebtText ?? "";
   const exchanged = toAccount !== undefined && toAccount.currency !== account?.currency;
   // Rules record transactions later, so they leave nothing out of budgets.
   const countedIn =
@@ -192,13 +217,13 @@ function LoadedTransactionForm({
     setTitle(draft.title);
     setTab(tabOf(draft.type));
     setRefund(draft.type === "refund");
-    setReceived(draft.type === "received");
+    setDebt(debtTypeOf(draft.type) ?? "given");
     if (picked) setAccountId(picked.id);
     setPickedCategoryId(draft.categoryId);
     setPickedCounterpartyId(draft.counterpartyId);
     setToAccountId(draft.toAccountId ?? "");
-    setAmount(typedAmount(draft.amount, picked?.id ?? accountId));
-    setToAmount(typedAmount(draft.toAmount, draft.toAccountId));
+    setOwnAmount(amountText(draft.amount, picked?.id ?? accountId));
+    setToAmount(amountText(draft.toAmount, draft.toAccountId));
   };
 
   const save = (form: FormData, button: string | null) => {
@@ -264,7 +289,13 @@ function LoadedTransactionForm({
           </span>
         </label>
       )}
-      {tab === "debt" && <DirectionChoice received={received} onChange={setReceived} />}
+      {tab === "debt" && (
+        <DirectionChoice
+          value={debt}
+          forgiveness={isForgiveness(initial.type)}
+          onChange={setDebt}
+        />
+      )}
       <Field
         label={t("transactions.form.amount")}
         name="amount"
@@ -272,9 +303,23 @@ function LoadedTransactionForm({
         autoComplete="off"
         required
         value={amount}
-        onChange={(event) => setAmount(event.target.value)}
+        onChange={(event) => setOwnAmount(event.target.value)}
+        // So that typing replaces an amount filled in for the user rather than adding to it.
+        onFocus={(event) => ownAmount === null && event.target.select()}
         placeholder={format.amount(0, decimalsOf(accountId))}
       />
+      {wholeDebtText !== null && amount !== wholeDebtText && account && (
+        <button
+          type="button"
+          onClick={() => setOwnAmount(wholeDebtText)}
+          className="-mt-2 self-start text-sm font-medium text-emerald-700 dark:text-emerald-400"
+        >
+          {t("transactions.form.wholeDebt", {
+            amount: wholeDebtText,
+            currency: account.currency,
+          })}
+        </button>
+      )}
       <AccountPicker
         label={tab === "transfer" ? t("transactions.form.from") : t("transactions.form.account")}
         accounts={accounts}
@@ -478,6 +523,7 @@ function problemMessage(problem: Problem, t: TFunction, example: string): string
 }
 
 function saveErrorMessage(error: Error, t: TFunction): string {
+  if (refusalReason(error) === "more_than_owed") return t("transactions.errors.moreThanOwed");
   if (isRaisedException(error)) return t("transactions.errors.saveRefused");
   return t("transactions.errors.saveFailed");
 }

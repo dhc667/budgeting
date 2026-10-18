@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { builtInCategoryName } from "../categories/category";
 import { localToday } from "../format/days";
 import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
@@ -14,8 +16,9 @@ import { type NetWorthSeries, netWorthSeries } from "./report-math";
 export function useReportData(): { data: ReportData | undefined; failed: boolean } {
   const spaces = useShownSpaces();
   const spaceIds = useMemo(() => (spaces ?? []).map(({ id }) => id).sort(), [spaces]);
-  const flowsQuery = useCopyQuery(["reports", "flows", spaceIds], ({ rows }) =>
-    readCategoryFlows(rows, spaceIds),
+  const { t, i18n } = useTranslation();
+  const flowsQuery = useCopyQuery(["reports", "flows", spaceIds, i18n.language], ({ rows }) =>
+    readCategoryFlows(rows, spaceIds, (builtIn) => builtInCategoryName(builtIn, t)),
   );
   const movementsQuery = useCopyQuery(["reports", "movements", spaceIds], ({ rows }) =>
     readAccountMovements(rows, spaceIds),

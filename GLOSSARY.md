@@ -56,13 +56,13 @@ An account in a space with more than one member; a joint pot that every member c
 _Avoid_: split, shared expense
 
 **Category**:
-A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. A subcategory always has its parent's kind, so moving it under a parent of the other kind, or changing its parent's kind, changes its own. Deleting a category moves its transactions to another category of the same kind in the same space. Every new space starts with a set of categories its members can change, named in the language the app was showing its creator; after that they are plain names that don't follow anyone's language.
+A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. A subcategory always has its parent's kind, so moving it under a parent of the other kind, or changing its parent's kind, changes its own. Deleting a category moves its transactions to another category of the same kind in the same space. Every new space starts with a set of categories its members can change, named in the language the app was showing its creator; after that they are plain names that don't follow anyone's language. Every space also has two built-in categories, Debts forgiven and Debts forgiven to you, which only forgiven debts go into: they are always named in the reader's language, keep their kind, have no subcategories, and can't be deleted.
 
 **Opening balance**:
 The transaction that records the money an account already held when it was added to the app. It is not income.
 
 **Transaction**:
-A single financial event: an expense, a refund, an income, a transfer, or money given or received. It happens on a day, never a future one, and may have a title saying what it was for and a note.
+A single financial event: an expense, a refund, an income, a transfer, money given or received, or a forgiven debt. It happens on a day, never a future one, and may have a title saying what it was for and a note.
 _Avoid_: entry, record
 
 **Expense**:
@@ -90,6 +90,10 @@ A transaction that moves money out of an account to a counterparty in the same s
 
 **Money received**:
 A transaction that moves money from a counterparty into an account in the same space, whether borrowing it or being paid back.
+
+**Forgiven debt**:
+A transaction that settles some or all of a debt without money moving, never more than is owed. When the space forgives a counterparty, the amount counts as spending from one of its accounts, in Debts forgiven; when a counterparty forgives the space, it counts as income to one, in Debts forgiven to you. The account's balance doesn't change. Forgiving a debt across several accounts is one forgiven debt per account.
+_Avoid_: write-off, cancelled debt
 
 **Unsynced transaction**:
 A transaction recorded on a device without a connection that the instance hasn't accepted yet. It counts in that device's balances and can be changed or discarded until it is sent. One the instance refuses stays unsynced, with the reason, until it is fixed or discarded.

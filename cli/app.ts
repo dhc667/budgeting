@@ -38,6 +38,8 @@ Categories (--space defaults to your private space):
   categories update <id> [--name ...] [--kind ...] [--icon ...] [--color ...]
       [--parent <id> | --no-parent]
   categories delete <id> [--move-to <id>]      Its transactions move to --move-to
+  Built-in categories, those with a built_in, take only forgiven debts: they keep their kind and
+  place, have no stored name, and can't be deleted.
 
 Counterparties: whoever money is lent to or borrowed from (--space defaults to your private space):
   counterparties list [--space <id>]           With what each owes per currency (below zero, you owe)
@@ -49,9 +51,11 @@ Transactions:
   transactions list [--space <id>] [--account <id>] [--category <id>] [--counterparty <id>]
       [--from <date>] [--to <date>] [--search <text>] [--limit <n>]
   transactions show <id>
-  transactions add --type expense|refund|income|transfer|given|received --account <id>
-      --amount <n> [--category <id>] [--to-account <id>] [--to-amount <n>]
+  transactions add --type expense|refund|income|transfer|given|received|forgave|forgiven
+      --account <id> --amount <n> [--category <id>] [--to-account <id>] [--to-amount <n>]
       [--counterparty <id>] [--date <date>] [--title <text>] [--note <text>]
+      forgave and forgiven settle a debt without money moving: the amount counts as spending
+      from the account, or income to it, in a built-in category
   transactions update <id> [same options as add]     What isn't given keeps its value
   transactions delete <id> | transactions restore <id>
 

@@ -18,6 +18,8 @@ type CategoryFormProps = {
   spaceId: string;
   // The category being edited, which can't be its own parent.
   categoryId?: string;
+  // A built-in category keeps its name, kind and place: only its looks change.
+  builtIn?: boolean;
   initial: CategoryDetails;
   submitLabel: string;
   mutation: { isPending: boolean; isSuccess: boolean; error: Error | null };
@@ -27,6 +29,7 @@ type CategoryFormProps = {
 export function CategoryForm({
   spaceId,
   categoryId,
+  builtIn = false,
   initial,
   submitLabel,
   mutation,
@@ -40,12 +43,15 @@ export function CategoryForm({
   const kind = parent?.kind ?? ownKind;
   const hasSubcategories = categories.some(({ parent_id }) => parent_id === categoryId);
   const parents = categoryTree(
-    categories.filter(({ space_id, id }) => space_id === spaceId && id !== categoryId),
+    categories.filter(
+      ({ space_id, id, built_in }) =>
+        space_id === spaceId && id !== categoryId && built_in === null,
+    ),
   ).map(({ category }) => category);
 
   const save = (form: FormData) =>
     onSave({
-      name: textField(form, "name").trim(),
+      name: builtIn ? initial.name : textField(form, "name").trim(),
       kind,
       icon: choiceField(form, "icon", iconNames) ?? initial.icon,
       color: choiceField(form, "color", colors) ?? initial.color,
@@ -54,42 +60,53 @@ export function CategoryForm({
 
   return (
     <form onSubmit={submitWith(save)} className="flex flex-col gap-4">
-      <Field label={t("categories.form.name")} name="name" defaultValue={initial.name} required />
-      <SelectField
-        label={t("categories.form.parent")}
-        hint={hasSubcategories ? t("categories.form.parentFixed") : undefined}
-        value={parentId ?? ""}
-        onChange={(event) => setParentId(event.target.value || null)}
-        disabled={hasSubcategories}
-      >
-        <option value="">{t("categories.form.noParent")}</option>
-        {categoryKinds.map((parentKind) => {
-          const ofKind = parents.filter((category) => category.kind === parentKind);
-          return (
-            ofKind.length > 0 && (
-              <optgroup key={parentKind} label={kindName(parentKind, t)}>
-                {ofKind.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </optgroup>
-            )
-          );
-        })}
-      </SelectField>
-      <KindChoice
-        value={kind}
-        onChange={setOwnKind}
-        disabled={parent !== undefined}
-        hint={
-          parent
-            ? t("categories.form.kindFromParent")
-            : hasSubcategories
-              ? t("categories.form.kindForSubcategories")
-              : undefined
-        }
-      />
+      {builtIn ? (
+        <p className="text-sm text-zinc-500">{t("categories.form.builtIn")}</p>
+      ) : (
+        <>
+          <Field
+            label={t("categories.form.name")}
+            name="name"
+            defaultValue={initial.name}
+            required
+          />
+          <SelectField
+            label={t("categories.form.parent")}
+            hint={hasSubcategories ? t("categories.form.parentFixed") : undefined}
+            value={parentId ?? ""}
+            onChange={(event) => setParentId(event.target.value || null)}
+            disabled={hasSubcategories}
+          >
+            <option value="">{t("categories.form.noParent")}</option>
+            {categoryKinds.map((parentKind) => {
+              const ofKind = parents.filter((category) => category.kind === parentKind);
+              return (
+                ofKind.length > 0 && (
+                  <optgroup key={parentKind} label={kindName(parentKind, t)}>
+                    {ofKind.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              );
+            })}
+          </SelectField>
+          <KindChoice
+            value={kind}
+            onChange={setOwnKind}
+            disabled={parent !== undefined}
+            hint={
+              parent
+                ? t("categories.form.kindFromParent")
+                : hasSubcategories
+                  ? t("categories.form.kindForSubcategories")
+                  : undefined
+            }
+          />
+        </>
+      )}
       <IconChoice defaultValue={initial.icon} />
       <ColorChoice defaultValue={initial.color} />
       {mutation.error && <ErrorText>{saveErrorMessage(mutation.error, t)}</ErrorText>}

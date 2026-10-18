@@ -53,12 +53,15 @@ async function refuseExistingAccounts(tx: TransactionSql, spaceId: string, accou
 }
 
 // Only categories nothing is in: delete_category would need somewhere to move transactions to.
+// Built-in categories stay: every space has them.
 async function deleteCategories(tx: TransactionSql, spaceId: string) {
   const inUse = await tx<{ label: string }[]>`
     select concat_ws(' › ', parent.name, category.name) as label
     from public.categories as category
     left join public.categories as parent on parent.id = category.parent_id
-    where category.space_id = ${spaceId} and category.transaction_count > 0
+    where category.space_id = ${spaceId}
+      and category.built_in is null
+      and category.transaction_count > 0
     order by category.kind, label`;
   if (inUse.length > 0) {
     throw new ImportError(
@@ -69,7 +72,7 @@ async function deleteCategories(tx: TransactionSql, spaceId: string) {
     await tx`
       select public.delete_category(id, null)
       from public.categories
-      where space_id = ${spaceId} and ${level}`;
+      where space_id = ${spaceId} and built_in is null and ${level}`;
   }
 }
 

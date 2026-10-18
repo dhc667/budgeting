@@ -39,6 +39,8 @@ function restoreErrorMessage(error: Error, t: TFunction): string {
       return t("transactions.restore.currencyChanged");
     case "category_deleted":
       return t("transactions.restore.categoryDeleted");
+    case "counterparty_deleted":
+      return t("transactions.restore.counterpartyDeleted");
     case undefined:
       return t("transactions.restore.refused");
   }
@@ -51,4 +53,5 @@ const restoreRefusals = [
   "account_deleted",
   "currency_changed",
   "category_deleted",
+  "counterparty_deleted",
 ] as const;

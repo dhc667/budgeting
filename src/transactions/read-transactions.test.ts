@@ -66,6 +66,35 @@ describe("reading a transaction", () => {
     });
   });
 
+  it("is a forgiven debt when what a counterparty owed passes through an account", () => {
+    const forgaveIt = readTransaction(
+      rows({
+        ledgers: [bank, charlie, forgiven],
+        txs: [tx("let go")],
+        postings: [pay("let go", charlie, bank, 400), pay("let go", bank, forgiven, 400)],
+      }),
+      "let go",
+    );
+    const wasForgiven = readTransaction(
+      rows({
+        ledgers: [bank, charlie, forgivenToYou],
+        txs: [tx("let off")],
+        postings: [pay("let off", bank, charlie, 400), pay("let off", forgivenToYou, bank, 400)],
+      }),
+      "let off",
+    );
+
+    expect(forgaveIt).toMatchObject({
+      type: "forgave",
+      from_account_id: "bank",
+      to_account_id: "bank",
+      from_amount: 400,
+      category_id: "forgiven",
+      counterparty_id: "charlie",
+    });
+    expect(wasForgiven).toMatchObject({ type: "forgiven", counterparty_id: "charlie" });
+  });
+
   it("is a one-sided transfer when only one of its postings is visible", () => {
     const sentOnly = readTransaction(
       rows({ txs: [tx("move")], postings: [post("move", bank, -700)] }),
@@ -310,6 +339,7 @@ const ledger = (id: string, kind: Ledger["kind"], space_id = "space-1"): Ledger 
   color: null,
   icon: null,
   parent_id: null,
+  built_in: null,
   position: 0,
   archived: false,
   created_at: "2026-01-01T00:00:00+00:00",
@@ -323,6 +353,17 @@ const food = ledger("food", "expense");
 const rent = ledger("rent", "expense");
 const salary = ledger("salary", "income");
 const opening = ledger("opening", "opening_balance");
+const charlie = ledger("charlie", "counterparty");
+const forgiven = {
+  ...ledger("forgiven", "expense"),
+  name: null,
+  built_in: "debts_forgiven" as const,
+};
+const forgivenToYou = {
+  ...ledger("forgiven-to-you", "income"),
+  name: null,
+  built_in: "debts_forgiven_to_you" as const,
+};
 
 function rows({
   ledgers = [bank, savings, shared, food, rent, salary, opening],

@@ -69,6 +69,7 @@ function EditCard({ category }: { category: Category }) {
       <CategoryForm
         spaceId={category.space_id}
         categoryId={category.id}
+        builtIn={category.built_in !== null}
         initial={{
           name: category.name,
           kind: category.kind,
@@ -87,6 +88,13 @@ function EditCard({ category }: { category: Category }) {
 function DeleteCard({ category, categories }: { category: Category; categories: Category[] }) {
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
+  if (category.built_in !== null) {
+    return (
+      <Card title={t("categories.delete.title")}>
+        <p className="text-sm text-zinc-500">{t("categories.delete.builtIn")}</p>
+      </Card>
+    );
+  }
   if (categories.some(({ parent_id }) => parent_id === category.id)) {
     return (
       <Card title={t("categories.delete.title")}>
@@ -126,8 +134,11 @@ function DeleteDialog({ category, categories, open, onClose }: DeleteDialogProps
   const count = category.transaction_count;
   const targets = categoryTree(
     categories.filter(
-      ({ id, space_id, kind }) =>
-        id !== category.id && space_id === category.space_id && kind === category.kind,
+      ({ id, space_id, kind, built_in }) =>
+        id !== category.id &&
+        space_id === category.space_id &&
+        kind === category.kind &&
+        built_in === null,
     ),
   ).flatMap(({ category, children }) => [category, ...children]);
   const choice = chosenTarget ?? category.parent_id;

@@ -173,14 +173,14 @@ isOneToOne: false
                   ]
                 },"ledger_accounts": {
                   Row: {
-                    "archived": boolean,"color": Database["public"]['Enums']["color"] | null,"created_at": string,"currency": string | null,"icon": string | null,"id": string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name": string | null,"parent_id": string | null,"position": number,"space_id": string,"version": number,"came_with_space": boolean | null
+                    "archived": boolean,"built_in": Database["public"]['Enums']["built_in_category"] | null,"color": Database["public"]['Enums']["color"] | null,"created_at": string,"currency": string | null,"icon": string | null,"id": string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name": string | null,"parent_id": string | null,"position": number,"space_id": string,"version": number,"came_with_space": boolean | null
                   }
                   ComputedFields: "came_with_space"
                   Insert: {
-                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id": string,"version"?: number
+                    "archived"?: boolean,"built_in"?: Database["public"]['Enums']["built_in_category"] | null,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id": string,"version"?: number
                   }
                   Update: {
-                    "archived"?: boolean,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id"?: string,"version"?: number
+                    "archived"?: boolean,"built_in"?: Database["public"]['Enums']["built_in_category"] | null,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string,"currency"?: string | null,"icon"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["ledger_account_kind"],"name"?: string | null,"parent_id"?: string | null,"position"?: number,"space_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -496,14 +496,14 @@ isOneToOne: false
                   ]
                 },"categories": {
                   Row: {
-                    "color": Database["public"]['Enums']["color"] | null,"created_at": string | null,"icon": string | null,"id": string | null,"kind": Database["public"]['Enums']["ledger_account_kind"] | null,"name": string | null,"parent_id": string | null,"space_id": string | null,"transaction_count": number | null
+                    "built_in": Database["public"]['Enums']["built_in_category"] | null,"color": Database["public"]['Enums']["color"] | null,"created_at": string | null,"icon": string | null,"id": string | null,"kind": Database["public"]['Enums']["ledger_account_kind"] | null,"name": string | null,"parent_id": string | null,"space_id": string | null,"transaction_count": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                           "color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string | null,"icon"?: string | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["ledger_account_kind"] | null,"name"?: string | null,"parent_id"?: string | null,"space_id"?: string | null,"transaction_count"?: never
+                           "built_in"?: Database["public"]['Enums']["built_in_category"] | null,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string | null,"icon"?: string | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["ledger_account_kind"] | null,"name"?: string | null,"parent_id"?: string | null,"space_id"?: string | null,"transaction_count"?: never
                          }
                         Update: {
-                           "color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string | null,"icon"?: string | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["ledger_account_kind"] | null,"name"?: string | null,"parent_id"?: string | null,"space_id"?: string | null,"transaction_count"?: never
+                           "built_in"?: Database["public"]['Enums']["built_in_category"] | null,"color"?: Database["public"]['Enums']["color"] | null,"created_at"?: string | null,"icon"?: string | null,"id"?: string | null,"kind"?: Database["public"]['Enums']["ledger_account_kind"] | null,"name"?: string | null,"parent_id"?: string | null,"space_id"?: string | null,"transaction_count"?: never
                          }
                         Relationships: [
                     {
@@ -652,6 +652,9 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"add_built_in_categories":
+{ Args: { "added_at": string,"space": string }; Returns: undefined
+                           },
 "add_transaction":
 { Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
                            },
@@ -992,6 +995,7 @@ isOneToOne: false
 "usable_account":
 { Args: { "account": string,"used_before": (string)[] }; Returns: {
               "archived": boolean,
+"built_in": Database["public"]['Enums']["built_in_category"] | null,
 "color": Database["public"]['Enums']["color"] | null,
 "created_at": string,
 "currency": string | null,
@@ -1010,12 +1014,15 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"uses_counterparty":
+{ Args: { "transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: boolean
+                           },
 "write_postings":
 { Args: { "account": string,"amount": number,"other_side": string,"to_account": string,"to_amount": number,"transaction": string,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: undefined
                            }
           }
           Enums: {
-            "activity_action": "insert"|"update"|"delete"|"restore","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance"|"counterparty","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","repeat_unit": "day"|"week"|"month"|"year","transaction_type": "expense"|"refund"|"income"|"transfer"|"given"|"received"
+            "activity_action": "insert"|"update"|"delete"|"restore","built_in_category": "debts_forgiven"|"debts_forgiven_to_you","color": "red"|"orange"|"amber"|"lime"|"green"|"teal"|"cyan"|"blue"|"indigo"|"violet"|"pink"|"slate","date_format": "day_month_year"|"month_day_year"|"year_month_day","language": "en"|"es-419"|"pt-BR","ledger_account_kind": "account"|"expense"|"income"|"opening_balance"|"counterparty","number_format": "comma_period"|"period_comma"|"space_comma"|"apostrophe_period","repeat_unit": "day"|"week"|"month"|"year","transaction_type": "expense"|"refund"|"income"|"transfer"|"given"|"received"|"forgave"|"forgiven"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1131,7 +1138,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_action": ["insert", "update", "delete", "restore"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance", "counterparty"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"repeat_unit": ["day", "week", "month", "year"],"transaction_type": ["expense", "refund", "income", "transfer", "given", "received"]
+            "activity_action": ["insert", "update", "delete", "restore"],"built_in_category": ["debts_forgiven", "debts_forgiven_to_you"],"color": ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"],"date_format": ["day_month_year", "month_day_year", "year_month_day"],"language": ["en", "es-419", "pt-BR"],"ledger_account_kind": ["account", "expense", "income", "opening_balance", "counterparty"],"number_format": ["comma_period", "period_comma", "space_comma", "apostrophe_period"],"repeat_unit": ["day", "week", "month", "year"],"transaction_type": ["expense", "refund", "income", "transfer", "given", "received", "forgave", "forgiven"]
           }
         }
 } as const

@@ -77,7 +77,8 @@ async function changeCategory(argv: string[]) {
   const { supabase } = await signedIn(values.env);
   const current = await category(supabase, id);
   const details: CategoryDetails = {
-    name: values.name ?? current.name,
+    // A built-in category has none, and keeps none whatever is sent.
+    name: values.name ?? current.name ?? "",
     kind: values.kind === undefined ? current.kind : choice(values.kind, kinds, "--kind"),
     icon: values.icon ?? current.icon,
     color:
@@ -109,7 +110,7 @@ async function category(supabase: AppSupabase, id: string) {
 
 const kinds: CategoryDetails["kind"][] = ["expense", "income"];
 
-const columns = "id, space_id, kind, name, icon, color, parent_id, transaction_count";
+const columns = "id, space_id, kind, name, built_in, icon, color, parent_id, transaction_count";
 
 const detailOptions = {
   name: { type: "string" },

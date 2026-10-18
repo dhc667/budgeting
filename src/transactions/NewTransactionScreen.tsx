@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { type Account, useAccounts } from "../accounts/account-queries";
-import { useCounterparties } from "../counterparties/counterparty-queries";
+import { type Account, openAccountsIn, useAccounts } from "../accounts/account-queries";
+import {
+  useCounterparties,
+  useCounterpartyTransactions,
+} from "../counterparties/counterparty-queries";
+import { type CurrencyDebt, debtShares } from "../counterparties/debt-shares";
+import { wholeDebtSettledBy } from "../counterparties/owed";
 import type { Counterparty } from "../counterparties/read-counterparties";
 import { localToday } from "../format/days";
 import { useCreateRecurringTransaction } from "../recurring/recurring-queries";
@@ -18,13 +23,16 @@ export function NewTransactionScreen() {
   const { data: accounts } = useAccounts();
   const { data: counterparties } = useCounterparties();
   const [params] = useSearchParams();
+  const { data: transactions } = useCounterpartyTransactions(params.get("counterparty") ?? "");
   const { lastAccountId, remember } = useLastAccount();
   const addTransaction = useAddTransaction();
   const createRecurring = useCreateRecurringTransaction();
   // One id for every attempt, so a retry after a lost reply can't save it twice.
   const [id] = useState(() => crypto.randomUUID());
-  if (!accounts || !counterparties) return null;
+  if (!accounts || !counterparties || !transactions) return null;
   const counterparty = counterparties.find(({ id }) => id === params.get("counterparty"));
+  const debts = counterparty ? debtShares(counterparty, transactions, accounts) : [];
+  const type = counterparty ? debtType(params.get("type")) : "expense";
   const backTo = counterparty ? `/counterparties/${counterparty.id}` : "/transactions";
 
   return (
@@ -37,11 +45,11 @@ export function NewTransactionScreen() {
         <Card title={t("transactions.details")}>
           <TransactionForm
             initial={{
-              type: counterparty ? debtType(params.get("type")) : "expense",
+              type,
               date: localToday(),
               title: "",
               note: "",
-              accountId: accountFor(counterparty, accounts, lastAccountId) ?? "",
+              accountId: accountFor(counterparty, type, accounts, debts, lastAccountId) ?? "",
               amount: 0,
               categoryId: null,
               toAccountId: null,
@@ -49,6 +57,7 @@ export function NewTransactionScreen() {
               counterpartyId: counterparty?.id ?? null,
             }}
             keptAccountIds={[]}
+            offersWholeDebt
             submitLabel={t("transactions.new.submit")}
             mutation={{
               isPending: addTransaction.isPending || createRecurring.isPending,
@@ -98,14 +107,19 @@ function debtType(type: string | null): "given" | "received" {
 }
 
 // Money given or received stays in the counterparty's space, so the account must be there too.
+// Paying back what's owed starts from an account the debt sits in, the newest first.
 function accountFor(
   counterparty: Counterparty | undefined,
+  type: "given" | "received" | "expense",
   accounts: Account[],
+  debts: CurrencyDebt[],
   lastAccountId: string | null,
 ): string | null {
-  if (!counterparty) return lastAccountId;
-  const inSpace = accounts.filter(
-    ({ space_id, archived }) => space_id === counterparty.space_id && !archived,
-  );
-  return (inSpace.find(({ id }) => id === lastAccountId) ?? inSpace[0])?.id ?? null;
+  if (!counterparty || type === "expense") return lastAccountId;
+  const holding = debts
+    .filter(({ owed }) => wholeDebtSettledBy(type, owed) !== null)
+    .flatMap(({ shares }) => shares.map(({ accountId }) => accountId));
+  const inSpace = openAccountsIn(accounts, counterparty.space_id).map(({ id }) => id);
+  const candidates = holding.length > 0 ? holding : inSpace;
+  return candidates.find((id) => id === lastAccountId) ?? candidates[0] ?? null;
 }

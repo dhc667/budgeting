@@ -10,6 +10,7 @@ import {
   openNewTransaction,
   openSignedIn,
   openSpaces,
+  picked,
   recordTransaction,
   signIn,
   uniqueName,
@@ -281,9 +282,3 @@ describe("pickers", () => {
     expect(picked("Account")).toBe("Cash");
   });
 });
-
-function picked(picker: string): string {
-  const field = screen.getByRole("combobox", { name: picker });
-  if (!(field instanceof HTMLInputElement)) throw new Error(`${picker} isn't a text field`);
-  return field.value || field.placeholder;
-}

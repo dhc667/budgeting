@@ -7,10 +7,10 @@ type Entry = RowOf<"activity">;
 
 describe("reading categories", () => {
   it("has expense and income categories only", () => {
-    const categories = readCategories({
-      ledger_accounts: byId([food, salary, bank, opening]),
-      postings: byId([]),
-    });
+    const categories = readCategories(
+      { ledger_accounts: byId([food, salary, bank, opening]), postings: byId([]) },
+      builtInName,
+    );
 
     expect(categories.map(({ id, kind }) => [id, kind])).toEqual([
       ["food", "expense"],
@@ -19,20 +19,34 @@ describe("reading categories", () => {
   });
 
   it("counts each transaction with a posting on the category once", () => {
-    const categories = readCategories({
-      ledger_accounts: byId([food, salary]),
-      postings: byId([
-        posting("p1", "t1", "food"),
-        posting("p2", "t1", "food"),
-        posting("p3", "t2", "food"),
-        posting("p4", "t3", "salary"),
-      ]),
-    });
+    const categories = readCategories(
+      {
+        ledger_accounts: byId([food, salary]),
+        postings: byId([
+          posting("p1", "t1", "food"),
+          posting("p2", "t1", "food"),
+          posting("p3", "t2", "food"),
+          posting("p4", "t3", "salary"),
+        ]),
+      },
+      builtInName,
+    );
 
     expect(categories.map(({ id, transaction_count }) => [id, transaction_count])).toEqual([
       ["food", 2],
       ["salary", 1],
     ]);
+  });
+
+  it("names a built-in category however it's told to", () => {
+    const forgiven: Ledger = { ...food, id: "forgiven", name: null, built_in: "debts_forgiven" };
+
+    const [category] = readCategories(
+      { ledger_accounts: byId([forgiven]), postings: byId([]) },
+      builtInName,
+    );
+
+    expect(category).toMatchObject({ name: "built-in debts_forgiven", built_in: "debts_forgiven" });
   });
 });
 
@@ -64,6 +78,7 @@ const food: Ledger = {
   color: "red",
   icon: "utensils",
   parent_id: null,
+  built_in: null,
   position: 0,
   archived: false,
   created_at: "2026-01-01T00:00:00+00:00",
@@ -73,6 +88,10 @@ const food: Ledger = {
 const salary: Ledger = { ...food, id: "salary", kind: "income", name: "Salary" };
 const bank: Ledger = { ...food, id: "bank", kind: "account", currency: "USD", icon: null };
 const opening: Ledger = { ...food, id: "opening", kind: "opening_balance", name: null };
+
+function builtInName(builtIn: string): string {
+  return `built-in ${builtIn}`;
+}
 
 function posting(id: string, transaction_id: string, ledger_account_id: string) {
   return { id, transaction_id, ledger_account_id, amount: 1, currency: "USD", version: 1 };

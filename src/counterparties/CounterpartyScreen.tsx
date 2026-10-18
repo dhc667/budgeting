@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Heart } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
@@ -10,6 +10,7 @@ import { useSpaces } from "../spaces/space-queries";
 import { TransactionList } from "../transactions/TransactionList";
 import { BackLink } from "../ui/BackLink";
 import { Button } from "../ui/Button";
+import { type ButtonVariant, buttonClass } from "../ui/button-class";
 import { Card, EmptyState } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
@@ -56,7 +57,7 @@ export function CounterpartyScreen() {
   );
 }
 
-function CounterpartyNotFound() {
+export function CounterpartyNotFound() {
   const { t } = useTranslation();
   return (
     <div className="flex max-w-xl flex-col gap-6">
@@ -79,28 +80,36 @@ function BalanceCard({ counterparty }: { counterparty: Counterparty }) {
         balances.map((balance) => <CurrencyBalance key={balance.currency} balance={balance} />)
       )}
       <div className="flex flex-wrap gap-3">
-        <MoneyLink
+        <ButtonLink
           to={`/transactions/new?type=given&counterparty=${id}`}
           label={t("counterparties.give", { name })}
           icon={<ArrowUpRight className="size-5" />}
         />
-        <MoneyLink
+        <ButtonLink
           to={`/transactions/new?type=received&counterparty=${id}`}
           label={t("counterparties.receive", { name })}
           icon={<ArrowDownLeft className="size-5" />}
         />
+        {balances.some(({ owed }) => owed !== 0) && (
+          <ButtonLink
+            to={`/counterparties/${id}/forgive`}
+            label={t("counterparties.forgive.open")}
+            icon={<Heart className="size-5" />}
+            variant="secondary"
+          />
+        )}
       </div>
     </Card>
   );
 }
 
-// How much of what is owed has been paid back, whichever way the money first went.
+// How much of what is owed has been paid back or forgiven, whichever way the money first went.
 function CurrencyBalance({ balance }: { balance: CounterpartyBalance }) {
   const { t } = useTranslation();
   const money = useMoney();
-  const { currency, given, received, owed } = balance;
+  const { currency, given, received, forgiven, owed } = balance;
   const [lent, repaid] = owed >= 0 ? [given, received] : [received, given];
-  const share = lent === 0 ? 1 : Math.min(repaid / lent, 1);
+  const share = lent === 0 ? 1 : Math.min((repaid + forgiven) / lent, 1);
 
   return (
     <section className="flex flex-col gap-2">
@@ -128,17 +137,23 @@ function CurrencyBalance({ balance }: { balance: CounterpartyBalance }) {
           given: money(given, currency),
           received: money(received, currency),
         })}
+        {forgiven > 0 &&
+          ` · ${t("counterparties.forgivenSoFar", { amount: money(forgiven, currency) })}`}
       </p>
     </section>
   );
 }
 
-function MoneyLink({ to, label, icon }: { to: string; label: string; icon: ReactNode }) {
+type ButtonLinkProps = {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  variant?: ButtonVariant;
+};
+
+function ButtonLink({ to, label, icon, variant }: ButtonLinkProps) {
   return (
-    <Link
-      to={to}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 font-medium text-white transition-colors hover:bg-emerald-700"
-    >
+    <Link to={to} className={buttonClass(variant)}>
       {icon}
       {label}
     </Link>

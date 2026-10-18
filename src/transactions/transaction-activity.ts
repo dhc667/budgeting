@@ -97,11 +97,18 @@ function isOpeningBalance(snapshot: Snapshot): boolean {
   return snapshot.postings.some(({ account_kind }) => account_kind === "opening_balance");
 }
 
+// A forgiven debt is named for its counterparty: its built-in category has no stored name.
 function snapshotLabel(snapshot: Snapshot, t: TFunction): string {
-  const otherSide = snapshot.postings.find(
-    ({ account_kind }) => isCategoryKind(account_kind) || account_kind === "counterparty",
+  const counterparty = snapshot.postings.find(
+    ({ account_kind }) => account_kind === "counterparty",
   );
-  return snapshot.title ?? otherSide?.account_name ?? t("transactions.transfer");
+  const category = snapshot.postings.find(({ account_kind }) => isCategoryKind(account_kind));
+  return (
+    snapshot.title ??
+    counterparty?.account_name ??
+    category?.account_name ??
+    t("transactions.transfer")
+  );
 }
 
 // What a space's members saw of a transaction: only their own side of a transfer from or to
@@ -141,6 +148,10 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
       return t("activity.transaction.given", withCounterparty);
     case "received":
       return t("activity.transaction.received", withCounterparty);
+    case "forgave":
+      return t("activity.transaction.forgave", withCounterparty);
+    case "forgiven":
+      return t("activity.transaction.forgiven", withCounterparty);
     case "transfer":
       if (sent && received)
         return sent.currency === received.currency

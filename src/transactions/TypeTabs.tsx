@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { type Tab, tabName } from "./transaction-tabs";
+import { type DebtType, type Tab, tabName } from "./transaction-tabs";
 
 type TypeTabsProps = { tabs: readonly Tab[]; value: Tab; onChange: (tab: Tab) => void };
 
@@ -27,23 +27,44 @@ export function TypeTabs({ tabs, value, onChange }: TypeTabsProps) {
   );
 }
 
-// Lent or paid back, against borrowed or got back: the same money moving either way.
+// Lent or paid back, against borrowed or got back: the same money moving either way. Forgiving
+// settles what's owed without money moving; it starts on its counterparty's screen, where it can be
+// split across accounts, so it's offered here only to edit one.
 export function DirectionChoice({
-  received,
+  value,
+  forgiveness,
   onChange,
 }: {
-  received: boolean;
-  onChange: (received: boolean) => void;
+  value: DebtType;
+  forgiveness: boolean;
+  onChange: (debt: DebtType) => void;
 }) {
   const { t } = useTranslation();
-  const options = [
-    { value: false, label: t("transactions.form.given"), hint: t("transactions.form.givenHint") },
-    {
-      value: true,
-      label: t("transactions.form.received"),
-      hint: t("transactions.form.receivedHint"),
-    },
-  ];
+  const options: { value: DebtType; label: string; hint: string }[] = forgiveness
+    ? [
+        {
+          value: "forgave",
+          label: t("transactions.form.forgave"),
+          hint: t("transactions.form.forgaveHint"),
+        },
+        {
+          value: "forgiven",
+          label: t("transactions.form.forgiven"),
+          hint: t("transactions.form.forgivenHint"),
+        },
+      ]
+    : [
+        {
+          value: "given",
+          label: t("transactions.form.given"),
+          hint: t("transactions.form.givenHint"),
+        },
+        {
+          value: "received",
+          label: t("transactions.form.received"),
+          hint: t("transactions.form.receivedHint"),
+        },
+      ];
   return (
     <div
       role="radiogroup"
@@ -55,7 +76,7 @@ export function DirectionChoice({
           key={option.label}
           type="button"
           role="radio"
-          aria-checked={option.value === received}
+          aria-checked={option.value === value}
           onClick={() => onChange(option.value)}
           className="flex flex-col items-start rounded-lg border border-zinc-300 p-3 text-left aria-checked:border-emerald-600 aria-checked:ring-2 aria-checked:ring-emerald-600/20 dark:border-zinc-700"
         >

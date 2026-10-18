@@ -78,9 +78,7 @@ describe("money given to or received from a counterparty", () => {
 
     const { error } = await ana.client.rpc("add_transaction", given({ counterparty: stranger }));
 
-    expect(error?.message).toBe(
-      "money given or received uses an account and a counterparty from the same space",
-    );
+    expect(error?.message).toBe("a debt uses an account and a counterparty from the same space");
   });
 
   it("refuses a category in place of a counterparty, and a counterparty in place of a category", async () => {
@@ -97,6 +95,31 @@ describe("money given to or received from a counterparty", () => {
 
     expect(asCounterparty.error?.message).toBe("no such counterparty in your spaces");
     expect(asCategory.error?.message).toBe("no such category in your spaces");
+  });
+});
+
+describe("restoring money given or received", () => {
+  it("brings it back to its counterparty", async () => {
+    const id = await addTransaction(ana, given({ amount: 600 }));
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toBeNull();
+    expect(await detailsOf(ana, id)).toMatchObject({ type: "given", counterparty_id: charlie });
+  });
+
+  it("refuses once its counterparty has been deleted", async () => {
+    const id = await addTransaction(ana, given());
+    await ana.client.rpc("delete_transaction", { transaction_id: id });
+    await ana.client.rpc("delete_counterparty", { counterparty_id: charlie });
+
+    const { error } = await ana.client.rpc("restore_transaction", { transaction_id: id });
+
+    expect(error).toMatchObject({
+      message: "its counterparty was deleted",
+      details: "counterparty_deleted",
+    });
   });
 });
 

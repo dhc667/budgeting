@@ -129,6 +129,12 @@ export async function choose(picker: string, option: string) {
   await user.click(await screen.findByRole("option", { name: option }));
 }
 
+export function picked(picker: string): string {
+  const field = screen.getByRole("combobox", { name: picker });
+  if (!(field instanceof HTMLInputElement)) throw new Error(`${picker} isn't a text field`);
+  return field.value || field.placeholder;
+}
+
 // Users pile up across test runs, and the member checklist finds them by name.
 export function uniqueName(name: string): string {
   return `${name} ${crypto.randomUUID().slice(0, 8)}`;
