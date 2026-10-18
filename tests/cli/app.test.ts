@@ -136,6 +136,39 @@ describe("the app CLI, signed in", () => {
     expect(cash).toMatchObject({ space_id: space.id });
   });
 
+  it("creates a space the user can move money into with a transfer", async () => {
+    const { email } = await existingUser("Ana");
+    login(email);
+    const family = idOf(app(["spaces", "add", "--name", "Family"]));
+    const cash = idOf(
+      app(["accounts", "add", "--name", "Cash", "--currency", "USD", "--opening-amount", "5000"]),
+    );
+    const shared = idOf(
+      app(["accounts", "add", "--space", family, "--name", "Cash", "--currency", "USD"]),
+    );
+
+    app([
+      "transactions",
+      "add",
+      "--type",
+      "transfer",
+      "--account",
+      cash,
+      "--to-account",
+      shared,
+      "--amount",
+      "5000",
+    ]);
+
+    expect(json(app(["spaces", "list"]))).toContainEqual({
+      id: family,
+      name: "Family",
+      private: false,
+    });
+    expect(json(app(["accounts", "list", "--space", family]))).toMatchObject([{ balance: 5000 }]);
+    expect(json(app(["accounts", "list"]))).toMatchObject([{ balance: 0 }, { balance: 5000 }]);
+  });
+
   it("changes only what an update gives, keeping the rest", async () => {
     const { email } = await existingUser("Ana");
     login(email);
