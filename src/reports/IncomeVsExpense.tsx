@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { dayToDate } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { Card } from "../ui/Card";
@@ -16,12 +17,37 @@ export function IncomeVsExpense({
 }) {
   const { t, i18n } = useTranslation();
   const format = useFormat();
-  const biggest = Math.max(...months.flatMap(({ income, expense }) => [income, expense]), 0);
   const money = (amount: number) => format.money(amount, data.conversion.currency);
   const monthName = new Intl.DateTimeFormat(i18n.language, { month: "short", year: "numeric" });
 
+  const chartData = months.map(({ month, income, expense }) => ({
+    name: monthName.format(dayToDate(firstDayOf(month))),
+    income,
+    expense,
+  }));
+
   return (
     <Card title={t("reports.incomeExpense.title")}>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={chartData}>
+          <CartesianGrid vertical={false} stroke="var(--color-zinc-200)" />
+          <XAxis dataKey="name" minTickGap={8} />
+          <YAxis width="auto" tickFormatter={money} />
+          <Tooltip formatter={(amount) => money(Number(amount))} />
+          <Bar
+            dataKey="income"
+            name={t("reports.incomeExpense.income")}
+            fill="var(--color-emerald-500)"
+            isAnimationActive={false}
+          />
+          <Bar
+            dataKey="expense"
+            name={t("reports.incomeExpense.expense")}
+            fill="var(--color-red-400)"
+            isAnimationActive={false}
+          />
+        </BarChart>
+      </ResponsiveContainer>
       <table className="w-full text-sm">
         <thead className="text-left text-xs text-zinc-500">
           <tr>
@@ -36,7 +62,6 @@ export function IncomeVsExpense({
             <tr key={month.month} className="border-t border-zinc-100 dark:border-zinc-800">
               <th scope="row" className="py-2 text-left font-normal">
                 {monthName.format(dayToDate(firstDayOf(month.month)))}
-                <Bars income={month.income} expense={month.expense} biggest={biggest} />
               </th>
               <td className="py-2 text-right align-top">{money(month.income)}</td>
               <td className="py-2 text-right align-top">{money(month.expense)}</td>
@@ -51,15 +76,5 @@ export function IncomeVsExpense({
       </table>
       <Unconverted missing={missing} />
     </Card>
-  );
-}
-
-function Bars({ income, expense, biggest }: { income: number; expense: number; biggest: number }) {
-  const width = (amount: number) => `${biggest > 0 ? (Math.max(amount, 0) / biggest) * 100 : 0}%`;
-  return (
-    <span aria-hidden className="mt-1 flex flex-col gap-0.5">
-      <span className="h-1.5 rounded-full bg-emerald-500" style={{ width: width(income) }} />
-      <span className="h-1.5 rounded-full bg-red-400" style={{ width: width(expense) }} />
-    </span>
   );
 }

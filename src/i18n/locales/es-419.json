@@ -35,8 +35,7 @@
       "title": "Patrimonio neto en el tiempo",
       "on": "El {{date}}",
       "today": "Hoy",
-      "none": "Aún no hay nada registrado.",
-      "chart": "Gráfico de líneas del patrimonio neto, de {{start}} el {{startDate}} a {{end}} hoy"
+      "none": "Aún no hay nada registrado."
     }
   },
   "instance": {

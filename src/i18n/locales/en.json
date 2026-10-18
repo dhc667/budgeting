@@ -35,8 +35,7 @@
       "title": "Net worth over time",
       "on": "On {{date}}",
       "today": "Today",
-      "none": "Nothing recorded yet.",
-      "chart": "Net worth line chart, from {{start}} on {{startDate}} to {{end}} today"
+      "none": "Nothing recorded yet."
     }
   },
   "instance": {
