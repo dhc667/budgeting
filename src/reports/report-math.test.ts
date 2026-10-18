@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { LatestRates, RateHistory } from "../rates/convert";
 import { netWorth } from "../rates/net-worth";
-import { incomeVsExpense, netWorthSeries, spendingByCategory, type Display } from "./report-math";
+import type { DisplayConversion } from "../rates/convert-dated";
+import { incomeVsExpense, netWorthSeries, spendingByCategory } from "./report-math";
 import type { AccountMovement, CategoryFlow } from "./read-reports";
 
 const usd = { code: "USD", decimals: 2 };
@@ -16,7 +17,7 @@ const history: RateHistory = new Map([
     ],
   ],
 ]);
-const display: Display = { currencies, currency: usd, history };
+const display: DisplayConversion = { currencies, currency: usd, history };
 
 describe("spending by category", () => {
   const period = { from: "2026-01-01", to: "2026-01-31" };
@@ -40,6 +41,22 @@ describe("spending by category", () => {
     ]);
     expect(result.total).toBe(570);
     expect(result.missing).toEqual([]);
+  });
+
+  it("counts a day exactly on either end of the period, and none outside it", () => {
+    const result = spendingByCategory(
+      [
+        flow({ categoryId: "before", categoryName: "Before", net: 1, day: "2025-12-31" }),
+        flow({ categoryId: "first", categoryName: "First", net: 10, day: "2026-01-01" }),
+        flow({ categoryId: "last", categoryName: "Last", net: 100, day: "2026-01-31" }),
+        flow({ categoryId: "after", categoryName: "After", net: 1_000, day: "2026-02-01" }),
+      ],
+      period,
+      display,
+    );
+
+    expect(result.categories.map(({ name }) => name)).toEqual(["Last", "First"]);
+    expect(result.total).toBe(110);
   });
 
   it("converts each flow at the rate of its own day", () => {
@@ -126,6 +143,25 @@ describe("net worth over time", () => {
       { day: "2026-02-01", total: 1_400 },
       { day: "2026-02-02", total: 1_150 },
     ]);
+  });
+
+  it("leaves an account out of the days before its currency's first rate, and names the first", () => {
+    const result = netWorthSeries(
+      [
+        move({ accountId: "bank", amount: 100, day: "2025-12-30" }),
+        move({ accountId: "euros", currency: "EUR", amount: 100, day: "2025-12-30" }),
+      ],
+      "2026-01-02",
+      display,
+    );
+
+    expect(result.points).toEqual([
+      { day: "2025-12-30", total: 100 },
+      { day: "2025-12-31", total: 100 },
+      { day: "2026-01-01", total: 300 },
+      { day: "2026-01-02", total: 300 },
+    ]);
+    expect(result.missing).toEqual([{ currency: "EUR", day: "2025-12-30" }]);
   });
 
   it("has no points before anything is recorded", () => {

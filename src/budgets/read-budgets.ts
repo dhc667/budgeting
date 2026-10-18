@@ -1,12 +1,10 @@
 import { type Activity, historyOf } from "../activity/activity";
-import type { RateHistory } from "../rates/convert";
 import { keyOfId, type RowOf, type Rows } from "../sync/copy";
 import {
   exclusionsByBudget,
   ledgerAccountsBySpace,
   postingsByLedgerAccount,
   postingsByTransaction,
-  ratesByCurrency,
 } from "../sync/lookups";
 
 export type SpendingRow = { spent_on: string; currency: string; amount: number };
@@ -86,24 +84,6 @@ function countedCategoryIds(budget: RowOf<"budgets">, ledgers: Rows["ledger_acco
           (ledger.parent_id !== null && named.includes(ledger.parent_id))),
     )
     .map(({ id }) => id);
-}
-
-// Each currency's rates from the one in effect on `firstDay` on, as a day's rate is the latest on
-// or before it. A day with no rate before it starts at the first rate after.
-export function readRateHistory(
-  { exchange_rates }: Pick<Rows, "exchange_rates">,
-  currencies: readonly string[],
-  firstDay: string | undefined,
-): RateHistory {
-  if (firstDay === undefined) return new Map();
-  const byCurrency = ratesByCurrency(exchange_rates);
-  return new Map(
-    currencies.map((code) => {
-      const dated = byCurrency.get(code) ?? [];
-      const inEffect = dated.findLastIndex(({ date }) => date <= firstDay);
-      return [code, dated.slice(Math.max(inEffect, 0)).map(({ date, rate }) => ({ date, rate }))];
-    }),
-  );
 }
 
 export function readBudgetHistory(

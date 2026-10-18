@@ -1,10 +1,9 @@
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { localToday } from "../format/days";
-import type { Currency } from "../format/format";
 import { useSupabase } from "../instance/instance-context";
 import { useCurrencies } from "../money/currency-queries";
-import { convertOn, type RateHistory } from "../rates/convert";
+import { convertAtDay, type DisplayConversion, type MissingRate } from "../rates/convert-dated";
+import { useBackfillMissingRates, useRateHistory } from "../rates/rate-queries";
 import type { Space } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
 import type { Repeat } from "../recurring/schedule";
@@ -22,7 +21,6 @@ import {
   readBudgetHistory,
   readBudgetSpending,
   readBudgets,
-  readRateHistory,
   type SpendingRow,
 } from "./read-budgets";
 
@@ -43,10 +41,14 @@ export function useBudgetProgress(budget: Budget): BudgetProgress | undefined {
   const { data: spending } = useBudgetSpending(budget);
   const { data: currencies } = useCurrencies();
   const currency = currencies?.find(({ code }) => code === budget.currency);
-  const { data: history } = useRateHistory(spending ?? [], budget.currency);
+  const dated = useMemo(
+    () => (spending ?? []).map((each) => ({ day: each.spent_on, currency: each.currency })),
+    [spending],
+  );
+  const { data: history } = useRateHistory(budget.currency, dated);
   const converted =
     spending && currency && currencies && history
-      ? convertSpending(spending, currency, currencies, history)
+      ? convertSpending(spending, { currencies, currency, history })
       : undefined;
   useBackfillMissingRates(converted?.missing ?? []);
   if (!converted) return undefined;
@@ -66,71 +68,25 @@ function useBudgetSpending(budget: Budget) {
   );
 }
 
-function useRateHistory(spending: SpendingRow[], budgetCurrency: string) {
-  const codes = [...new Set([budgetCurrency, ...spending.map(({ currency }) => currency)])]
-    .filter((code) => code !== "USD")
-    .sort();
-  const firstDay = spending[0]?.spent_on;
-  return useCopyQuery(["rate-history", codes, firstDay], ({ rows }) =>
-    readRateHistory(rows, codes, firstDay),
-  );
-}
-
 function convertSpending(
   spending: SpendingRow[],
-  to: Currency,
-  currencies: Currency[],
-  history: RateHistory,
-): { daily: DaySpending[]; missing: { currency: string; day: string }[] } {
+  conversion: DisplayConversion,
+): { daily: DaySpending[]; missing: MissingRate[] } {
   const daily: DaySpending[] = [];
-  const missing: { currency: string; day: string }[] = [];
-  for (const { spent_on: day, currency: code, amount } of spending) {
-    const from = currencies.find((candidate) => candidate.code === code);
-    const converted = from ? convertOn(amount, from, to, day, history) : undefined;
-    switch (converted?.kind) {
+  const missing: MissingRate[] = [];
+  for (const { spent_on: day, currency, amount } of spending) {
+    const converted = convertAtDay(amount, currency, day, conversion);
+    switch (converted.kind) {
       case "converted":
         daily.push({ day, amount: converted.minorUnits });
         break;
-      case "no-rate":
-        missing.push({ currency: converted.currency, day });
-        break;
-      case undefined:
-        missing.push({ currency: code, day });
+      case "missing":
+        missing.push(converted.missing);
         break;
     }
   }
   return { daily, missing };
 }
-
-// The daily sync fetches rates back to the oldest transaction, but only once a day: one dated
-// before every other, recorded since, waits until tomorrow unless asked now. Asked once per day and
-// currency, as a provider without that history would otherwise be asked on every render.
-export function useBackfillMissingRates(missing: { currency: string; day: string }[]) {
-  const queryClient = useQueryClient();
-  const asked = missing
-    .map(({ currency, day }) => `${currency} ${day}`)
-    .filter((key) => !askedFor(queryClient).has(key));
-  const key = asked.join(",");
-  useEffect(() => {
-    if (key === "") return;
-    for (const each of key.split(",")) askedFor(queryClient).add(each);
-    void queryClient.invalidateQueries(
-      { queryKey: ["exchange-rates-sync"] },
-      { cancelRefetch: false },
-    );
-  }, [key, queryClient]);
-}
-
-function askedFor(queryClient: QueryClient): Set<string> {
-  let asked = askedByClient.get(queryClient);
-  if (!asked) {
-    asked = new Set();
-    askedByClient.set(queryClient, asked);
-  }
-  return asked;
-}
-
-const askedByClient = new WeakMap<QueryClient, Set<string>>();
 
 export function useBudgetHistory(budgetId: string) {
   return useCopyQuery(["budgets", budgetId, "history"], ({ rows }) =>

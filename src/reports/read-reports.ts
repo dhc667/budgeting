@@ -61,14 +61,14 @@ export function readAccountMovements(
   const movements = new Map<string, AccountMovement>();
 
   for (const ledger of ledgersIn(rows, spaceIds)) {
-    if (ledger.kind !== "account") continue;
+    if (ledger.kind !== "account" || ledger.currency === null) continue;
     for (const posting of postingsOn.get(ledger.id) ?? []) {
       const transaction = rows.transactions.get(keyOfId(posting.transaction_id));
       if (!transaction) continue;
-      const key = JSON.stringify([ledger.id, transaction.date, posting.currency]);
+      const key = JSON.stringify([ledger.id, transaction.date]);
       const movement = movements.get(key) ?? {
         accountId: ledger.id,
-        currency: posting.currency,
+        currency: ledger.currency,
         day: transaction.date,
         amount: 0,
       };

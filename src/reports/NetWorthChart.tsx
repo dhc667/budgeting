@@ -1,18 +1,29 @@
 import { useTranslation } from "react-i18next";
-import { localToday } from "../format/days";
+import { accountsInSpaces, useAccounts } from "../accounts/account-queries";
 import { useFormat } from "../format/use-format";
+import { netWorth } from "../rates/net-worth";
+import { useLatestRates } from "../rates/rate-queries";
+import { StaleRateNotes } from "../rates/StaleRateNotes";
 import { Card, EmptyState } from "../ui/Card";
-import { type NetWorthPoint, netWorthSeries } from "./report-math";
+import type { NetWorthPoint } from "./report-math";
 import type { ReportData } from "./report-queries";
 import { Unconverted } from "./Unconverted";
 
 export function NetWorthChart({ data }: { data: ReportData }) {
   const { t } = useTranslation();
   const format = useFormat();
-  const { points, missing } = netWorthSeries(data.movements, localToday(), data.display);
+  const { data: accounts } = useAccounts();
+  const { data: latestRates } = useLatestRates();
+  const { points, missing } = data.netWorth;
+  const { currencies, currency } = data.conversion;
+  const staleRates =
+    accounts && latestRates
+      ? netWorth(accountsInSpaces(accounts, data.spaces), currencies, currency, latestRates)
+          .staleRates
+      : [];
   const first = points[0];
   const last = points.at(-1);
-  const money = (amount: number) => format.money(amount, data.display.currency);
+  const money = (amount: number) => format.money(amount, currency);
 
   return (
     <Card title={t("reports.netWorth.title")}>
@@ -30,7 +41,7 @@ export function NetWorthChart({ data }: { data: ReportData }) {
               <dd className="text-2xl font-semibold tabular-nums">{money(last.total)}</dd>
             </div>
           </dl>
-          <Line
+          <NetWorthLine
             points={points}
             label={t("reports.netWorth.chart", {
               start: money(first.total),
@@ -42,6 +53,7 @@ export function NetWorthChart({ data }: { data: ReportData }) {
       ) : (
         <EmptyState>{t("reports.netWorth.none")}</EmptyState>
       )}
+      <StaleRateNotes rates={staleRates} />
       <Unconverted missing={missing} />
     </Card>
   );
@@ -51,7 +63,7 @@ const width = 600;
 const height = 160;
 const padding = 4;
 
-function Line({ points, label }: { points: NetWorthPoint[]; label: string }) {
+function NetWorthLine({ points, label }: { points: NetWorthPoint[]; label: string }) {
   const totals = points.map(({ total }) => total);
   const low = Math.min(...totals);
   const span = Math.max(...totals) - low;

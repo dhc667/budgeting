@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
@@ -6,22 +5,31 @@ import { spaceName } from "../spaces/space";
 import { Card, EmptyState } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Field } from "../ui/Field";
-import { lastMonth, type Period, thisMonth, thisYear } from "./periods";
+import type { DateRange } from "../format/days";
+import { lastMonth, thisMonth, thisYear } from "./periods";
 import type { ReportData } from "./report-queries";
-import { spendingByCategory } from "./report-math";
+import type { SpendingReport } from "./report-math";
 import { Unconverted } from "./Unconverted";
 
-export function SpendingByCategory({ data }: { data: ReportData }) {
+export function SpendingByCategory({
+  report: { total, categories, missing },
+  period,
+  onPeriodChange,
+  data,
+}: {
+  report: SpendingReport;
+  period: DateRange;
+  onPeriodChange: (period: DateRange) => void;
+  data: ReportData;
+}) {
   const { t } = useTranslation();
   const format = useFormat();
-  const [period, setPeriod] = useState(() => thisMonth(localToday()));
-  const { total, categories, missing } = spendingByCategory(data.flows, period, data.display);
   const today = localToday();
   const showSpace = data.spaces.length > 1;
 
   return (
     <Card title={t("reports.spending.title")}>
-      <PeriodChoice period={period} onChange={setPeriod} today={today} />
+      <PeriodChoice period={period} onChange={onPeriodChange} today={today} />
       {categories.length === 0 ? (
         <EmptyState>{t("reports.spending.none")}</EmptyState>
       ) : (
@@ -29,7 +37,7 @@ export function SpendingByCategory({ data }: { data: ReportData }) {
           <p className="flex items-baseline justify-between gap-3">
             <span className="text-sm text-zinc-500">{t("reports.spending.total")}</span>
             <span className="text-2xl font-semibold tabular-nums">
-              {format.money(total, data.display.currency)}
+              {format.money(total, data.conversion.currency)}
             </span>
           </p>
           <ul className="flex flex-col gap-3">
@@ -46,7 +54,7 @@ export function SpendingByCategory({ data }: { data: ReportData }) {
                       )}
                     </span>
                     <span className="shrink-0 tabular-nums">
-                      <span>{format.money(category.amount, data.display.currency)}</span>
+                      <span>{format.money(category.amount, data.conversion.currency)}</span>
                       <span className="ml-2 text-xs text-zinc-500">{format.percent(share)}</span>
                     </span>
                   </p>
@@ -72,8 +80,8 @@ function PeriodChoice({
   onChange,
   today,
 }: {
-  period: Period;
-  onChange: (period: Period) => void;
+  period: DateRange;
+  onChange: (period: DateRange) => void;
   today: string;
 }) {
   const { t } = useTranslation();

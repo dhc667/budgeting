@@ -20,3 +20,5 @@ function dayOf(date: Date): string {
   const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
 }
+
+export type DateRange = { from: string; to: string };

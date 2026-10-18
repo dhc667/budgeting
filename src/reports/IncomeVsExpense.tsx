@@ -1,24 +1,23 @@
 import { useTranslation } from "react-i18next";
-import { localToday } from "../format/days";
+import { dayToDate } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { Card } from "../ui/Card";
-import { firstDayOf, lastMonths } from "./periods";
-import { incomeVsExpense } from "./report-math";
+import { firstDayOf } from "./periods";
+import type { IncomeExpenseReport } from "./report-math";
 import type { ReportData } from "./report-queries";
 import { Unconverted } from "./Unconverted";
 
-const monthsShown = 12;
-
-export function IncomeVsExpense({ data }: { data: ReportData }) {
+export function IncomeVsExpense({
+  report: { months, missing },
+  data,
+}: {
+  report: IncomeExpenseReport;
+  data: ReportData;
+}) {
   const { t, i18n } = useTranslation();
   const format = useFormat();
-  const { months, missing } = incomeVsExpense(
-    data.flows,
-    lastMonths(monthsShown, localToday()),
-    data.display,
-  );
   const biggest = Math.max(...months.flatMap(({ income, expense }) => [income, expense]), 0);
-  const money = (amount: number) => format.money(amount, data.display.currency);
+  const money = (amount: number) => format.money(amount, data.conversion.currency);
   const monthName = new Intl.DateTimeFormat(i18n.language, { month: "short", year: "numeric" });
 
   return (
@@ -36,7 +35,7 @@ export function IncomeVsExpense({ data }: { data: ReportData }) {
           {months.map((month) => (
             <tr key={month.month} className="border-t border-zinc-100 dark:border-zinc-800">
               <th scope="row" className="py-2 text-left font-normal">
-                {monthName.format(new Date(`${firstDayOf(month.month)}T12:00:00`))}
+                {monthName.format(dayToDate(firstDayOf(month.month)))}
                 <Bars income={month.income} expense={month.expense} biggest={biggest} />
               </th>
               <td className="py-2 text-right align-top">{money(month.income)}</td>

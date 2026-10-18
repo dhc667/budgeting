@@ -11,6 +11,9 @@
   "reports": {
     "title": "Informes",
     "unconverted": "Sin contar, no hay tipo de cambio para su día: {{currencies}}",
+    "errors": {
+      "loadFailed": "No se pudieron cargar los reportes. Revisa tu conexión e inténtalo de nuevo."
+    },
     "spending": {
       "title": "Gastos por categoría",
       "from": "Desde",
