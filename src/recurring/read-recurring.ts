@@ -1,4 +1,4 @@
-import { type Activity, newestFirst } from "../activity/activity";
+import { type Activity, historyOf } from "../activity/activity";
 import type { RowOf, Rows } from "../sync/copy";
 
 export function readRecurringTransactions({
@@ -13,8 +13,5 @@ export function readRecurringHistory(
   { activity }: Pick<Rows, "activity">,
   ruleId: string,
 ): Activity[] {
-  return newestFirst(
-    activity,
-    ({ table_name, row_id }) => table_name === "recurring_transactions" && row_id === ruleId,
-  );
+  return historyOf(activity, "recurring_transactions", ruleId);
 }

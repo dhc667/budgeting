@@ -134,6 +134,39 @@ describe("budget spending", () => {
     ]);
   });
 
+  it("has no end when ends_on is null, so a late transaction still counts", () => {
+    const spending = readBudgetSpending(
+      rows({
+        budget: budget({ ends_on: null }),
+        txs: [tx("early", "2026-01-01"), tx("late", "2031-12-31")],
+        postings: [...pay("early", bank, food, 10), ...pay("late", bank, food, 20)],
+      }),
+      "budget",
+    );
+
+    expect(spending.map(({ spent_on, amount }) => [spent_on, amount])).toEqual([
+      ["2026-01-01", 10],
+      ["2031-12-31", 20],
+    ]);
+  });
+
+  it("combines a listed parent's subcategories with the account filter", () => {
+    const spending = readBudgetSpending(
+      rows({
+        budget: budget({ category_ids: ["food"], account_ids: ["bank"] }),
+        txs: [tx("a"), tx("b"), tx("c")],
+        postings: [
+          ...pay("a", bank, snacks, 20),
+          ...pay("b", savings, snacks, 900),
+          ...pay("c", bank, rent, 200),
+        ],
+      }),
+      "budget",
+    );
+
+    expect(spending).toEqual([{ spent_on: "2026-01-01", currency: "USD", amount: 20 }]);
+  });
+
   it("is empty for a budget the copy doesn't hold", () => {
     expect(readBudgetSpending(rows({}), "missing")).toEqual([]);
   });
