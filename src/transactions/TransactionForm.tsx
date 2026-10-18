@@ -24,13 +24,8 @@ import { submitWithButton, textField } from "../ui/forms";
 import { ChecklistField } from "../ui/ChecklistField";
 import { Picker, type PickerOption } from "../ui/Picker";
 import { TitleField } from "./TitleField";
-import { draftOf } from "./transaction";
-import {
-  type TitleSuggestion,
-  type TransactionDraft,
-  type TransactionType,
-  useTitleSuggestions,
-} from "./transaction-queries";
+import { type TitleSuggestion, useTitleSuggestions } from "./transaction-queries";
+import { draftOf, type TransactionDraft, type TransactionType } from "./transaction-writes";
 
 type TransactionFormProps = {
   initial: TransactionDraft;

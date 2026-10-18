@@ -17,12 +17,12 @@ import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import {
   accountsOf,
-  draftOf,
   type ShownAmount,
   shownAmount,
   signedAmount,
   transactionLabel,
 } from "./transaction";
+import { draftOf } from "./transaction-writes";
 import {
   type Transaction,
   useDeleteTransaction,

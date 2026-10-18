@@ -10,7 +10,8 @@ import { Field } from "../ui/Field";
 import { choiceField, submitWith, textField } from "../ui/forms";
 import { SelectField } from "../ui/SelectField";
 import { categoryKinds, categoryTree, kindName } from "./category";
-import { type CategoryDetails, type CategoryKind, useCategories } from "./category-queries";
+import { type CategoryKind, useCategories } from "./category-queries";
+import type { CategoryDetails } from "./category-writes";
 import { iconFor, iconLabel, iconNames } from "./icons";
 
 type CategoryFormProps = {
