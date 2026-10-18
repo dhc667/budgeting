@@ -12,10 +12,53 @@ export function formatMoney(
       currency: currency.code,
     });
   }
-  const { placement } = conventions[format];
-  const symbol = currencySymbol(currency.code, language);
   const sign = minorUnits < 0 ? "-" : "";
   const amount = writeDigits(Math.abs(minorUnits), currency.decimals, conventions[format]);
+  return withSymbol(sign, amount, currency, format, language);
+}
+
+// For axis ticks, where the full amount is too wide. Rounded, so only for reading at a glance.
+export function formatCompactMoney(
+  minorUnits: number,
+  currency: Currency,
+  format: NumberFormat | null,
+  language: string,
+): string {
+  const major = minorUnits / 10 ** currency.decimals;
+  const compact: Intl.NumberFormatOptions = { notation: "compact", maximumFractionDigits: 1 };
+  if (!format) {
+    return new Intl.NumberFormat(undefined, {
+      ...compact,
+      style: "currency",
+      currency: currency.code,
+    }).format(major);
+  }
+  const { group, decimal } = conventions[format];
+  const amount = new Intl.NumberFormat(language, compact)
+    .formatToParts(Math.abs(major))
+    .map((part) => {
+      switch (part.type) {
+        case "decimal":
+          return decimal;
+        case "group":
+          return group;
+        default:
+          return part.value;
+      }
+    })
+    .join("");
+  return withSymbol(minorUnits < 0 ? "-" : "", amount, currency, format, language);
+}
+
+function withSymbol(
+  sign: string,
+  amount: string,
+  currency: Currency,
+  format: NumberFormat,
+  language: string,
+): string {
+  const { placement } = conventions[format];
+  const symbol = currencySymbol(currency.code, language);
   if (placement === "after") return `${sign}${amount}${noBreakSpace}${symbol}`;
   const gap = placement === "before, spaced" || endsInLetter(symbol) ? noBreakSpace : "";
   return `${sign}${symbol}${gap}${amount}`;

@@ -22,20 +22,23 @@
       "lastMonth": "Last month",
       "thisYear": "This year",
       "total": "Total spent",
-      "none": "No spending in this period."
+      "none": "No spending in this period.",
+      "chart": "Spending by category bar chart"
     },
     "incomeExpense": {
       "title": "Income vs. expense",
       "month": "Month",
       "income": "Income",
       "expense": "Expense",
-      "difference": "Difference"
+      "difference": "Difference",
+      "chart": "Income and expense by month bar chart"
     },
     "netWorth": {
       "title": "Net worth over time",
       "on": "On {{date}}",
       "today": "Today",
-      "none": "Nothing recorded yet."
+      "none": "Nothing recorded yet.",
+      "chart": "Net worth line chart"
     }
   },
   "instance": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatDate, formatMoney, parseAmount } from "./format";
+import { formatAmount, formatCompactMoney, formatDate, formatMoney, parseAmount } from "./format";
 
 const brl = { code: "BRL", decimals: 2 };
 const usd = { code: "USD", decimals: 2 };
@@ -55,6 +55,20 @@ describe("number formats", () => {
 
   it("refuses an amount that isn't a whole number of minor units", () => {
     expect(() => formatMoney(12.5, usd, "comma_period", "en")).toThrow();
+  });
+});
+
+describe("compact amounts", () => {
+  it.each([
+    ["comma_period", "R$1.2K"],
+    ["period_comma", "R$\u00A01,2K"],
+    ["space_comma", "1,2K\u00A0R$"],
+  ] as const)("shortens thousands by the %s convention", (format, expected) => {
+    expect(formatCompactMoney(123456, brl, format, "en")).toBe(expected);
+  });
+
+  it("keeps the sign of a negative amount", () => {
+    expect(formatCompactMoney(-123456, brl, "comma_period", "en")).toBe("-R$1.2K");
   });
 });
 
