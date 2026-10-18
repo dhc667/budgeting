@@ -1,21 +1,18 @@
-import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { parseArgs, parseEnv } from "node:util";
+import { existsSync, readFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import qrcode from "qrcode-terminal";
-import { migrationCount } from "../db/migration-count.ts";
 import { buildConnectLink, type ConnectRequest } from "../src/instance/connect-link.ts";
 import type { Database } from "../src/supabase/database.ts";
 import * as z from "zod";
+import { backup, restore } from "./backup.ts";
+import { type Env, instanceFromEnv, readEnvFile, requireEnv } from "./env.ts";
+import { fail, messageOf } from "./fail.ts";
 import { ImportError, importFile, importIntoPrivateSpace } from "./import.ts";
 import { createInviteCode } from "./invites.ts";
+import { migrateDatabase } from "./migrate.ts";
 import { loadRatesByHand, RatesError, ratesFile } from "./rates.ts";
 
 const usage = `Usage: pnpm run instance <command> [--env <file>]
@@ -40,15 +37,16 @@ Options:
 
 type Options = { args: string[]; expiresInHours: number; replaceCategories: boolean; env: Env };
 
-type Env = NodeJS.Dict<string>;
-
 const commands: Record<string, (options: Options) => void | Promise<void>> = {
-  migrate: migrateDatabase,
+  migrate: ({ env }) => migrateDatabase(env),
   invite,
   link,
   "reset-password": resetPassword,
-  backup,
-  restore,
+  backup: ({ env }) => backup(env),
+  restore: ({ args: [file], env }) => {
+    if (!file) fail("Usage: pnpm run instance restore <file>");
+    return restore(env, file);
+  },
   import: importTransactions,
   "load-rates": loadRates,
 };
@@ -79,25 +77,6 @@ async function main() {
   await command({ args, expiresInHours, replaceCategories: values["replace-categories"], env });
 }
 
-// Only the file counts: process.loadEnvFile would let variables already exported in the shell win,
-// and those may belong to another project's database.
-function readEnvFile(path: string): Env {
-  if (!existsSync(path)) {
-    fail(`No env file at ${path}. Copy .env.instance.example to .env.instance and fill it in.`);
-  }
-  return parseEnv(readFileSync(path, "utf8"));
-}
-
-async function migrateDatabase({ env }: Options, migrationsFolder = appMigrationsFolder()) {
-  const client = postgres(requireEnv(env, "DATABASE_URL"), { max: 1, onnotice: () => {} });
-  try {
-    await migrate(drizzle(client), { migrationsFolder });
-  } finally {
-    await client.end();
-  }
-  console.log("The database is up to date.");
-}
-
 async function invite({ expiresInHours, env }: Options) {
   const inviteCode = await createInviteCode(adminClient(env), expiresInHours);
   printConnectQr(env, { instance: instanceFromEnv(env), inviteCode });
@@ -120,64 +99,6 @@ async function resetPassword({ args: [email], env }: Options) {
 
   console.log(`Temporary password for ${email}: ${password}`);
   console.log("They can change it from their profile after signing in.");
-}
-
-function backup({ env }: Options) {
-  const connection = connectionFromEnv(env);
-  const version = runTool(
-    "psql",
-    ["--no-align", "--tuples-only", "--command=select public.schema_version()"],
-    connection,
-  ).trim();
-  // Data only: the migrations rebuild the structure, so the backup can't drift from them.
-  const data = runTool(
-    "pg_dump",
-    [
-      "--data-only",
-      "--no-owner",
-      "--table=auth.users",
-      "--table=auth.identities",
-      "--table=public.*",
-    ],
-    connection,
-  );
-
-  const path = writeNewFile(`-- Budgeting backup at schema version ${version}\n${data}`);
-  console.log(`Backup saved to ${path}.`);
-  console.log("It holds everyone's data and password hashes: keep it somewhere safe.");
-}
-
-async function restore(options: Options) {
-  const [file] = options.args;
-  if (!file) fail("Usage: pnpm run instance restore <file>");
-  if (!existsSync(file)) fail(`No backup file at ${file}.`);
-
-  const version = readBackupVersion(file);
-  if (version > migrationCount()) {
-    fail(
-      `${file} is from a newer version of the app (schema version ${version}). Update the app first.`,
-    );
-  }
-  const connection = connectionFromEnv(options.env);
-  await refuseUnlessFresh(requireEnv(options.env, "DATABASE_URL"));
-
-  await migrateToVersion(options, version);
-  runTool(
-    "psql",
-    [
-      "--single-transaction",
-      "--variable=ON_ERROR_STOP=1",
-      "--quiet",
-      "--command=SET session_replication_role = replica",
-      `--command=${emptyAppTables()}`,
-      `--file=${file}`,
-    ],
-    connection,
-    "The project now has a schema but no data, so it is no longer fresh. Create a new project " +
-      "(or reset the local one) and restore again.",
-  );
-  console.log(`Loaded ${file}.`);
-  await migrateDatabase(options);
 }
 
 async function importTransactions({ args: [email, file], replaceCategories, env }: Options) {
@@ -231,128 +152,6 @@ function readJsonFile<T>(file: string, schema: z.ZodType<T>, format: string): T 
   return result.data;
 }
 
-function readBackupVersion(file: string): number {
-  const header = readFileSync(file, "utf8").split("\n", 1)[0] ?? "";
-  const match = /^-- Budgeting backup at schema version (\d+)\s*$/.exec(header);
-  if (!match?.[1]) fail(`${file} is not a backup made by this tool: its first line is missing.`);
-  return Number(match[1]);
-}
-
-async function refuseUnlessFresh(databaseUrl: string) {
-  const client = postgres(databaseUrl, { max: 1, onnotice: () => {} });
-  try {
-    const [counts] = await client<{ users: number; tables: number }[]>`
-      select
-        (select count(*)::integer from auth.users) as users,
-        (select count(*)::integer from information_schema.tables
-          where table_schema in ('public', 'drizzle')) as tables`;
-    if (!counts || counts.users > 0 || counts.tables > 0) {
-      fail(
-        "This database is not fresh, and a restore needs a fresh project. Create a new Supabase " +
-          "project and do not run migrate before restoring: the restore applies the migrations itself.",
-      );
-    }
-  } catch (error) {
-    return fail(`Could not reach the database: ${describeError(error)}`);
-  } finally {
-    await client.end();
-  }
-}
-
-// The migrator has no target version, but it applies exactly the journal's entries.
-async function migrateToVersion(options: Options, version: number) {
-  const folder = mkdtempSync(join(tmpdir(), "migrations-"));
-  try {
-    cpSync(appMigrationsFolder(), folder, { recursive: true });
-    const journalPath = join(folder, "meta", "_journal.json");
-    const journal: unknown = JSON.parse(readFileSync(journalPath, "utf8"));
-    if (typeof journal !== "object" || !journal || !("entries" in journal)) {
-      return fail("The migrations journal has no entries list.");
-    }
-    const entries = Array.isArray(journal.entries) ? journal.entries.slice(0, version) : [];
-    writeFileSync(journalPath, JSON.stringify({ ...journal, entries }));
-    await migrateDatabase(options, folder);
-  } finally {
-    rmSync(folder, { recursive: true, force: true });
-  }
-}
-
-function appMigrationsFolder(): string {
-  return fileURLToPath(new URL("../db/migrations", import.meta.url));
-}
-
-// Migrations seed rows of their own (currencies); the backup's copy of them is the one that counts.
-function emptyAppTables(): string {
-  return `DO $$ BEGIN
-    EXECUTE (SELECT 'TRUNCATE ' || string_agg(format('%I.%I', schemaname, tablename), ', ')
-      FROM pg_tables WHERE schemaname = 'public');
-  END $$`;
-}
-
-function writeNewFile(contents: string): string {
-  const date = new Date().toISOString().slice(0, 10);
-  for (let n = 1; ; n++) {
-    const path = n === 1 ? `backup-${date}.sql` : `backup-${date}-${n}.sql`;
-    try {
-      writeFileSync(path, contents, { flag: "wx" });
-      return path;
-    } catch (error) {
-      if (!(error instanceof Error && "code" in error && error.code === "EEXIST")) throw error;
-    }
-  }
-}
-
-function runTool(
-  tool: "pg_dump" | "psql",
-  args: string[],
-  connection: Connection,
-  afterFailure = "",
-): string {
-  const run = spawnSync(tool, args, {
-    encoding: "utf8",
-    env: { ...withoutPgVariables(process.env), ...connection },
-    maxBuffer: 1024 ** 3,
-  });
-  if (run.error && "code" in run.error && run.error.code === "ENOENT") {
-    fail(
-      `${tool} is not installed. Install the PostgreSQL client tools (they include pg_dump and psql).`,
-    );
-  }
-  if (run.error) fail(`Could not run ${tool}: ${run.error.message}`);
-  if (run.status !== 0) {
-    fail(`${tool} failed:\n${run.stderr.trim()}\n${afterFailure}`.trim());
-  }
-  return run.stdout;
-}
-
-// libpq reads these from the environment, which keeps the password out of the process list and
-// out of any message.
-function connectionFromEnv(env: Env): Connection {
-  const url = new URL(requireEnv(env, "DATABASE_URL"));
-  return {
-    PGHOST: url.hostname,
-    PGPORT: url.port || "5432",
-    PGUSER: decodeURIComponent(url.username),
-    PGPASSWORD: decodeURIComponent(url.password),
-    PGDATABASE: decodeURIComponent(url.pathname.slice(1)),
-    PGSSLMODE: url.searchParams.get("sslmode") ?? "prefer",
-  };
-}
-
-// Only the env file counts, so a PGHOST exported for another project can't redirect the tools.
-function withoutPgVariables(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  return Object.fromEntries(Object.entries(env).filter(([name]) => !name.startsWith("PG")));
-}
-
-function describeError(error: unknown): string {
-  if (error instanceof Error && "code" in error) return String(error.code);
-  return messageOf(error);
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function printConnectQr(env: Env, request: ConnectRequest) {
   const url = buildConnectLink(requireEnv(env, "APP_URL"), request);
   qrcode.generate(url, { small: true });
@@ -375,26 +174,3 @@ function adminClient(env: Env) {
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 }
-
-function instanceFromEnv(env: Env) {
-  return {
-    supabaseUrl: requireEnv(env, "SUPABASE_URL"),
-    publishableKey: requireEnv(env, "SUPABASE_PUBLISHABLE_KEY"),
-  };
-}
-
-function requireEnv(env: Env, name: string): string {
-  const value = env[name];
-  if (!value) fail(`${name} is not set. Add it to your env file (see .env.instance.example).`);
-  return value;
-}
-
-function fail(message: string): never {
-  console.error(message);
-  process.exit(1);
-}
-
-type Connection = Record<
-  "PGHOST" | "PGPORT" | "PGUSER" | "PGPASSWORD" | "PGDATABASE" | "PGSSLMODE",
-  string
->;
