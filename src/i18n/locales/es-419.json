@@ -54,7 +54,7 @@
     "connectedTo": "Conectado a {{host}}.",
     "welcome": {
       "title": "Te damos la bienvenida",
-      "body": "Para empezar, escanea el código QR de invitación de quien administra el presupuesto de tu familia, o abre el enlace que te envió."
+      "body": "Para empezar, escanea el código QR de invitación de alguien de tu familia, o abre el enlace que te envió."
     },
     "unreachable": {
       "title": "No se puede conectar con tu presupuesto",
@@ -78,6 +78,20 @@
       "confirm": "Cambiar",
       "stay": "Seguir conectado a {{host}}"
     }
+  },
+  "invite": {
+    "title": "Invitar a alguien",
+    "card": "Invitación",
+    "explained": "Una invitación permite que una persona cree una cuenta en el presupuesto de tu familia. Sirve una sola vez, dentro de las 24 horas.",
+    "create": "Crear invitación",
+    "createAnother": "Crear otra invitación",
+    "failed": "No se pudo crear la invitación. Revisa tu conexión e inténtalo de nuevo.",
+    "qr": "Código QR de invitación",
+    "link": "Enlace de invitación",
+    "share": "Compartir enlace",
+    "copy": "Copiar enlace",
+    "copied": "Copiado.",
+    "afterSignUp": "Empieza solo con su espacio privado. Cuando se haya registrado, agrégalo a un espacio compartido."
   },
   "auth": {
     "email": "Correo electrónico",
@@ -165,6 +179,10 @@
     "spaces": {
       "explained": "Tu espacio privado y los espacios que compartes con otros.",
       "manage": "Administrar espacios"
+    },
+    "invite": {
+      "explained": "Deja que alguien de tu familia se una al presupuesto.",
+      "open": "Invitar a alguien"
     }
   },
   "error": {

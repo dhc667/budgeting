@@ -19,6 +19,7 @@ import { NewCounterpartyScreen } from "./counterparties/NewCounterpartyScreen";
 import { DashboardScreen } from "./dashboard/DashboardScreen";
 import { ConnectScreen } from "./instance/ConnectScreen";
 import { InstanceGate } from "./instance/InstanceGate";
+import { InviteScreen } from "./instance/InviteScreen";
 import { connectPath } from "./instance/connect-link";
 import { AppShell } from "./layout/AppShell";
 import { ProfileScreen } from "./profile/ProfileScreen";
@@ -66,6 +67,7 @@ export function createAppRouter() {
                         { path: "budgets/:budgetId", element: <BudgetScreen /> },
                         { path: "reports", element: <LazyReportsScreen /> },
                         { path: "profile", element: <ProfileScreen /> },
+                        { path: "invite", element: <InviteScreen /> },
                         { path: "spaces", element: <SpacesScreen /> },
                         { path: "spaces/new", element: <NewSpaceScreen /> },
                         { path: "spaces/:spaceId", element: <SpaceScreen /> },

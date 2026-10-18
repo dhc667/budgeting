@@ -54,7 +54,7 @@
     "connectedTo": "Conectado a {{host}}.",
     "welcome": {
       "title": "Boas-vindas",
-      "body": "Para começar, escaneie o QR code de convite de quem administra o orçamento da sua família, ou abra o link que essa pessoa enviou."
+      "body": "Para começar, escaneie o QR code de convite de alguém da sua família ou abra o link que essa pessoa enviou."
     },
     "unreachable": {
       "title": "Não foi possível acessar seu orçamento",
@@ -78,6 +78,20 @@
       "confirm": "Mudar",
       "stay": "Continuar conectado a {{host}}"
     }
+  },
+  "invite": {
+    "title": "Convidar alguém",
+    "card": "Convite",
+    "explained": "Um convite permite que uma pessoa crie uma conta no orçamento da sua família. Ele funciona uma vez, em até 24 horas.",
+    "create": "Criar convite",
+    "createAnother": "Criar outro convite",
+    "failed": "Não foi possível criar o convite. Verifique sua conexão e tente novamente.",
+    "qr": "QR code de convite",
+    "link": "Link de convite",
+    "share": "Compartilhar link",
+    "copy": "Copiar link",
+    "copied": "Copiado.",
+    "afterSignUp": "A pessoa começa só com o espaço privado dela. Depois que ela se cadastrar, adicione-a a um espaço compartilhado."
   },
   "auth": {
     "email": "E-mail",
@@ -165,6 +179,10 @@
     "spaces": {
       "explained": "Seu espaço privado e os espaços que você compartilha com outras pessoas.",
       "manage": "Gerenciar espaços"
+    },
+    "invite": {
+      "explained": "Deixe alguém da sua família entrar no orçamento.",
+      "open": "Convidar alguém"
     }
   },
   "error": {

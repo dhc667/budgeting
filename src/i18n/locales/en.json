@@ -54,7 +54,7 @@
     "connectedTo": "Connected to {{host}}.",
     "welcome": {
       "title": "Welcome",
-      "body": "To get started, scan the invite QR code from the person who runs your family's budget, or open the link they sent you."
+      "body": "To get started, scan the invite QR code from someone in your family, or open the link they sent you."
     },
     "unreachable": {
       "title": "Can't reach your budget",
@@ -78,6 +78,20 @@
       "confirm": "Switch",
       "stay": "Stay connected to {{host}}"
     }
+  },
+  "invite": {
+    "title": "Invite someone",
+    "card": "Invite",
+    "explained": "An invite lets one person create an account on your family's budget. It works once, within 24 hours.",
+    "create": "Create invite",
+    "createAnother": "Create another invite",
+    "failed": "Couldn't create the invite. Check your connection and try again.",
+    "qr": "Invite QR code",
+    "link": "Invite link",
+    "share": "Share link",
+    "copy": "Copy link",
+    "copied": "Copied.",
+    "afterSignUp": "They start with only their private space. Once they've signed up, add them to a shared space."
   },
   "auth": {
     "email": "Email",
@@ -165,6 +179,10 @@
     "spaces": {
       "explained": "Your private space and the spaces you share with others.",
       "manage": "Manage spaces"
+    },
+    "invite": {
+      "explained": "Let someone in your family join the budget.",
+      "open": "Invite someone"
     }
   },
   "error": {

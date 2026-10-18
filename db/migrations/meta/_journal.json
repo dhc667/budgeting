@@ -281,6 +281,20 @@
       "when": 1792354631251,
       "tag": "0039_forgive_debts",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792361448827,
+      "tag": "0040_invites_from_the_app",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792361449437,
+      "tag": "0041_invites_from_the_app_grant",
+      "breakpoints": true
     }
   ]
 }

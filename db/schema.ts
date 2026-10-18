@@ -149,14 +149,23 @@ export const profiles = pgTable(
   ],
 );
 
-// No policies: only the signup hook and trigger (security definer) and the instance CLI (secret key) touch it.
-export const inviteCodes = pgTable("invite_codes", {
-  codeHash: text("code_hash").primaryKey(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  usedAt: timestamp("used_at", { withTimezone: true }),
-  usedBy: uuid("used_by").references(() => authUsers.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}).enableRLS();
+// Users may insert only code_hash (granted in a migration), so their codes always take the
+// default expiry and can't be read back.
+export const inviteCodes = pgTable(
+  "invite_codes",
+  {
+    codeHash: text("code_hash").primaryKey(),
+    expiresAt: timestamp("expires_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now() + interval '24 hours'`),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    usedBy: uuid("used_by").references(() => authUsers.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  () => [
+    pgPolicy("users invite people", { for: "insert", to: authenticatedRole, withCheck: sql`true` }),
+  ],
+).enableRLS();
 
 export const spaces = pgTable(
   "spaces",

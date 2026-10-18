@@ -52,7 +52,8 @@ You need a free [Supabase](https://supabase.com) account and this repository clo
    ```
 
    Scan the QR code with a phone camera. The code works once and expires after 24 hours
-   (`--expires <hours>` to change that).
+   (`--expires <hours>` to change that). Once signed in, anyone can invite others from
+   Profile → Invite someone.
 
 Other commands: `link` prints a QR that connects another device to sign in, without an
 invite; `reset-password <email>` gives a user a temporary password. Run `pnpm run instance --help` for

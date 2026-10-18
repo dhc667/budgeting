@@ -163,7 +163,7 @@ isOneToOne: false
                   }
                   ComputedFields: never
                   Insert: {
-                    "code_hash": string,"created_at"?: string,"expires_at": string,"used_at"?: string | null,"used_by"?: string | null
+                    "code_hash": string,"created_at"?: string,"expires_at"?: string,"used_at"?: string | null,"used_by"?: string | null
                   }
                   Update: {
                     "code_hash"?: string,"created_at"?: string,"expires_at"?: string,"used_at"?: string | null,"used_by"?: string | null

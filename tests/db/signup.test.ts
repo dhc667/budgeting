@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createInviteCode, hashInviteCode } from "../../cli/invites.ts";
+import { createInviteCode } from "../../cli/invites.ts";
 import { migrationCount } from "../../db/migration-count.ts";
+import { hashInviteCode, newInviteCode } from "../../src/instance/invite-code.ts";
 import {
   admin,
   anonClient,
@@ -26,7 +27,7 @@ describe("signup with an invite code", () => {
       await sql`select display_name, display_currency from profiles where id = ${userId}`;
     expect(profile).toEqual({ display_name: "Ana", display_currency: "USD" });
     const [invite] =
-      await sql`select used_by from invite_codes where code_hash = ${hashInviteCode(code)}`;
+      await sql`select used_by from invite_codes where code_hash = ${await hashInviteCode(code)}`;
     expect(invite).toEqual({ used_by: userId });
   });
 
@@ -41,7 +42,7 @@ describe("signup with an invite code", () => {
 
   it("rejects an expired code", async () => {
     const code = await createInviteCode(admin, 24);
-    await sql`update invite_codes set expires_at = now() - interval '1 minute' where code_hash = ${hashInviteCode(code)}`;
+    await sql`update invite_codes set expires_at = now() - interval '1 minute' where code_hash = ${await hashInviteCode(code)}`;
 
     const { error } = await signUp({ invite_code: code, display_name: "Late" });
 
@@ -60,6 +61,52 @@ describe("signup with an invite code", () => {
       values (gen_random_uuid(), ${uniqueEmail()}, '{}'::jsonb)`;
 
     await expect(insertWithoutCode).rejects.toThrow(/invalid, used or expired invite code/);
+  });
+});
+
+describe("invite codes from users", () => {
+  let ana: ReturnType<typeof anonClient>;
+
+  beforeAll(async () => {
+    ({ client: ana } = await signedInUser("Ana"));
+  });
+
+  it("let one more person sign up, within 24 hours", async () => {
+    const code = newInviteCode();
+    const hash = await hashInviteCode(code);
+
+    const { error } = await ana.from("invite_codes").insert({ code_hash: hash });
+
+    expect(error).toBeNull();
+    const [invite] = await sql`
+      select expires_at - created_at = interval '24 hours' as lasts_a_day
+      from invite_codes where code_hash = ${hash}`;
+    expect(invite).toEqual({ lasts_a_day: true });
+    expect((await signUp({ invite_code: code, display_name: "Ben" })).error).toBeNull();
+    expect((await signUp({ invite_code: code, display_name: "Carla" })).error).not.toBeNull();
+  });
+
+  it("can't be given another expiry, or be marked used", async () => {
+    const calls = await Promise.all([
+      ana.from("invite_codes").insert({
+        code_hash: await hashInviteCode(newInviteCode()),
+        expires_at: "2999-01-01T00:00:00Z",
+      }),
+      ana.from("invite_codes").insert({
+        code_hash: await hashInviteCode(newInviteCode()),
+        used_at: new Date().toISOString(),
+      }),
+    ]);
+
+    expect(calls.map(({ error }) => error?.code)).toEqual(["42501", "42501"]);
+  });
+
+  it("can't be created before signing in", async () => {
+    const { error } = await anonClient()
+      .from("invite_codes")
+      .insert({ code_hash: await hashInviteCode(newInviteCode()) });
+
+    expect(error?.code).toBe("42501");
   });
 });
 

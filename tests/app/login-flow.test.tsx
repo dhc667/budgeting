@@ -78,6 +78,31 @@ describe("joining with an invite", () => {
   });
 });
 
+describe("inviting someone from the app", () => {
+  it("gives a link that lets one more person join", async () => {
+    await openSignedIn("Kim");
+    const link = await createInvite();
+    cleanup();
+    localStorage.clear();
+
+    openApp(link);
+    await signUpAs("Lu");
+
+    expect(await screen.findByRole("heading", { name: /, Lu$/ })).toBeTruthy();
+  });
+
+  it("shows the invite as a QR code and copies its link", async () => {
+    await openSignedIn("Mar");
+
+    const link = await createInvite();
+    await user.click(screen.getByRole("button", { name: "Copy link" }));
+
+    expect(screen.getByRole("img", { name: "Invite QR code" })).toBeTruthy();
+    expect(await screen.findByText("Copied.")).toBeTruthy();
+    expect(await navigator.clipboard.readText()).toBe(link);
+  });
+});
+
 describe("signing in", () => {
   it("opens the dashboard with the right password", async () => {
     const { email } = await existingUser("Carla");
@@ -318,6 +343,15 @@ describe("a device whose saved data is unreadable", () => {
 
 async function openProfile() {
   await user.click(defined(screen.getAllByRole("link", { name: "Profile" })[0]));
+}
+
+async function createInvite(): Promise<string> {
+  await openProfile();
+  await user.click(await screen.findByRole("link", { name: "Invite someone" }));
+  await user.click(await screen.findByRole("button", { name: "Create invite" }));
+  const field = await screen.findByLabelText("Invite link");
+  if (!(field instanceof HTMLInputElement)) throw new Error("The invite link isn't a text field");
+  return field.value;
 }
 
 async function chooseFormats(choices: { language?: string; numbers?: string }) {
