@@ -8,7 +8,34 @@
     "addTransaction": "Agregar movimiento",
     "backTo": "Volver a {{place}}"
   },
-  "comingSoon": "Próximamente.",
+  "reports": {
+    "title": "Informes",
+    "unconverted": "Sin contar, no hay tipo de cambio para su día: {{currencies}}",
+    "spending": {
+      "title": "Gastos por categoría",
+      "from": "Desde",
+      "to": "Hasta",
+      "thisMonth": "Este mes",
+      "lastMonth": "Mes pasado",
+      "thisYear": "Este año",
+      "total": "Total gastado",
+      "none": "No hay gastos en este período."
+    },
+    "incomeExpense": {
+      "title": "Ingresos y gastos",
+      "month": "Mes",
+      "income": "Ingresos",
+      "expense": "Gastos",
+      "difference": "Diferencia"
+    },
+    "netWorth": {
+      "title": "Patrimonio neto en el tiempo",
+      "on": "El {{date}}",
+      "today": "Hoy",
+      "none": "Aún no hay nada registrado.",
+      "chart": "Gráfico de líneas del patrimonio neto, de {{start}} el {{startDate}} a {{end}} hoy"
+    }
+  },
   "instance": {
     "connectedTo": "Conectado a {{host}}.",
     "welcome": {
