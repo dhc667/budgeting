@@ -58,3 +58,6 @@ jobs:
           pnpm db:types
           git diff --exit-code -- src/supabase/database.types.ts
       - run: pnpm test:integration
+        env:
+          # Supabase shares the runner's 4 vCPUs, and slow screens time out when it is starved.
+          INTEGRATION_WORKERS: 3

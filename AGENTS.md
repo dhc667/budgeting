@@ -14,7 +14,7 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ## Checks
 
-Run `pnpm check` before calling work done, and `pnpm test:integration` (with `pnpm db:start`) when touching the database or the app's screens. `pnpm fix` formats and applies lint autofixes. The pre-commit hook runs `pnpm check` on the staged snapshot and never edits files.
+Run `pnpm check` before calling work done, and `pnpm test:integration` (with `pnpm db:start`) when touching the database or the app's screens. `pnpm fix` formats and applies lint autofixes. Integration test files run in parallel by default. A file that writes or depends on a table shared by every user (rates, currencies, the migration record, whole-database dumps) must be listed in `sharedState` in `vite.config.ts`, which runs after the parallel files, one at a time. Tests must not reach the network: `fetch` rejects any host but localhost, so stub the rates provider. The pre-commit hook runs `pnpm check` on the staged snapshot and never edits files.
 
 ## Migrations
 

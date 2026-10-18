@@ -17,7 +17,7 @@
     "knip": "knip",
     "translations": "i18next-cli status && i18next-cli status --unused",
     "test": "vitest run --project unit",
-    "test:integration": "vitest run --project integration",
+    "test:integration": "vitest run --project integration --project integration-serial",
     "db:start": "supabase start && scripts/write-local-env.sh && node cli/instance.ts migrate --env .env.instance.local",
     "db:stop": "supabase stop",
     "db:generate": "drizzle-kit generate",
