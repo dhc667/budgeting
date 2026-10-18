@@ -11,6 +11,9 @@
   "reports": {
     "title": "Relatórios",
     "unconverted": "Não contado, sem taxa de câmbio para o dia: {{currencies}}",
+    "errors": {
+      "loadFailed": "Não foi possível carregar os relatórios. Verifique sua conexão e tente de novo."
+    },
     "spending": {
       "title": "Gastos por categoria",
       "from": "De",

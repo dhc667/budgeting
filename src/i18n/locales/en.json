@@ -11,6 +11,9 @@
   "reports": {
     "title": "Reports",
     "unconverted": "Not counted, no exchange rate for its day: {{currencies}}",
+    "errors": {
+      "loadFailed": "Couldn't load the reports. Check your connection and try again."
+    },
     "spending": {
       "title": "Spending by category",
       "from": "From",

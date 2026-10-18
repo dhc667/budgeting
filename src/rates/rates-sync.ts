@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRequestPull } from "../sync/local-copy-context";
 import { useSupabase } from "../instance/instance-context";
 import type { AppSupabase } from "../supabase/client";
-import { localToday } from "../format/days";
+import { type DateRange, localToday } from "../format/days";
 import {
   fetchLatestRates,
   fetchRatesBetween,
@@ -201,6 +201,5 @@ function addDays(day: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-type DateRange = { from: string; to: string };
 type Coverage = { currency: string; newest: string; stored: DateRange };
 type Gap = DateRange & { currency: string; stored: DateRange };

@@ -3,7 +3,7 @@ import { convert, type LatestRate, type LatestRates } from "./convert";
 
 export function netWorth(
   accounts: NetWorthAccount[],
-  currencies: Currency[],
+  currencies: readonly Currency[],
   displayCurrency: Currency,
   rates: LatestRates,
 ): NetWorth {
