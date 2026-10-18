@@ -4,6 +4,7 @@ import { useSupabase } from "../instance/instance-context";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import type { Tables } from "../supabase/database.types";
 import { readSpaceActivity, readSpaces } from "./read-spaces";
+import { createSpace } from "./space-writes";
 
 export function useSpaces() {
   return useCopyQuery(["spaces"], ({ rows }) => readSpaces(rows));
@@ -18,15 +19,13 @@ export function useSpaceActivity(spaceId: string) {
 export function useCreateSpace() {
   const supabase = useSupabase();
   const { i18n } = useTranslation();
-  return useCopyMutation(async ({ name, memberIds }: { name: string; memberIds: string[] }) => {
-    const { data, error } = await supabase.rpc("create_space", {
-      space_name: name,
-      member_ids: memberIds,
-      starter_language: shownLanguage(i18n.resolvedLanguage),
-    });
-    if (error) throw error;
-    return data;
-  });
+  return useCopyMutation(({ name, memberIds }: { name: string; memberIds: string[] }) =>
+    createSpace(supabase, {
+      name,
+      memberIds,
+      starterLanguage: shownLanguage(i18n.resolvedLanguage),
+    }),
+  );
 }
 
 export function useRenameSpace(spaceId: string) {

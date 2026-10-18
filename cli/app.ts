@@ -19,6 +19,7 @@ Session:
 
 Spaces:
   spaces list
+  spaces add --name <name>                     Just you in it; add members from the app
 
 Accounts (--space defaults to your private space):
   accounts list [--space <id>] [--archived]
