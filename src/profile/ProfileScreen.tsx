@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { authErrorMessage } from "../auth/auth-errors";
@@ -7,7 +8,7 @@ import { useSignedInUser } from "../auth/session";
 import { dateFormats, formatDate, formatAmount, numberFormats } from "../format/format";
 import { deviceLanguage, languageNames, languages } from "../i18n/languages";
 import { useInstance, useSupabase } from "../instance/instance-context";
-import { CurrencySelect } from "../money/CurrencySelect";
+import { CurrencyPicker } from "../money/CurrencyPicker";
 import { useLatestRates } from "../rates/rate-queries";
 import { useSignOut } from "../sync/sign-out";
 import { isCheckViolation, refusalReason } from "../supabase/errors";
@@ -40,6 +41,7 @@ function AboutForm({ profile }: { profile: Profile }) {
   const { t } = useTranslation();
   const updateProfile = useUpdateProfile();
   const { data: rates } = useLatestRates();
+  const [displayCurrency, setDisplayCurrency] = useState(profile.display_currency);
   const offered = new Set(["USD", profile.display_currency]);
   rates?.forEach(({ currency, stale }) => !stale && offered.add(currency));
   const save = (form: FormData) =>
@@ -58,12 +60,13 @@ function AboutForm({ profile }: { profile: Profile }) {
           defaultValue={profile.display_name}
           required
         />
-        <CurrencySelect
+        <CurrencyPicker
           label={t("profile.about.displayCurrency")}
           hint={t("profile.about.displayCurrencyHint")}
           name="displayCurrency"
           only={offered}
-          defaultValue={profile.display_currency}
+          value={displayCurrency}
+          onChange={setDisplayCurrency}
         />
         <SaveControls mutation={updateProfile} />
       </form>

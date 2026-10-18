@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
-import { CurrencySelect } from "../money/CurrencySelect";
+import { CurrencyPicker } from "../money/CurrencyPicker";
 import { useProfile } from "../profile/profile-queries";
 import { isCheckViolation } from "../supabase/errors";
 import { Button } from "../ui/Button";
@@ -66,11 +66,11 @@ function LoadedAccountForm({
     <form onSubmit={submitWith(save)} className="flex flex-col gap-4">
       {extraFields}
       <Field label={t("accounts.form.name")} name="name" defaultValue={initial.name} required />
-      <CurrencySelect
+      <CurrencyPicker
         label={t("accounts.form.currency")}
         hint={currencyFixed ? t("accounts.form.currencyFixed") : undefined}
         value={currency}
-        onChange={(event) => setCurrency(event.target.value)}
+        onChange={setCurrency}
         disabled={currencyFixed}
       />
       <ColorChoice defaultValue={initial.color} />

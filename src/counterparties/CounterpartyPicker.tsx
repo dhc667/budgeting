@@ -1,51 +1,59 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
 import { ColorDot } from "../colors/ColorDot";
-import { Picker } from "../ui/Picker";
+import { Picker, type PickerOption } from "../ui/Picker";
 import type { Counterparty } from "./read-counterparties";
 
 type CounterpartyPickerProps = {
   counterparties: Counterparty[];
+  // One typed into the picker, added when the transaction is saved.
+  named: { id: string; name: string } | null;
   value: string | null;
   onChange: (counterpartyId: string) => void;
+  onName: (name: string) => void;
 };
 
-export function CounterpartyPicker({ counterparties, value, onChange }: CounterpartyPickerProps) {
+export function CounterpartyPicker({
+  counterparties,
+  named,
+  value,
+  onChange,
+  onName,
+}: CounterpartyPickerProps) {
   const { t } = useTranslation();
-  if (counterparties.length === 0) {
-    return (
-      <p className="text-sm text-zinc-500">
-        {t("transactions.form.noCounterparties")}{" "}
-        <Link
-          to="/counterparties/new"
-          className="font-medium text-emerald-700 dark:text-emerald-400"
-        >
-          {t("counterparties.add")}
-        </Link>
-      </p>
-    );
+  const options: PickerOption[] = counterparties.map(({ id, name, color }) => ({
+    id,
+    label: name,
+    icon: <ColorDot color={color} />,
+    content: (
+      <>
+        <ColorDot color={color} />
+        <span className="flex-1 truncate">{name}</span>
+      </>
+    ),
+  }));
+  if (named) {
+    options.push({
+      id: named.id,
+      label: named.name,
+      content: <span className="flex-1 truncate">{named.name}</span>,
+    });
   }
   return (
     <Picker
       label={t("transactions.form.counterparty")}
-      groups={[
-        {
-          heading: null,
-          options: counterparties.map((counterparty) => ({
-            id: counterparty.id,
-            label: counterparty.name,
-            content: (
-              <>
-                <ColorDot color={counterparty.color} />
-                <span className="flex-1 truncate">{counterparty.name}</span>
-              </>
-            ),
-          })),
-        },
-      ]}
+      hint={
+        named && value === named.id
+          ? t("transactions.form.newCounterpartyHint", { name: named.name })
+          : undefined
+      }
+      groups={[{ heading: null, options }]}
       value={value}
       onChange={onChange}
       placeholder={t("transactions.form.chooseCounterparty")}
+      create={{
+        label: (name) => t("transactions.form.newCounterparty", { name }),
+        onCreate: onName,
+      }}
     />
   );
 }

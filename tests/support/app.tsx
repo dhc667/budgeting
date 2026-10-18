@@ -62,7 +62,10 @@ type NewAccount = { name: string; openingBalance: string; space?: string; curren
 export async function addAccount({ name, openingBalance, space, currency }: NewAccount) {
   await openNewAccount();
   if (space) await user.selectOptions(screen.getByLabelText("Space"), space);
-  if (currency) await user.selectOptions(screen.getByLabelText("Currency"), currency);
+  if (currency) {
+    await user.click(screen.getByRole("combobox", { name: "Currency" }));
+    await user.click(screen.getByRole("option", { name: new RegExp(`^${currency} · `) }));
+  }
   await user.type(screen.getByLabelText("Name"), name);
   if (openingBalance) await user.type(screen.getByLabelText("Opening balance"), openingBalance);
   await user.click(screen.getByRole("button", { name: "Add account" }));

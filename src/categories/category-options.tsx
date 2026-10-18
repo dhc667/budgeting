@@ -9,6 +9,7 @@ export function categoryOptions(categories: Category[]): PickerOption[] {
     id: category.id,
     label: categoryLabel(category, categories),
     indent,
+    icon: <CategoryIcon icon={category.icon} color={category.color} />,
     content: (
       <>
         <CategoryIcon icon={category.icon} color={category.color} />

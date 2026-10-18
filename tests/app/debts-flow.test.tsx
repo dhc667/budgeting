@@ -64,6 +64,26 @@ describe("debts", () => {
     );
   });
 
+  it("adds a counterparty typed into the form when the transaction is saved", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+
+    await openNewTransaction();
+    await user.click(screen.getByRole("tab", { name: "Debt" }));
+    await user.type(screen.getByLabelText("Amount"), "40");
+    await user.type(screen.getByRole("combobox", { name: "Counterparty" }), "Jorge");
+    await user.click(screen.getByRole("option", { name: "Add “Jorge”" }));
+    expect(screen.getByText("“Jorge” is added as a counterparty when you save.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    expect((await screen.findByRole("link", { name: /Jorge/ })).textContent).toMatch(/-\$40\.00/);
+    await goHome();
+    const debts = within(await screen.findByRole("region", { name: "Debts" }));
+    expect((await debts.findByRole("link", { name: /Jorge/ })).textContent).toMatch(
+      /Owes you \$40\.00/,
+    );
+  });
+
   it("deletes a counterparty only while no money has moved with it", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "50" });

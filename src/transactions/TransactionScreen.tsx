@@ -106,8 +106,7 @@ function EditCard({
         saving={{
           kind: "transaction",
           excludedBudgetIds,
-          onSave: (draft, excluded) =>
-            updateTransaction.mutate({ ...draft, excludedBudgetIds: excluded }),
+          onSave: (draft, extras) => updateTransaction.mutate({ ...draft, ...extras }),
         }}
       />
     </Card>

@@ -100,7 +100,12 @@ describe("accounts", () => {
     await addAccount({ name: "Savings", openingBalance: "100" });
 
     const details = within(screen.getByRole("region", { name: "Details" }));
-    await user.selectOptions(details.getByLabelText("Currency"), "JPY");
+    await user.clear(details.getByRole("combobox", { name: "Currency" }));
+    await user.type(details.getByRole("combobox", { name: "Currency" }), "japan");
+    expect(details.getAllByRole("option").map(({ textContent }) => textContent)).toEqual([
+      "JPY · Japanese Yen",
+    ]);
+    await user.click(details.getByRole("option", { name: /^JPY · / }));
 
     const amount = details.getByLabelText("Opening balance");
     expect(amount).toHaveProperty("value", "");

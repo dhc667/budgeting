@@ -704,7 +704,7 @@ isOneToOne: false
 { Args: { "category_color": Database["public"]['Enums']["color"],"category_icon": string,"category_kind": Database["public"]['Enums']["ledger_account_kind"],"category_name": string,"parent": string,"space": string }; Returns: string
                            },
 "create_counterparty":
-{ Args: { "counterparty_color": Database["public"]['Enums']["color"],"counterparty_name": string,"space": string }; Returns: string
+{ Args: { "counterparty_color": Database["public"]['Enums']["color"],"counterparty_id"?: string,"counterparty_name": string,"space": string }; Returns: string
                            },
 "create_recurring_transaction":
 { Args: { "account": string,"amount": number,"category": string,"ends_on": string,"every": number,"note": string,"record_first": boolean,"starts_on": string,"times": number,"title": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"] }; Returns: string
