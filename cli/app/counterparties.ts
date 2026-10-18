@@ -30,14 +30,16 @@ export const counterpartyCommands: Commands = {
 async function listCounterparties(argv: string[]) {
   const { values, positionals } = parseCommand(argv, { space: { type: "string" } });
   noPositionals(positionals, "counterparties list [--space <id>]");
-  const { supabase } = await signedIn(values.env);
-  let query = supabase
-    .from("ledger_accounts")
-    .select("id, space_id, name, color")
-    .eq("kind", "counterparty")
-    .order("name");
-  if (values.space) query = query.eq("space_id", values.space);
-  const counterparties = await dataOf(query);
+  const { supabase, userId } = await signedIn(values.env);
+  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
+  const counterparties = await dataOf(
+    supabase
+      .from("ledger_accounts")
+      .select("id, space_id, name, color")
+      .eq("kind", "counterparty")
+      .eq("space_id", spaceId)
+      .order("name"),
+  );
   const postings = await dataOf(
     supabase
       .from("postings")

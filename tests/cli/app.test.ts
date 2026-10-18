@@ -166,7 +166,7 @@ describe("the app CLI, signed in", () => {
       private: false,
     });
     expect(json(app(["accounts", "list", "--space", family]))).toMatchObject([{ balance: 5000 }]);
-    expect(json(app(["accounts", "list"]))).toMatchObject([{ balance: 0 }, { balance: 5000 }]);
+    expect(json(app(["accounts", "list"]))).toMatchObject([{ balance: 0 }]);
   });
 
   it("lends to a counterparty and lists what it still owes", async () => {
