@@ -4,20 +4,26 @@ import { ledgerAccountsBySpace, postingsByLedgerAccount } from "../sync/lookups"
 
 type ReportRows = Pick<Rows, "ledger_accounts" | "postings" | "transactions">;
 
-// What each top-level category took in or paid out on a day, in one currency. Subcategories count
-// towards their parent. Opening balances aren't in it, as their category is neither kind.
+// What each category took in or paid out on a day, in one currency. Opening balances aren't in it,
+// as their category is neither kind.
 export type CategoryFlow = {
   day: string;
   currency: string;
   kind: "expense" | "income";
-  categoryId: string;
-  categoryName: string;
-  categoryIcon: string;
-  categoryColor: Color;
-  spaceId: string;
+  // Always top-level; a subcategory's flow names its parent here and itself as the subcategory.
+  category: FlowCategory;
+  subcategory: FlowCategory | null;
   // Net of refunds. Positive for spending on an expense category and for money earned on an
   // income one, whichever way the postings run.
   net: number;
+};
+
+export type FlowCategory = {
+  id: string;
+  name: string;
+  icon: string;
+  color: Color;
+  spaceId: string;
 };
 
 // Every account's change on a day, archived accounts included.
@@ -34,21 +40,17 @@ export function readCategoryFlows(rows: ReportRows, spaceIds: readonly string[])
 
   for (const ledger of ledgersIn(rows, spaceIds)) {
     const kind = flowKind(ledger.kind);
-    const top = topLevel(ledger, rows.ledger_accounts);
-    if (kind === null || top?.name == null || top.icon === null || top.color === null) continue;
+    const categories = categoriesOf(ledger, rows.ledger_accounts);
+    if (kind === null || categories === null) continue;
     for (const posting of postingsOn.get(ledger.id) ?? []) {
       const transaction = rows.transactions.get(keyOfId(posting.transaction_id));
       if (!transaction) continue;
-      const key = JSON.stringify([transaction.date, posting.currency, top.id, kind]);
+      const key = JSON.stringify([transaction.date, posting.currency, ledger.id]);
       const flow = flows.get(key) ?? {
         day: transaction.date,
         currency: posting.currency,
         kind,
-        categoryId: top.id,
-        categoryName: top.name,
-        categoryIcon: top.icon,
-        categoryColor: top.color,
-        spaceId: top.space_id,
+        ...categories,
         net: 0,
       };
       flow.net += kind === "expense" ? posting.amount : -posting.amount;
@@ -92,12 +94,29 @@ function ledgersIn(
   return spaceIds.flatMap((spaceId) => bySpace.get(spaceId) ?? []);
 }
 
-function topLevel(
+function categoriesOf(
   ledger: RowOf<"ledger_accounts">,
   ledgers: Rows["ledger_accounts"],
-): RowOf<"ledger_accounts"> | undefined {
-  if (ledger.parent_id === null) return ledger;
-  return ledgers.get(keyOfId(ledger.parent_id));
+): Pick<CategoryFlow, "category" | "subcategory"> | null {
+  if (ledger.parent_id === null) {
+    const category = flowCategory(ledger);
+    return category && { category, subcategory: null };
+  }
+  const parent = ledgers.get(keyOfId(ledger.parent_id));
+  const category = parent ? flowCategory(parent) : null;
+  const subcategory = flowCategory(ledger);
+  return category && subcategory && { category, subcategory };
+}
+
+function flowCategory({
+  id,
+  name,
+  icon,
+  color,
+  space_id,
+}: RowOf<"ledger_accounts">): FlowCategory | null {
+  if (name === null || icon === null || color === null) return null;
+  return { id, name, icon, color, spaceId: space_id };
 }
 
 function flowKind(kind: RowOf<"ledger_accounts">["kind"]): CategoryFlow["kind"] | null {

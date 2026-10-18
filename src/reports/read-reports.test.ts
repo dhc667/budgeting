@@ -16,12 +16,12 @@ describe("category flows", () => {
     );
 
     expect(flows).toEqual([
-      expect.objectContaining({ day: "2026-01-01", kind: "expense", categoryId: "food", net: 100 }),
-      expect.objectContaining({ day: "2026-01-03", kind: "expense", categoryId: "food", net: -30 }),
+      expect.objectContaining({ day: "2026-01-01", kind: "expense", net: 100 }),
+      expect.objectContaining({ day: "2026-01-03", kind: "expense", net: -30 }),
     ]);
   });
 
-  it("rolls a subcategory into its parent", () => {
+  it("names a subcategory's parent as its category", () => {
     const flows = readCategoryFlows(
       rows({
         txs: [tx("a"), tx("b")],
@@ -30,8 +30,11 @@ describe("category flows", () => {
       ["space-1"],
     );
 
-    expect(flows).toEqual([
-      expect.objectContaining({ categoryId: "food", categoryName: "food", net: 125 }),
+    expect(
+      flows.map(({ category, subcategory, net }) => [category.id, subcategory?.id, net]),
+    ).toEqual([
+      ["food", undefined, 100],
+      ["food", "snacks", 25],
     ]);
   });
 

@@ -13,7 +13,7 @@ import {
   user,
 } from "../support/app";
 import { daysAgo, today } from "../support/dates";
-import { sql } from "../support/local-instance";
+import { signedInAs, sql } from "../support/local-instance";
 import { addRates } from "../support/rates";
 
 vi.mock("../../src/rates/rates-provider", async () => {
@@ -69,25 +69,67 @@ describe("spending by category", () => {
     expect(card.getByRole("button", { name: "All time", pressed: true })).toBeTruthy();
   });
 
-  it("picks out one category at a time, its share beside it", async () => {
+  it("shows a chosen category alone, with its transactions over the period", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "1000" });
-    await recordTransaction({ amount: "75", category: "Groceries" });
-    await recordTransaction({ amount: "25", category: "Transport" });
+    await recordTransaction({ amount: "75", category: "Groceries", title: "Market" });
+    await recordTransaction({ amount: "25", category: "Transport", title: "Bus" });
+    await recordTransaction({
+      amount: "10",
+      category: "Groceries",
+      title: "Old market",
+      date: endOfLastMonth(),
+    });
     await openReports();
 
     const card = await spendingCard();
-    const groceries = card.getByRole("button", { name: /^Groceries/ });
-    const transport = card.getByRole("button", { name: /^Transport/ });
-    expect(within(groceries).getByText("75%")).toBeTruthy();
+    expect(within(categoryRow(card, "Groceries")).getByText("75%")).toBeTruthy();
+    await user.click(categoryRow(card, "Groceries"));
 
-    await user.click(groceries);
-    expect(groceries.getAttribute("aria-pressed")).toBe("true");
-    await user.click(transport);
-    expect(groceries.getAttribute("aria-pressed")).toBe("false");
-    expect(transport.getAttribute("aria-pressed")).toBe("true");
-    await user.click(transport);
-    expect(transport.getAttribute("aria-pressed")).toBe("false");
+    expect(categoryRow(card, "Groceries").getAttribute("aria-pressed")).toBe("true");
+    expect(card.queryByRole("button", { name: /^Transport/ })).toBeNull();
+    expect(await card.findByText("Market")).toBeTruthy();
+    expect(card.queryByText("Bus")).toBeNull();
+    expect(card.queryByText("Old market")).toBeNull();
+
+    await user.click(card.getByRole("button", { name: "Clear the chosen category" }));
+    expect(categoryRow(card, "Transport")).toBeTruthy();
+    expect(card.queryByText("Market")).toBeNull();
+  });
+
+  it("totals income by category on its own tab", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "1000" });
+    await recordTransaction({ type: "Income", amount: "500", category: "Salary" });
+    await recordTransaction({ amount: "100", category: "Groceries" });
+    await openReports();
+
+    const card = await spendingCard();
+    await user.click(card.getByRole("tab", { name: "Income" }));
+
+    expect(amountOf(card, "Salary")).toBe("$500.00");
+    expect(card.queryByText("Groceries")).toBeNull();
+    expect(defined(card.getByText("Total earned").nextElementSibling?.textContent)).toBe("$500.00");
+  });
+
+  it("lists subcategories under their category, and narrows to one when chosen", async () => {
+    const { email } = await openSignedIn(uniqueName("Ana"));
+    await addSubcategory(email, "Groceries", "Bakery");
+    await addAccount({ name: "Checking", openingBalance: "1000" });
+    await recordTransaction({ amount: "60", category: "Groceries", title: "Market" });
+    await recordTransaction({ amount: "40", category: "Groceries › Bakery", title: "Bread" });
+    await openReports();
+
+    const card = await spendingCard();
+    expect(amountOf(card, "Groceries")).toBe("$100.00");
+    expect(card.queryByText("Bakery")).toBeNull();
+
+    await user.click(card.getByRole("button", { name: "Show subcategories" }));
+    expect(within(categoryRow(card, "Bakery")).getByText("$40.00")).toBeTruthy();
+
+    await user.click(categoryRow(card, "Bakery"));
+    expect(await card.findByText("Bread")).toBeTruthy();
+    expect(card.queryByText("Market")).toBeNull();
   });
 
   it("converts each transaction at the rate of its own day, and says what it couldn't convert", async () => {
@@ -179,7 +221,28 @@ async function openReports() {
 }
 
 async function spendingCard() {
-  return within(await screen.findByRole("region", { name: "Spending by category" }));
+  return within(await screen.findByRole("region", { name: "By category" }));
+}
+
+function categoryRow(card: Card, name: string): HTMLElement {
+  return card.getByRole("button", { name: new RegExp(`^${name}\\$`) });
+}
+
+async function addSubcategory(email: string, parentName: string, name: string) {
+  const client = await signedInAs(email);
+  const [parent] = await sql<{ id: string; space_id: string }[]>`select c.id, c.space_id
+    from public.ledger_accounts c
+    join public.spaces s on s.id = c.space_id join auth.users u on u.id = s.private_owner
+    where u.email = ${email} and c.name = ${parentName}`;
+  const { error } = await client.rpc("create_category", {
+    space: defined(parent).space_id,
+    category_name: name,
+    category_kind: "expense",
+    category_icon: "tag",
+    category_color: "blue",
+    parent: defined(parent).id,
+  });
+  if (error) throw error;
 }
 
 function amountOf(card: Card, category: string): string {

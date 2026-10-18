@@ -14,17 +14,25 @@
     "errors": {
       "loadFailed": "Couldn't load the reports. Check your connection and try again."
     },
-    "spending": {
-      "title": "Spending by category",
+    "byCategory": {
+      "title": "By category",
       "from": "From",
       "to": "To",
       "thisMonth": "This month",
       "lastMonth": "Last month",
       "thisYear": "This year",
       "allTime": "All time",
-      "total": "Total spent",
-      "none": "No spending in this period.",
-      "chart": "Spending by category pie chart"
+      "kind": "Kind",
+      "expense": "Expense",
+      "income": "Income",
+      "totalSpent": "Total spent",
+      "totalEarned": "Total earned",
+      "noSpending": "No spending in this period.",
+      "noIncome": "No income in this period.",
+      "chart": "Pie chart by category",
+      "clear": "Clear the chosen category",
+      "subcategories": "Show subcategories",
+      "transactions": "Transactions"
     },
     "incomeExpense": {
       "title": "Income vs. expense",
