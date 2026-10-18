@@ -1,19 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
 import type { Currency } from "../format/format";
-import { useSupabase } from "../instance/instance-context";
+import { useCopyQuery } from "../sync/copy-query";
 
 export function useCurrencies() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["currencies"],
-    staleTime: Number.POSITIVE_INFINITY,
-    async queryFn(): Promise<Currency[]> {
-      const { data, error } = await supabase
-        .from("currencies")
-        .select("code, decimals")
-        .order("code");
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["currencies"], ({ rows }): Currency[] =>
+    [...rows.currencies.values()]
+      .map(({ code, decimals }) => ({ code, decimals }))
+      .sort((a, b) => a.code.localeCompare(b.code)),
+  );
 }

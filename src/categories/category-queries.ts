@@ -1,37 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Color } from "../colors/colors";
 import { useSupabase } from "../instance/instance-context";
 import type { Database } from "../supabase/database";
-import type { Activity } from "../spaces/space-queries";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
+import { readCategories, readCategoryHistory } from "./read-categories";
 
 export function useCategories() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["categories"],
-    async queryFn(): Promise<Category[]> {
-      const { data, error } = await supabase.from("categories").select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["categories"], ({ rows }) => readCategories(rows));
 }
 
 export function useCategoryHistory(categoryId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["categories", categoryId, "history"],
-    async queryFn(): Promise<Activity[]> {
-      const { data, error } = await supabase
-        .from("activity")
-        .select("id, table_name, row_id, action, changed_by, changed_at, old, new")
-        .eq("table_name", "ledger_accounts")
-        // Including deletes of other categories that moved their transactions into this one.
-        .or(`row_id.eq.${categoryId},old->moved_to->>id.eq.${categoryId}`)
-        .order("id", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["categories", categoryId, "history"], ({ rows }) =>
+    readCategoryHistory(rows, categoryId),
+  );
 }
 
 export function useCreateCategory() {
@@ -70,18 +50,9 @@ export function useDeleteCategory(categoryId: string) {
   });
 }
 
-// Category changes show up in their space's activity too, and budgets follow deleted ones.
+// Budgets follow deleted categories.
 function useCategoryMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["categories"] }),
-        queryClient.invalidateQueries({ queryKey: ["budgets"] }),
-        queryClient.invalidateQueries({ queryKey: ["spaces"] }),
-      ]),
-  });
+  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 function detailsArgs(details: CategoryDetails) {

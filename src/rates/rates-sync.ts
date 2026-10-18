@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRequestPull } from "../sync/local-copy-context";
 import { useSupabase } from "../instance/instance-context";
 import type { AppSupabase } from "../supabase/client";
 import { localToday } from "../format/days";
@@ -13,6 +14,7 @@ import {
 export function useSyncExchangeRates() {
   const supabase = useSupabase();
   const queryClient = useQueryClient();
+  const requestPull = useRequestPull();
   useQuery({
     queryKey: ["exchange-rates-sync"],
     staleTime: ({ state }) => nextLocalMidnight(state.dataUpdatedAt) - state.dataUpdatedAt,
@@ -20,7 +22,7 @@ export function useSyncExchangeRates() {
     async queryFn() {
       await syncExchangeRates(supabase, await currenciesWithProviderRates(supabase));
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["latest-rates"] }),
+        requestPull(),
         queryClient.invalidateQueries({ queryKey: ["rate-history"] }),
       ]);
       return null;

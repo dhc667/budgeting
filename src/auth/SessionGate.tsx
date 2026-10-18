@@ -8,7 +8,6 @@ import { useSupabase } from "../instance/instance-context";
 import { useProfile } from "../profile/profile-queries";
 import { createQueryClient } from "../query-client";
 import { useSyncExchangeRates } from "../rates/rates-sync";
-import { isNoRows } from "../supabase/errors";
 import { LocalCopyProvider } from "../sync/LocalCopyProvider";
 import { useSignOut } from "../sync/sign-out";
 import { SessionContext, useSession } from "./session";
@@ -60,8 +59,7 @@ function UserQueryCache({ children }: { children: ReactNode }) {
 // show; signing out is the only way forward.
 function SignOutDeletedUser({ children }: { children: ReactNode }) {
   const signOut = useSignOut();
-  const { error } = useProfile();
-  const userDeleted = error !== null && isNoRows(error);
+  const userDeleted = useProfile().data === null;
 
   useEffect(() => {
     if (userDeleted) void signOut();

@@ -1,35 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
 import type { Color } from "../colors/colors";
 import type { Space } from "../spaces/space-queries";
 import type { Database } from "../supabase/database";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
+import { readAccountHistory, readAccounts } from "./read-accounts";
 
 export function useAccounts() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["accounts"],
-    async queryFn(): Promise<Account[]> {
-      const { data, error } = await supabase
-        .from("accounts")
-        .select("*")
-        .order("position")
-        .order("created_at");
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["accounts"], ({ rows }) => readAccounts(rows));
 }
 
 export function useAccountHistory(accountId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["accounts", accountId, "history"],
-    async queryFn() {
-      const { data, error } = await supabase.rpc("account_history", { account_id: accountId });
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["accounts", accountId, "history"], ({ rows }) =>
+    readAccountHistory(rows, accountId),
+  );
 }
 
 export function useCreateAccount() {
@@ -81,18 +64,9 @@ export function useReorderAccounts() {
   });
 }
 
-// Account changes show up in their space's activity too, and budgets forget deleted ones.
+// Budgets forget deleted accounts.
 function useAccountMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["accounts"] }),
-        queryClient.invalidateQueries({ queryKey: ["budgets"] }),
-        queryClient.invalidateQueries({ queryKey: ["spaces"] }),
-      ]),
-  });
+  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 function detailsArgs(details: AccountDetails) {

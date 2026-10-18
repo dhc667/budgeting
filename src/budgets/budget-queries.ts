@@ -1,4 +1,4 @@
-import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { localToday } from "../format/days";
 import type { Currency } from "../format/format";
@@ -9,6 +9,7 @@ import type { Activity, Space } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
 import type { Repeat } from "../recurring/schedule";
 import type { Database } from "../supabase/database";
+import { useCopyMutation } from "../sync/copy-query";
 import {
   type BudgetPlan,
   budgetPeriods,
@@ -261,15 +262,7 @@ export async function setBudgetExclusions(
 
 // Budget changes show up in their space's activity too.
 function useBudgetMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["budgets"] }),
-        queryClient.invalidateQueries({ queryKey: ["spaces"] }),
-      ]),
-  });
+  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 function detailsColumns(details: BudgetDetails) {

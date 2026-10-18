@@ -1,15 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { useSupabase } from "../instance/instance-context";
-import type { LatestRates } from "./convert";
+import { useCopyQuery } from "../sync/copy-query";
+import { readLatestRates } from "./read-latest-rates";
 
 export function useLatestRates() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["latest-rates"],
-    async queryFn(): Promise<LatestRates> {
-      const { data, error } = await supabase.rpc("latest_exchange_rates");
-      if (error) throw error;
-      return new Map(data.map((rate) => [rate.currency, rate]));
-    },
-  });
+  return useCopyQuery(["latest-rates"], ({ rows }) => readLatestRates(rows));
 }
