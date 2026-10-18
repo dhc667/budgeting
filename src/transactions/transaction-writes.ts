@@ -36,7 +36,7 @@ export async function restoreTransaction(supabase: AppSupabase, transactionId: s
 // changed kind since: money leaving into an income category then edits as income.
 export function draftOf(transaction: DraftSource, categories: Category[]): TransactionDraft {
   const type = transaction.type ?? typeFromCategory(transaction, categories);
-  const leaves = type === "expense" || type === "transfer";
+  const leaves = leavesAccount(type);
   return {
     type,
     date: transaction.date,
@@ -47,12 +47,13 @@ export function draftOf(transaction: DraftSource, categories: Category[]): Trans
     categoryId: transaction.category_id,
     toAccountId: type === "transfer" ? transaction.to_account_id : null,
     toAmount: type === "transfer" ? transaction.to_amount : null,
+    counterpartyId: transaction.counterparty_id,
   };
 }
 
 // A draft may still hold what another type used; only what its own type uses is saved.
 function draftArgs(draft: TransactionDraft) {
-  const isTransfer = draft.type === "transfer";
+  const otherSide = otherSideOf(draft.type);
   return {
     transaction_type: draft.type,
     transaction_date: draft.date,
@@ -60,10 +61,39 @@ function draftArgs(draft: TransactionDraft) {
     note: draft.note,
     account: draft.accountId,
     amount: draft.amount,
-    category: isTransfer ? null : draft.categoryId,
-    to_account: isTransfer ? draft.toAccountId : null,
-    to_amount: isTransfer ? draft.toAmount : null,
+    category: otherSide === "category" ? draft.categoryId : null,
+    to_account: otherSide === "toAccount" ? draft.toAccountId : null,
+    to_amount: otherSide === "toAccount" ? draft.toAmount : null,
+    counterparty: otherSide === "counterparty" ? draft.counterpartyId : null,
   };
+}
+
+// Where the money comes from or goes to, besides the account the draft names.
+export function otherSideOf(type: TransactionType): "category" | "toAccount" | "counterparty" {
+  switch (type) {
+    case "expense":
+    case "refund":
+    case "income":
+      return "category";
+    case "transfer":
+      return "toAccount";
+    case "given":
+    case "received":
+      return "counterparty";
+  }
+}
+
+function leavesAccount(type: TransactionType): boolean {
+  switch (type) {
+    case "expense":
+    case "transfer":
+    case "given":
+      return true;
+    case "refund":
+    case "income":
+    case "received":
+      return false;
+  }
 }
 
 function typeFromCategory(transaction: DraftSource, categories: Category[]): TransactionType {
@@ -89,6 +119,7 @@ type DraftSource = Pick<
   | "to_account_id"
   | "to_amount"
   | "category_id"
+  | "counterparty_id"
 >;
 
 type Category = Pick<Database["public"]["Views"]["categories"]["Row"], "id" | "kind">;
@@ -106,4 +137,5 @@ export type TransactionDraft = {
   categoryId: string | null;
   toAccountId: string | null;
   toAmount: number | null;
+  counterpartyId: string | null;
 };

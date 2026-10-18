@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { Counterparty } from "../counterparties/read-counterparties";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { type Category, useCategories } from "../categories/category-queries";
 import { daysAfter, localToday } from "../format/days";
@@ -62,7 +63,12 @@ function UpcomingRow({ upcoming, accounts, categories }: UpcomingRowProps) {
   return (
     <div className="flex flex-col gap-2 px-2 py-2">
       <span className="flex items-center gap-3">
-        <TransactionSummary transaction={transaction} accounts={accounts} categories={categories} />
+        <TransactionSummary
+          transaction={transaction}
+          accounts={accounts}
+          categories={categories}
+          counterparties={noCounterparties}
+        />
       </span>
       <span className="flex flex-wrap items-center gap-3 pl-11">
         <span className="flex-1 text-sm text-zinc-500">
@@ -78,7 +84,7 @@ function UpcomingRow({ upcoming, accounts, categories }: UpcomingRowProps) {
         <RecordDialog
           upcoming={upcoming}
           accounts={accounts}
-          label={transactionLabel(transaction, categories, t)}
+          label={transactionLabel(transaction, categories, noCounterparties, t)}
           onClose={() => setRecording(false)}
         />
       )}
@@ -162,3 +168,6 @@ function RecordDialog({ upcoming, accounts, label, onClose }: RecordDialogProps)
     </ConfirmDialog>
   );
 }
+
+// Recurring transactions never give or receive money.
+const noCounterparties: Counterparty[] = [];

@@ -98,8 +98,10 @@ function isOpeningBalance(snapshot: Snapshot): boolean {
 }
 
 function snapshotLabel(snapshot: Snapshot, t: TFunction): string {
-  const category = snapshot.postings.find(({ account_kind }) => isCategoryKind(account_kind));
-  return snapshot.title ?? category?.account_name ?? t("transactions.transfer");
+  const otherSide = snapshot.postings.find(
+    ({ account_kind }) => isCategoryKind(account_kind) || account_kind === "counterparty",
+  );
+  return snapshot.title ?? otherSide?.account_name ?? t("transactions.transfer");
 }
 
 // What a space's members saw of a transaction: only their own side of a transfer from or to
@@ -109,6 +111,9 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
   const sent = accounts.find(({ amount }) => amount < 0);
   const received = accounts.find(({ amount }) => amount > 0);
   const category = snapshot.postings.find(({ account_kind }) => isCategoryKind(account_kind));
+  const counterparty = snapshot.postings.find(
+    ({ account_kind }) => account_kind === "counterparty",
+  );
   const amountOf = (posting: Posting) => money(Math.abs(posting.amount), posting.currency);
   const date = day(snapshot.date);
   const moved = sent ?? received;
@@ -119,6 +124,12 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
     category: category?.account_name ?? "",
     date,
   };
+  const withCounterparty = {
+    amount: amountOf(moved),
+    account: moved.account_name,
+    counterparty: counterparty?.account_name ?? "",
+    date,
+  };
   switch (snapshot.type) {
     case "expense":
       return t("activity.transaction.expense", withCategory);
@@ -126,6 +137,10 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
       return t("activity.transaction.refund", withCategory);
     case "income":
       return t("activity.transaction.income", withCategory);
+    case "given":
+      return t("activity.transaction.given", withCounterparty);
+    case "received":
+      return t("activity.transaction.received", withCounterparty);
     case "transfer":
       if (sent && received)
         return sent.currency === received.currency

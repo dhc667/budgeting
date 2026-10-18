@@ -61,19 +61,20 @@ export function readTransactionHistory(
   );
 }
 
-// The user's latest transaction of each title, per category and which way its money went, or per
-// pair of accounts for a transfer.
+// The user's latest transaction of each title, per type and category or counterparty, or per pair
+// of accounts for a transfer.
 export function readTitleSuggestions(rows: TransactionRows, userId: string): TitleSuggestion[] {
   const latest = new Map<string, TitleSuggestion>();
   for (const transaction of readAllTransactions(rows).sort(newestFirst)) {
     const { title, type } = transaction;
     if (transaction.created_by !== userId || title === null || type === null) continue;
     if (transaction.one_sided) continue;
-    const isTransfer = transaction.category_id === null;
+    const isTransfer = type === "transfer";
     const key = JSON.stringify({
       title: title.toLowerCase(),
+      type,
       categoryId: transaction.category_id,
-      isExpense: type === "expense",
+      counterpartyId: transaction.counterparty_id,
       fromAccountId: isTransfer ? transaction.from_account_id : null,
       toAccountId: isTransfer ? transaction.to_account_id : null,
     });
@@ -119,6 +120,7 @@ function transactionOf(
   const category = visible.find(
     ({ ledger }) => ledger.kind === "expense" || ledger.kind === "income",
   );
+  const counterparty = visible.find(({ ledger }) => ledger.kind === "counterparty");
   const { id, date, title, note, created_by, created_at } = transaction;
   return {
     id,
@@ -127,7 +129,7 @@ function transactionOf(
     note,
     created_by,
     created_at,
-    type: typeOf(visible.length, { sent, received, category }),
+    type: typeOf(visible.length, { sent, received, otherSide: category ?? counterparty }),
     one_sided: visible.length < 2,
     from_account_id: sent?.posting.ledger_account_id ?? null,
     from_amount: sent ? -sent.posting.amount : null,
@@ -138,29 +140,33 @@ function transactionOf(
     category_id: category?.posting.ledger_account_id ?? null,
     space_ids: [...new Set(visible.map(({ ledger }) => ledger.space_id))],
     search_text: withoutAccents([title, note].filter((text) => text !== null).join("\n")),
+    counterparty_id: counterparty?.posting.ledger_account_id ?? null,
   };
 }
 
 // A single visible posting on a money account is one side of a transfer: an expense, refund or
-// income stays within one space (ADR 0007), so its other side is in a space the user is not in.
+// income, or money given or received, stays within one space (ADR 0007), so its other side is in
+// a space the user is not in.
 function typeOf(
   visibleCount: number,
   sides: {
     sent: VisiblePosting | undefined;
     received: VisiblePosting | undefined;
-    category: VisiblePosting | undefined;
+    otherSide: VisiblePosting | undefined;
   },
 ): TransactionType | null {
-  const { sent, received, category } = sides;
+  const { sent, received, otherSide } = sides;
   if (visibleCount === 1) return sent || received ? "transfer" : null;
   if (visibleCount !== 2) return null;
   if (sent && received) return "transfer";
-  if (!category || !(sent || received)) return null;
-  switch (category.ledger.kind) {
+  if (!otherSide || !(sent || received)) return null;
+  switch (otherSide.ledger.kind) {
     case "expense":
       return sent ? "expense" : "refund";
     case "income":
       return received ? "income" : null;
+    case "counterparty":
+      return sent ? "given" : "received";
     case "account":
     case "opening_balance":
       return null;
@@ -168,14 +174,15 @@ function typeOf(
 }
 
 function matches(transaction: Transaction, filter: TransactionFilter): boolean {
-  const { spaceIds, accountIds, categoryIds, from, to, search } = filter;
-  const { from_account_id, to_account_id, category_id } = transaction;
+  const { spaceIds, accountIds, categoryIds, counterpartyIds, from, to, search } = filter;
+  const { from_account_id, to_account_id, category_id, counterparty_id } = transaction;
   return (
     (!spaceIds || transaction.space_ids.some((id) => spaceIds.includes(id))) &&
     (!accountIds ||
       (from_account_id !== null && accountIds.includes(from_account_id)) ||
       (to_account_id !== null && accountIds.includes(to_account_id))) &&
     (!categoryIds || (category_id !== null && categoryIds.includes(category_id))) &&
+    (!counterpartyIds || (counterparty_id !== null && counterpartyIds.includes(counterparty_id))) &&
     (!from || transaction.date >= from) &&
     (!to || transaction.date <= to) &&
     (!search ||

@@ -1,12 +1,13 @@
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAccountOption } from "../accounts/account-options";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { type Budget, useBudgets } from "../budgets/budget-queries";
 import { budgetsCounting } from "../budgets/coverage";
-import { categoryOptions } from "../categories/category-options";
-import { type Category, type CategoryKind, useCategories } from "../categories/category-queries";
+import { type Category, useCategories } from "../categories/category-queries";
+import { useCounterparties } from "../counterparties/counterparty-queries";
+import { CounterpartyPicker } from "../counterparties/CounterpartyPicker";
+import type { Counterparty } from "../counterparties/read-counterparties";
 import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
 import { useCurrencies } from "../money/currency-queries";
@@ -14,7 +15,6 @@ import { useProfile } from "../profile/profile-queries";
 import type { Schedule } from "../recurring/schedule";
 import { scheduleFrom } from "../recurring/schedule-form";
 import { ScheduleFields } from "../recurring/ScheduleFields";
-import { bySpace } from "../spaces/by-space";
 import { type Space, useSpaces } from "../spaces/space-queries";
 import { isRaisedException } from "../supabase/errors";
 import { Button } from "../ui/Button";
@@ -22,10 +22,18 @@ import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { submitWithButton, textField } from "../ui/forms";
 import { ChecklistField } from "../ui/ChecklistField";
-import { Picker, type PickerOption } from "../ui/Picker";
+import type { PickerOption } from "../ui/Picker";
 import { TitleField } from "./TitleField";
+import { AccountPicker, CategoryPicker } from "./TransactionPickers";
+import { categoryKindOf, ruleTabs, tabOf, tabs, typeOf } from "./transaction-tabs";
+import { DirectionChoice, TypeTabs } from "./TypeTabs";
 import { type TitleSuggestion, useTitleSuggestions } from "./transaction-queries";
-import { draftOf, type TransactionDraft, type TransactionType } from "./transaction-writes";
+import {
+  draftOf,
+  otherSideOf,
+  type TransactionDraft,
+  type TransactionType,
+} from "./transaction-writes";
 
 type TransactionFormProps = {
   initial: TransactionDraft;
@@ -60,7 +68,9 @@ export function TransactionForm(props: TransactionFormProps) {
   const { data: categories } = useCategories();
   const { data: spaces } = useSpaces();
   const { data: budgets } = useBudgets();
+  const { data: counterparties } = useCounterparties();
   if (!profile || !currencies || !accounts || !categories || !spaces || !budgets) return null;
+  if (!counterparties) return null;
   const offered = accounts.filter(
     ({ id, archived }) => !archived || props.keptAccountIds.includes(id),
   );
@@ -69,6 +79,7 @@ export function TransactionForm(props: TransactionFormProps) {
       {...props}
       accounts={offered}
       categories={categories}
+      counterparties={counterparties}
       spaces={spaces}
       budgets={budgets}
     />
@@ -78,6 +89,7 @@ export function TransactionForm(props: TransactionFormProps) {
 type LoadedProps = TransactionFormProps & {
   accounts: Account[];
   categories: Category[];
+  counterparties: Counterparty[];
   spaces: Space[];
   budgets: Budget[];
 };
@@ -89,6 +101,7 @@ function LoadedTransactionForm({
   saving,
   accounts,
   categories,
+  counterparties,
   spaces,
   budgets,
 }: LoadedProps) {
@@ -106,10 +119,12 @@ function LoadedTransactionForm({
       : format.amount(amount, decimalsOf(accountId));
   const [tab, setTab] = useState(tabOf(initial.type));
   const [refund, setRefund] = useState(initial.type === "refund");
+  const [received, setReceived] = useState(initial.type === "received");
   const [accountId, setAccountId] = useState(
     accounts.some(({ id }) => id === initial.accountId) ? initial.accountId : accounts[0]?.id,
   );
   const [pickedCategoryId, setPickedCategoryId] = useState(initial.categoryId);
+  const [pickedCounterpartyId, setPickedCounterpartyId] = useState(initial.counterpartyId);
   const [toAccountId, setToAccountId] = useState(initial.toAccountId ?? "");
   const [title, setTitle] = useState(initial.title);
   const [amount, setAmount] = useState(() => typedAmount(initial.amount, initial.accountId));
@@ -118,13 +133,15 @@ function LoadedTransactionForm({
   );
   const [date, setDate] = useState(initial.date);
   const isRule = saving.kind === "rule";
-  const [repeating, setRepeating] = useState(isRule);
+  const [repeatChecked, setRepeatChecked] = useState(isRule);
+  // Recurring transactions don't give or receive money yet.
+  const repeating = repeatChecked && tab !== "debt";
   const [excludedBudgetIds, setExcludedBudgetIds] = useState(
     saving.kind === "transaction" ? saving.excludedBudgetIds : [],
   );
   const [problem, setProblem] = useState<Problem | null>(null);
 
-  const type: TransactionType = tab === "expense" && refund ? "refund" : tab;
+  const type = typeOf(tab, { refund, received });
   const account = accounts.find(({ id }) => id === accountId);
   const toAccount = accounts.find(({ id }) => id === toAccountId && id !== accountId);
   const kind = categoryKindOf(tab);
@@ -134,6 +151,10 @@ function LoadedTransactionForm({
   const category =
     offeredCategories.find(({ id }) => id === pickedCategoryId) ??
     suggestedCategory(title, titles, offeredCategories);
+  const offeredCounterparties = counterparties.filter(
+    ({ space_id }) => space_id === account?.space_id,
+  );
+  const counterparty = offeredCounterparties.find(({ id }) => id === pickedCounterpartyId);
   const exchanged = toAccount !== undefined && toAccount.currency !== account?.currency;
   // Rules record transactions later, so they leave nothing out of budgets.
   const countedIn =
@@ -143,7 +164,10 @@ function LoadedTransactionForm({
 
   const chooseAccount = (id: string) => {
     const chosen = accounts.find((candidate) => candidate.id === id);
-    if (chosen?.space_id !== account?.space_id) setPickedCategoryId(null);
+    if (chosen?.space_id !== account?.space_id) {
+      setPickedCategoryId(null);
+      setPickedCounterpartyId(null);
+    }
     setAccountId(id);
   };
 
@@ -159,8 +183,10 @@ function LoadedTransactionForm({
     setTitle(draft.title);
     setTab(tabOf(draft.type));
     setRefund(draft.type === "refund");
+    setReceived(draft.type === "received");
     if (picked) setAccountId(picked.id);
     setPickedCategoryId(draft.categoryId);
+    setPickedCounterpartyId(draft.counterpartyId);
     setToAccountId(draft.toAccountId ?? "");
     setAmount(typedAmount(draft.amount, picked?.id ?? accountId));
     setToAmount(typedAmount(draft.toAmount, draft.toAccountId));
@@ -169,14 +195,17 @@ function LoadedTransactionForm({
   const save = (form: FormData, button: string | null) => {
     if (!account) return;
     const sent = format.parseAmount(amount, decimalsOf(account.id));
-    const received = exchanged ? format.parseAmount(toAmount, decimalsOf(toAccount.id)) : null;
+    const amountReceived = exchanged
+      ? format.parseAmount(toAmount, decimalsOf(toAccount.id))
+      : null;
     const found = findProblem({
       type,
       amount: sent,
       category,
+      counterparty,
       toAccount,
       exchanged,
-      toAmount: received,
+      toAmount: amountReceived,
     });
     setProblem(found);
     if (found || sent === null) return;
@@ -189,7 +218,8 @@ function LoadedTransactionForm({
       amount: sent,
       categoryId: category?.id ?? null,
       toAccountId: toAccount?.id ?? null,
-      toAmount: received,
+      toAmount: amountReceived,
+      counterpartyId: counterparty?.id ?? null,
     };
     switch (saving.kind) {
       case "rule":
@@ -207,7 +237,7 @@ function LoadedTransactionForm({
   return (
     <form onSubmit={submitWithButton(save)} className="flex flex-col gap-4">
       <TitleField value={title} onChange={setTitle} suggestions={titles} onPick={pick} />
-      <TypeTabs value={tab} onChange={setTab} />
+      <TypeTabs tabs={isRule ? ruleTabs : tabs} value={tab} onChange={setTab} />
       {tab === "expense" && (
         <label className="flex min-h-11 items-center gap-3">
           <input
@@ -222,6 +252,7 @@ function LoadedTransactionForm({
           </span>
         </label>
       )}
+      {tab === "debt" && <DirectionChoice received={received} onChange={setReceived} />}
       <Field
         label={t("transactions.form.amount")}
         name="amount"
@@ -239,7 +270,7 @@ function LoadedTransactionForm({
         value={accountId ?? null}
         onChange={chooseAccount}
       />
-      {tab === "transfer" ? (
+      {tab === "transfer" && (
         <AccountPicker
           label={t("transactions.form.to")}
           accounts={accounts.filter(({ id }) => id !== accountId)}
@@ -247,11 +278,19 @@ function LoadedTransactionForm({
           value={toAccount?.id ?? null}
           onChange={chooseToAccount}
         />
-      ) : (
+      )}
+      {(tab === "expense" || tab === "income") && (
         <CategoryPicker
           categories={offeredCategories}
           value={category?.id ?? null}
           onChange={setPickedCategoryId}
+        />
+      )}
+      {tab === "debt" && (
+        <CounterpartyPicker
+          counterparties={offeredCounterparties}
+          value={counterparty?.id ?? null}
+          onChange={setPickedCounterpartyId}
         />
       )}
       {tab === "transfer" && exchanged && (
@@ -267,12 +306,12 @@ function LoadedTransactionForm({
           placeholder={format.amount(0, decimalsOf(toAccount.id))}
         />
       )}
-      {saving.kind === "transaction" && saving.onRepeat && (
+      {saving.kind === "transaction" && saving.onRepeat && tab !== "debt" && (
         <label className="flex min-h-11 items-center gap-3">
           <input
             type="checkbox"
-            checked={repeating}
-            onChange={(event) => setRepeating(event.target.checked)}
+            checked={repeatChecked}
+            onChange={(event) => setRepeatChecked(event.target.checked)}
             className="size-5"
           />
           <span className="flex flex-col">
@@ -353,72 +392,6 @@ function keptExclusions(excluded: string[], countedIn: Budget[], stored: string[
   );
 }
 
-function TypeTabs({ value, onChange }: { value: Tab; onChange: (tab: Tab) => void }) {
-  const { t } = useTranslation();
-  return (
-    <div
-      role="tablist"
-      aria-label={t("transactions.form.type")}
-      className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800"
-    >
-      {tabs.map((tab) => (
-        <button
-          key={tab}
-          type="button"
-          role="tab"
-          aria-selected={tab === value}
-          onClick={() => onChange(tab)}
-          className="h-10 rounded-lg font-medium text-zinc-600 aria-selected:bg-white aria-selected:text-zinc-900 aria-selected:shadow-sm dark:text-zinc-400 dark:aria-selected:bg-zinc-900 dark:aria-selected:text-zinc-100"
-        >
-          {tabName(tab, t)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-type AccountPickerProps = {
-  label: string;
-  accounts: Account[];
-  spaces: Space[];
-  value: string | null;
-  onChange: (accountId: string) => void;
-};
-
-// Every space's accounts are offered, whatever the space picker shows.
-function AccountPicker({ label, accounts, spaces, value, onChange }: AccountPickerProps) {
-  const { t } = useTranslation();
-  const accountOption = useAccountOption();
-  return (
-    <Picker
-      label={label}
-      groups={bySpace(spaces, accounts, t, (inSpace) => inSpace.map(accountOption))}
-      value={value}
-      onChange={onChange}
-      placeholder={t("transactions.form.chooseAccount")}
-    />
-  );
-}
-
-type CategoryPickerProps = {
-  categories: Category[];
-  value: string | null;
-  onChange: (categoryId: string) => void;
-};
-
-function CategoryPicker({ categories, value, onChange }: CategoryPickerProps) {
-  const { t } = useTranslation();
-  return (
-    <Picker
-      label={t("transactions.form.category")}
-      groups={[{ heading: null, options: categoryOptions(categories) }]}
-      value={value}
-      onChange={onChange}
-      placeholder={t("transactions.form.chooseCategory")}
-    />
-  );
-}
-
 function budgetOption(budget: Budget): PickerOption {
   return {
     id: budget.id,
@@ -445,6 +418,7 @@ type ProblemInput = {
   type: TransactionType;
   amount: number | null;
   category: Category | undefined;
+  counterparty: Counterparty | undefined;
   toAccount: Account | undefined;
   exchanged: boolean;
   toAmount: number | null;
@@ -454,15 +428,22 @@ function findProblem({
   type,
   amount,
   category,
+  counterparty,
   toAccount,
   exchanged,
   toAmount,
 }: ProblemInput): Problem | null {
   if (amount === null || amount <= 0) return "amount";
-  if (type !== "transfer") return category ? null : "category";
-  if (!toAccount) return "toAccount";
-  if (exchanged && (toAmount === null || toAmount <= 0)) return "toAmount";
-  return null;
+  switch (otherSideOf(type)) {
+    case "category":
+      return category ? null : "category";
+    case "counterparty":
+      return counterparty ? null : "counterparty";
+    case "toAccount":
+      if (!toAccount) return "toAccount";
+      if (exchanged && (toAmount === null || toAmount <= 0)) return "toAmount";
+      return null;
+  }
 }
 
 function problemMessage(problem: Problem, t: TFunction, example: string): string {
@@ -472,6 +453,8 @@ function problemMessage(problem: Problem, t: TFunction, example: string): string
       return t("transactions.errors.amount", { example });
     case "category":
       return t("transactions.errors.category");
+    case "counterparty":
+      return t("transactions.errors.counterparty");
     case "toAccount":
       return t("transactions.errors.toAccount");
   }
@@ -487,42 +470,4 @@ function dateLabel(isRule: boolean, repeating: boolean, t: TFunction): string {
   return repeating ? t("recurring.form.startsOn") : t("transactions.form.date");
 }
 
-function tabOf(type: TransactionType): Tab {
-  switch (type) {
-    case "expense":
-    case "refund":
-      return "expense";
-    case "income":
-      return "income";
-    case "transfer":
-      return "transfer";
-  }
-}
-
-function categoryKindOf(tab: Tab): CategoryKind | null {
-  switch (tab) {
-    case "expense":
-      return "expense";
-    case "income":
-      return "income";
-    case "transfer":
-      return null;
-  }
-}
-
-function tabName(tab: Tab, t: TFunction): string {
-  switch (tab) {
-    case "expense":
-      return t("transactions.type.expense");
-    case "income":
-      return t("transactions.type.income");
-    case "transfer":
-      return t("transactions.type.transfer");
-  }
-}
-
-const tabs = ["expense", "income", "transfer"] as const;
-
-type Tab = (typeof tabs)[number];
-
-type Problem = "amount" | "category" | "toAccount" | "toAmount";
+type Problem = "amount" | "category" | "counterparty" | "toAccount" | "toAmount";

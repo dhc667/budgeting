@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { useAccounts } from "../accounts/account-queries";
 import { useBudgetExclusions } from "../budgets/budget-queries";
 import { type Category, useCategories } from "../categories/category-queries";
+import { useCounterparties } from "../counterparties/counterparty-queries";
 import { useFormat } from "../format/use-format";
 import { useMoney } from "../money/use-money";
 import { displayNameOf, useUsers } from "../profile/profile-queries";
@@ -39,11 +40,12 @@ export function TransactionScreen() {
   const { transactionId = "" } = useParams();
   const { data: transaction } = useTransaction(transactionId);
   const { data: categories } = useCategories();
+  const { data: counterparties } = useCounterparties();
   const { data: users = [] } = useUsers();
   const listAddress = useListAddress();
-  if (transaction === undefined || !categories) return null;
+  if (transaction === undefined || !categories || !counterparties) return null;
   if (transaction === null) return <TransactionNotFound />;
-  const label = transactionLabel(transaction, categories, t);
+  const label = transactionLabel(transaction, categories, counterparties, t);
 
   // Keyed so that another transaction's screen starts with a fresh form rather than this one's.
   return (

@@ -274,7 +274,9 @@
       "transfer": "uma transferência de {{amount}} de “{{from}}” para “{{to}}”, em {{date}}",
       "transferExchanged": "uma transferência de {{amount}} de “{{from}}” para “{{to}}”, recebida como {{received}}, em {{date}}",
       "transferToOtherSpace": "uma transferência de {{amount}} de “{{from}}” para outro espaço, em {{date}}",
-      "transferFromOtherSpace": "uma transferência de {{amount}} para “{{to}}” de outro espaço, em {{date}}"
+      "transferFromOtherSpace": "uma transferência de {{amount}} para “{{to}}” de outro espaço, em {{date}}",
+      "given": "{{amount}} dados de “{{account}}” para “{{counterparty}}”, em {{date}}",
+      "received": "{{amount}} recebidos em “{{account}}” de “{{counterparty}}”, em {{date}}"
     },
     "recurring": {
       "created": "{{actor}} criou a transação recorrente “{{label}}”",
@@ -293,6 +295,12 @@
       "changed": "{{actor}} mudou o orçamento “{{name}}”",
       "excluded": "{{actor}} deixou “{{transaction}}” de {{date}} fora do orçamento “{{name}}”",
       "included": "{{actor}} voltou a contar “{{transaction}}” de {{date}} no orçamento “{{name}}”"
+    },
+    "counterparty": {
+      "added": "{{actor}} adicionou a contraparte “{{name}}”",
+      "renamed": "{{actor}} renomeou a contraparte “{{from}}” para “{{to}}”",
+      "recolored": "{{actor}} mudou a cor de “{{name}}”",
+      "deleted": "{{actor}} excluiu a contraparte “{{name}}”"
     }
   },
   "accounts": {
@@ -442,7 +450,8 @@
     "type": {
       "expense": "Despesa",
       "income": "Receita",
-      "transfer": "Transferência"
+      "transfer": "Transferência",
+      "debt": "Dívida"
     },
     "new": {
       "title": "Nova transação",
@@ -471,7 +480,15 @@
       "leftOutOf": "Deixar fora de orçamentos",
       "countedInAll": "Conta em todos os seus orçamentos",
       "leftOutOfSome_one": "Fora de {{count}} orçamento",
-      "leftOutOfSome_other": "Fora de {{count}} orçamentos"
+      "leftOutOfSome_other": "Fora de {{count}} orçamentos",
+      "direction": "Para onde foi o dinheiro",
+      "given": "Dei",
+      "givenHint": "Emprestei, ou devolvi",
+      "received": "Recebi",
+      "receivedHint": "Peguei emprestado, ou recebi de volta",
+      "counterparty": "Contraparte",
+      "chooseCounterparty": "Escolha uma contraparte",
+      "noCounterparties": "O espaço desta conta ainda não tem contrapartes."
     },
     "oneSided": {
       "toAnotherSpace": "De “{{account}}” para outro espaço",
@@ -502,7 +519,8 @@
       "saveRefused": "Não foi possível salvar esta transação. As contas ou categorias podem ter mudado nesse meio-tempo; recarregue e tente de novo.",
       "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
       "deleteFailed": "Não foi possível excluir esta transação. Verifique sua conexão e tente de novo.",
-      "loadFailed": "Não foi possível carregar as transações. Verifique sua conexão e tente de novo."
+      "loadFailed": "Não foi possível carregar as transações. Verifique sua conexão e tente de novo.",
+      "counterparty": "Escolha para quem foi o dinheiro ou de quem veio."
     }
   },
   "colors": {
@@ -743,6 +761,47 @@
       "nameBlank": "Dê um nome ao orçamento.",
       "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
       "deleteFailed": "Não foi possível excluir. Verifique sua conexão e tente de novo."
+    }
+  },
+  "counterparties": {
+    "title": "Dívidas",
+    "none": "Ninguém te deve dinheiro, e você não deve a ninguém. Adicione uma pessoa ou empresa para quem você empresta ou de quem pega emprestado.",
+    "add": "Adicionar uma contraparte",
+    "details": "Contraparte",
+    "new": {
+      "title": "Nova contraparte",
+      "submit": "Adicionar contraparte"
+    },
+    "form": {
+      "name": "Nome",
+      "nameHint": "Uma pessoa, uma empresa, qualquer um para quem você empresta dinheiro ou de quem pega emprestado.",
+      "space": "Espaço",
+      "save": "Salvar",
+      "saved": "Salvo."
+    },
+    "errors": {
+      "nameBlank": "O nome de uma contraparte não pode ficar em branco.",
+      "saveFailed": "Não foi possível salvar. Verifique sua conexão e tente de novo.",
+      "deleteFailed": "Não foi possível excluir esta contraparte. Verifique sua conexão e tente de novo."
+    },
+    "owesYou": "Te deve {{amount}}",
+    "youOwe": "Você deve {{amount}}",
+    "settledIn": "Quitado em {{currency}}",
+    "settled": "Quitado",
+    "balance": "Saldo",
+    "nothingYet": "Nenhum dinheiro foi movimentado ainda.",
+    "give": "Dei dinheiro para {{name}}",
+    "receive": "{{name}} me deu dinheiro",
+    "paidBack": "{{paid}} de {{total}} devolvido",
+    "givenAndReceived": "dado {{given}}, recebido {{received}}",
+    "noTransactions": "Nada dado nem recebido ainda.",
+    "notFound": "Esta contraparte não existe, ou está em um espaço do qual você não é membro.",
+    "delete": {
+      "title": "Excluir contraparte",
+      "hasTransactions": "Já houve dinheiro movimentado com esta contraparte, então ela não pode ser excluída.",
+      "submit": "Excluir contraparte",
+      "confirm": "Excluir",
+      "confirmTitle": "Excluir {{name}}?"
     }
   }
 }

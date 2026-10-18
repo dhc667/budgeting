@@ -38,7 +38,8 @@ export function RecurringTransactionScreen() {
   if (!rules || !accounts || !categories) return null;
   const rule = rules.find(({ id }) => id === ruleId);
   if (!rule) return <RuleNotFound />;
-  const label = transactionLabel(asTransaction(rule, accounts), categories, t);
+  // Recurring transactions never give or receive money.
+  const label = transactionLabel(asTransaction(rule, accounts), categories, [], t);
   const schedule = scheduleOf(rule);
   const next = nextDueDate(schedule, rule.done);
 

@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { AccountsCard } from "../accounts/AccountsCard";
 import { BudgetsCarousel } from "../budgets/BudgetsCarousel";
+import { DebtsCard } from "../counterparties/DebtsCard";
 import { useProfile } from "../profile/profile-queries";
 import { UpcomingCard } from "../recurring/UpcomingCard";
 import { NetWorthCard } from "./NetWorthCard";
@@ -26,6 +27,7 @@ export function DashboardScreen() {
         <div className="flex flex-col gap-4 lg:order-last">
           <UpcomingCard />
           <BudgetsCarousel />
+          <DebtsCard />
         </div>
 
         <RecentTransactionsCard className="lg:col-span-2" />
