@@ -61,7 +61,13 @@ function copyWithCurrencies(count: number): LocalCopy {
       return [code, { code, decimals: 2, rates_by_hand: false, version: 1 }];
     }),
   );
-  return { version: 1, spaceIds: [], schemaVersion: 1, rows: { ...emptyRows, currencies } };
+  return {
+    version: 1,
+    spaceIds: [],
+    rateCurrencies: [],
+    schemaVersion: 1,
+    rows: { ...emptyRows, currencies },
+  };
 }
 
 const emptyRows: Rows = {

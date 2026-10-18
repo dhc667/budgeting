@@ -9,7 +9,7 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance.ts";
-import { today } from "../support/dates.ts";
+import { daysAgo, today } from "../support/dates.ts";
 
 type Changes = Database["public"]["Functions"]["changes_since"]["Returns"];
 
@@ -71,6 +71,74 @@ describe("a first pull", () => {
     expect(pulled.rows.ledger_accounts.map(({ space_id }) => space_id)).not.toContain(familyId);
     expect(pulled.rows.transactions.map(({ id }) => id)).not.toContain(id);
     expect(pulled.rows.activity.map(({ space_id }) => space_id)).not.toContain(familyId);
+  });
+});
+
+describe("exchange rates in a pull", () => {
+  beforeEach(async () => {
+    await addRates("XSA", "XSB", "XSC", "XSD");
+  });
+
+  it("sends the full history of the currency of an account the user can see", async () => {
+    await addAccount(ana, familyId, "Euros", 0, "XSA");
+
+    const pulled = await pull(ben);
+
+    expect(pulled.rate_currencies).toContain("XSA");
+    expect(ratesOf(pulled, "XSA")).toHaveLength(rateDays);
+  });
+
+  it("sends the full history of the user's display currency", async () => {
+    const { error } = await ben.client
+      .from("profiles")
+      .update({ display_currency: "XSB" })
+      .eq("id", ben.userId);
+    if (error) throw error;
+
+    const pulled = await pull(ben);
+
+    expect(pulled.rate_currencies).toContain("XSB");
+    expect(ratesOf(pulled, "XSB")).toHaveLength(rateDays);
+  });
+
+  it("sends only the latest rate of a currency the user doesn't use", async () => {
+    const pulled = await pull(ben);
+
+    expect(pulled.rate_currencies).not.toContain("XSC");
+    expect(ratesOf(pulled, "XSC").map(({ date }) => date)).toEqual([daysAgo(1)]);
+  });
+
+  it("leaves out the history of a currency used only in a space the user isn't in", async () => {
+    await addAccount(ana, (await privateSpaceOf(ana)).id, "Reais", 0, "XSD");
+
+    const pulled = await pull(ben);
+
+    expect(pulled.rate_currencies).not.toContain("XSD");
+    expect(ratesOf(pulled, "XSD")).toHaveLength(1);
+  });
+
+  it("lists a currency once an account in it is added", async () => {
+    const before = await pull(ben);
+    expect(before.rate_currencies).not.toContain("XSA");
+
+    await addAccount(ana, familyId, "Euros", 0, "XSA");
+
+    const after = await pull(ben, before.version);
+    expect(after.rate_currencies).toContain("XSA");
+    expect(ratesOf(await pull(ben), "XSA")).toHaveLength(rateDays);
+  });
+
+  it("sends only the rates written since, plus the latest of an unused currency", async () => {
+    await addRates("XSE", "XSF");
+    await addAccount(ana, familyId, "Euros", 0, "XSE");
+    const { version } = await pull(ben);
+
+    await sql`insert into public.exchange_rates (date, currency, rate)
+      select ${today()}::date, code, 2 from unnest(array['XSE', 'XSF']) as code`;
+    const pulled = await pull(ben, version);
+
+    expect(ratesOf(pulled, "XSE").map(({ date }) => date)).toContain(today());
+    expect(ratesOf(pulled, "XSF").map(({ date }) => date)).toContain(today());
   });
 });
 
@@ -342,11 +410,32 @@ async function historyOf(user: User, id: string) {
   return data.map(({ action, old, new: next }) => ({ action, old, new: next }));
 }
 
-async function addAccount(user: User, spaceId: string, name: string, openingAmount: number) {
+const rateDays = 5;
+
+async function addRates(...currencies: string[]) {
+  await sql`insert into public.currencies (code, decimals)
+    select code, 2 from unnest(${currencies}::text[]) as code on conflict do nothing`;
+  await sql`insert into public.exchange_rates (date, currency, rate)
+    select (${daysAgo(1)}::date - day), code, 1.5
+    from unnest(${currencies}::text[]) as code, generate_series(0, ${rateDays - 1}) as day
+    on conflict do nothing`;
+}
+
+function ratesOf(pulled: Changes, currency: string) {
+  return pulled.rows.exchange_rates.filter((rate) => rate.currency === currency);
+}
+
+async function addAccount(
+  user: User,
+  spaceId: string,
+  name: string,
+  openingAmount: number,
+  currency = "USD",
+) {
   const { data, error } = await user.client.rpc("create_account", {
     space: spaceId,
     account_name: name,
-    account_currency: "USD",
+    account_currency: currency,
     account_color: "blue",
     opening_amount: openingAmount,
     opening_date: today(),

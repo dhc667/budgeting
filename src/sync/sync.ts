@@ -51,8 +51,9 @@ export function createCopySync(options: CopySyncOptions): CopySync {
         switch (applied.outcome) {
           case "repull":
             await store.clear();
+            // The screens keep the copy they show until the new one replaces it: a write of the
+            // user's own can start this, and unmounting them would lose what they are showing.
             copy = null;
-            publish(null);
             break;
           case "applied":
             await store.save(applied.copy, applied.delta);

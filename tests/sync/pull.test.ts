@@ -13,7 +13,7 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance";
-import { today } from "../support/dates";
+import { daysAgo, today } from "../support/dates";
 
 afterAll(() => sql.end());
 
@@ -177,6 +177,35 @@ describe("pulling the local copy", () => {
     expect(reopened.fetchedSince).toEqual([device.copy().version, 0]);
     expect(reopened.copy().spaceIds).toContain(familyId);
     expect(idsIn(reopened.copy(), "currencies")).not.toContain("ZZZ");
+  });
+
+  it("pulls everything again when an account in a new currency makes its history visible", async () => {
+    await addRates("XPA");
+    const device = deviceOf(ben);
+    await device.sync.pull();
+    expect(ratesIn(device.copy(), "XPA")).toHaveLength(1);
+    const { version } = device.copy();
+
+    await addAccount(ana, familyId, "Euros", "XPA");
+    await device.sync.pull();
+
+    expect(device.fetchedSince).toEqual([0, version, 0]);
+    expect(ratesIn(device.copy(), "XPA")).toHaveLength(rateDays);
+    expect(device.copy().rateCurrencies).toContain("XPA");
+  });
+
+  it("drops the superseded latest rate of a currency the user doesn't use", async () => {
+    await sql`insert into public.currencies (code, decimals) values ('XPB', 2) on conflict do nothing`;
+    await sql`insert into public.exchange_rates (date, currency, rate)
+      values (${daysAgo(1)}, 'XPB', 1.5)`;
+    const device = deviceOf(ben);
+    await device.sync.pull();
+    expect(ratesIn(device.copy(), "XPB")).toEqual([daysAgo(1)]);
+
+    await sql`insert into public.exchange_rates (date, currency, rate) values (${today()}, 'XPB', 1.6)`;
+    await device.sync.pull();
+
+    expect(ratesIn(device.copy(), "XPB")).toEqual([today()]);
   });
 
   it("keeps the copy when a pull fails", async () => {
@@ -348,11 +377,27 @@ function postingsOf(copy: LocalCopy, transactionId: string) {
   );
 }
 
-async function addAccount(user: User, spaceId: string, name: string) {
+const rateDays = 4;
+
+async function addRates(currency: string) {
+  await sql`insert into public.currencies (code, decimals) values (${currency}, 2) on conflict do nothing`;
+  await sql`insert into public.exchange_rates (date, currency, rate)
+    select ${today()}::date - day, ${currency}, 1.5 from generate_series(0, ${rateDays - 1}) as day
+    on conflict do nothing`;
+}
+
+function ratesIn(copy: LocalCopy, currency: string): unknown[] {
+  return [...copy.rows.exchange_rates.values()]
+    .filter((rate) => rate.currency === currency)
+    .map(({ date }) => date)
+    .sort();
+}
+
+async function addAccount(user: User, spaceId: string, name: string, currency = "USD") {
   const { data, error } = await user.client.rpc("create_account", {
     space: spaceId,
     account_name: name,
-    account_currency: "USD",
+    account_currency: currency,
     account_color: "blue",
     opening_amount: 10_000,
     opening_date: today(),
