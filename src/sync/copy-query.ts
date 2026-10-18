@@ -27,9 +27,8 @@ export function useCopyQuery<Result>(
   });
 }
 
-// Resolves once the write has been pulled back, so the screen it leads to already shows it.
-// `alsoInvalidate` names the queries that still read the instance; they refetch after the pull so
-// no screen shows the write on one side of the app and not the other.
+// The pull resolves before `alsoInvalidate` refetches, so the screen the write leads to already
+// shows it.
 export function useCopyMutation<Input, Output>(
   mutationFn: (input: Input) => Promise<Output>,
   alsoInvalidate: readonly QueryKey[] = [],

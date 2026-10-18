@@ -1,3 +1,4 @@
+import { memberOf } from "../supabase/json";
 import { useTranslation } from "react-i18next";
 import { describeBudgetChange } from "../budgets/budget-activity";
 import { useCategories } from "../categories/category-queries";
@@ -11,8 +12,8 @@ import {
   restorableDeletions,
 } from "../transactions/transaction-activity";
 import { EmptyState } from "../ui/Card";
-import { hasChanged, ledgerAccountKinds, type Phrasing, stringAt, valueAt } from "./activity";
-import type { Activity } from "./space-queries";
+import { hasChanged, ledgerAccountKinds, type Phrasing, stringAt } from "./activity";
+import type { Activity } from "../activity/activity";
 
 export function ActivityList({ activity }: { activity: Activity[] | undefined }) {
   const { t } = useTranslation();
@@ -111,7 +112,7 @@ function describeMembershipChange(
 }
 
 function describeLedgerAccountChange(entry: Activity, actor: string, phrasing: Phrasing): string[] {
-  const kind = ledgerAccountKinds.find((kind) => kind === valueAt(entry.new ?? entry.old, "kind"));
+  const kind = ledgerAccountKinds.find((kind) => kind === memberOf(entry.new ?? entry.old, "kind"));
   switch (kind) {
     case "account":
       return describeAccountChange(entry, actor, phrasing);
@@ -148,7 +149,7 @@ function describeAccountChange(entry: Activity, actor: string, { t }: Phrasing):
       if (changed("color")) lines.push(t("activity.account.recolored", { actor, name }));
       if (changed("archived"))
         lines.push(
-          valueAt(entry.new, "archived") === true
+          memberOf(entry.new, "archived") === true
             ? t("activity.account.archived", { actor, name })
             : t("activity.account.unarchived", { actor, name }),
         );
@@ -167,8 +168,8 @@ function describeCategoryChange(
     case "insert":
       return [t("activity.category.added", { actor, name })];
     case "delete": {
-      const movedTo = stringAt(valueAt(entry.old, "moved_to") ?? null, "name");
-      const count = valueAt(entry.old, "moved_transactions");
+      const movedTo = stringAt(memberOf(entry.old, "moved_to") ?? null, "name");
+      const count = memberOf(entry.old, "moved_transactions");
       return movedTo === null || typeof count !== "number"
         ? [t("activity.category.deleted", { actor, name })]
         : [t("activity.category.deletedAndMoved", { actor, name, count, to: movedTo })];
@@ -194,7 +195,7 @@ function describeCategoryChange(
       }
       if (hasChanged(entry, "kind"))
         lines.push(
-          valueAt(entry.new, "kind") === "income"
+          memberOf(entry.new, "kind") === "income"
             ? t("activity.category.madeIncome", { actor, name })
             : t("activity.category.madeExpense", { actor, name }),
         );

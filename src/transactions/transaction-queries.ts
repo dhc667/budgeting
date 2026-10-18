@@ -1,7 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { setBudgetExclusions } from "../budgets/budget-queries";
 import { useSupabase } from "../instance/instance-context";
-import type { Activity } from "../spaces/space-queries";
+import type { Activity } from "../activity/activity";
 import type { AppSupabase } from "../supabase/client";
 import { useCopyMutation } from "../sync/copy-query";
 import type { Database } from "../supabase/database";
