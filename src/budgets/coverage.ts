@@ -2,7 +2,7 @@ import type { Account } from "../accounts/account-queries";
 import type { Category } from "../categories/category-queries";
 import type { Budget } from "./budget-queries";
 
-// The budgets an expense or refund counts toward, as `budget_spending` counts it: one of its
+// The budgets an expense or refund counts toward, as `readBudgetSpending` counts it: one of its
 // categories or their subcategories, from one of its accounts, within its dates.
 export function budgetsCounting(
   budgets: Budget[],

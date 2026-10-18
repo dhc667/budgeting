@@ -1,10 +1,4 @@
-import {
-  type QueryKey,
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryResult,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { LocalCopy } from "./copy";
 import { copyQueryKey, useLocalCopy, useRequestPull } from "./local-copy-context";
 
@@ -27,21 +21,12 @@ export function useCopyQuery<Result>(
   });
 }
 
-// The pull resolves before `alsoInvalidate` refetches, so the screen the write leads to already
-// shows it.
-export function useCopyMutation<Input, Output>(
-  mutationFn: (input: Input) => Promise<Output>,
-  alsoInvalidate: readonly QueryKey[] = [],
-) {
-  const queryClient = useQueryClient();
+export function useCopyMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
   const requestPull = useRequestPull();
   return useMutation({
     mutationFn,
     async onSuccess() {
       await requestPull();
-      await Promise.all(
-        alsoInvalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-      );
     },
   });
 }
