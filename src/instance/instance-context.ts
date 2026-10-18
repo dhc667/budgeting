@@ -17,6 +17,12 @@ export function useInstance(): InstanceContextValue {
   return context;
 }
 
+export function useConnectedInstance(): Instance {
+  const { instance } = useInstance();
+  if (!instance) throw new Error("useConnectedInstance must be used below InstanceGate");
+  return instance;
+}
+
 export function useSupabase(): AppSupabase {
   const { supabase } = useInstance();
   if (!supabase) throw new Error("useSupabase must be used below InstanceGate");

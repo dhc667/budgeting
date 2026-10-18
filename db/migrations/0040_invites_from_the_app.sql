@@ -1,0 +1,2 @@
+ALTER TABLE "invite_codes" ALTER COLUMN "expires_at" SET DEFAULT now() + interval '24 hours';--> statement-breakpoint
+CREATE POLICY "users invite people" ON "invite_codes" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK (true);

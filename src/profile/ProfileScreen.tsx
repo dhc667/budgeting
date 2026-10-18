@@ -31,6 +31,7 @@ export function ProfileScreen() {
       <AboutForm profile={profile} />
       <FormatsForm profile={profile} />
       <SpacesCard />
+      <InviteCard />
       <PasswordForm />
       <DeviceCard />
     </div>
@@ -161,6 +162,18 @@ function SpacesCard() {
       <p className="text-sm text-zinc-500">{t("profile.spaces.explained")}</p>
       <Link to="/spaces" className="self-start font-medium text-emerald-700 dark:text-emerald-400">
         {t("profile.spaces.manage")}
+      </Link>
+    </Card>
+  );
+}
+
+function InviteCard() {
+  const { t } = useTranslation();
+  return (
+    <Card title={t("invite.card")}>
+      <p className="text-sm text-zinc-500">{t("profile.invite.explained")}</p>
+      <Link to="/invite" className="self-start font-medium text-emerald-700 dark:text-emerald-400">
+        {t("profile.invite.open")}
       </Link>
     </Card>
   );

@@ -11,7 +11,7 @@ One family's deployment of the backend. Everyone in an instance can see each oth
 _Avoid_: server, database, tenant
 
 **Instance owner**:
-The person who set up the instance and holds its credentials; the only one who can issue invite codes or reset passwords.
+The person who set up the instance and holds its credentials; the only one who can reset passwords.
 _Avoid_: admin
 
 **User**:
@@ -22,8 +22,8 @@ _Avoid_: account, member (when meaning a login)
 A user's name and display currency, visible to everyone in the instance, plus their language and how numbers and dates look. Each of those three can be left on Automatic, which follows the device. It also holds how many days ahead the dashboard shows upcoming transactions, 7 unless they choose otherwise.
 
 **Invite code**:
-A one-time, expiring code, issued by the instance owner and delivered as a QR code, that lets one person sign up as a user.
-_Avoid_: token, invitation link
+A one-time, expiring code that lets one person sign up as a user. Any user can issue one, delivered as a QR code or a link that carries it.
+_Avoid_: token
 
 **Space**:
 A group of users who share accounts, categories and budgets. Every member of a space has the same rights.
