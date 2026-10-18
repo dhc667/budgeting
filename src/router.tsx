@@ -19,6 +19,7 @@ import { InstanceGate } from "./instance/InstanceGate";
 import { connectPath } from "./instance/connect-link";
 import { AppShell } from "./layout/AppShell";
 import { ProfileScreen } from "./profile/ProfileScreen";
+import { LazyReportsScreen } from "./reports/LazyReportsScreen";
 import { RecurringScreen } from "./recurring/RecurringScreen";
 import { RecurringTransactionScreen } from "./recurring/RecurringTransactionScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
@@ -60,12 +61,7 @@ export function createAppRouter() {
                         { path: "budgets", element: <BudgetsScreen /> },
                         { path: "budgets/new", element: <NewBudgetScreen /> },
                         { path: "budgets/:budgetId", element: <BudgetScreen /> },
-                        {
-                          path: "reports",
-                          lazy: async () => ({
-                            Component: (await import("./reports/ReportsScreen")).ReportsScreen,
-                          }),
-                        },
+                        { path: "reports", element: <LazyReportsScreen /> },
                         { path: "profile", element: <ProfileScreen /> },
                         { path: "spaces", element: <SpacesScreen /> },
                         { path: "spaces/new", element: <NewSpaceScreen /> },

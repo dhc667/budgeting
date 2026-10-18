@@ -317,6 +317,15 @@ describe("pulling the local copy", () => {
     expect(after.published).toEqual([]);
   });
 
+  it("downloads nothing when closed before its saved copy has opened", async () => {
+    const device = deviceOf(ben);
+    const pulling = device.sync.pull();
+    device.sync.close();
+    await pulling;
+
+    expect(device.fetchedSince).toEqual([]);
+  });
+
   it("does not bring the copy back once closed, even with a pull waiting", async () => {
     const entered = deferred();
     const release = deferred();
