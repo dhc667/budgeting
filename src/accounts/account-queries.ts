@@ -17,21 +17,19 @@ export function useAccountHistory(accountId: string) {
 
 export function useCreateAccount() {
   const supabase = useSupabase();
-  return useAccountMutation(
-    async ({ spaceId, ...details }: AccountDetails & { spaceId: string }) => {
-      const { data, error } = await supabase.rpc("create_account", {
-        space: spaceId,
-        ...detailsArgs(details),
-      });
-      if (error) throw error;
-      return data;
-    },
-  );
+  return useCopyMutation(async ({ spaceId, ...details }: AccountDetails & { spaceId: string }) => {
+    const { data, error } = await supabase.rpc("create_account", {
+      space: spaceId,
+      ...detailsArgs(details),
+    });
+    if (error) throw error;
+    return data;
+  });
 }
 
 export function useUpdateAccount(accountId: string) {
   const supabase = useSupabase();
-  return useAccountMutation(async (details: AccountDetails) => {
+  return useCopyMutation(async (details: AccountDetails) => {
     const { error } = await supabase.rpc("update_account", {
       account_id: accountId,
       ...detailsArgs(details),
@@ -42,7 +40,7 @@ export function useUpdateAccount(accountId: string) {
 
 export function useArchiveAccount(accountId: string) {
   const supabase = useSupabase();
-  return useAccountMutation(async (archived: boolean) => {
+  return useCopyMutation(async (archived: boolean) => {
     const { error } = await supabase.from("accounts").update({ archived }).eq("id", accountId);
     if (error) throw error;
   });
@@ -50,7 +48,7 @@ export function useArchiveAccount(accountId: string) {
 
 export function useDeleteAccount(accountId: string) {
   const supabase = useSupabase();
-  return useAccountMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.from("accounts").delete().eq("id", accountId);
     if (error) throw error;
   });
@@ -58,15 +56,10 @@ export function useDeleteAccount(accountId: string) {
 
 export function useReorderAccounts() {
   const supabase = useSupabase();
-  return useAccountMutation(async (accountIds: string[]) => {
+  return useCopyMutation(async (accountIds: string[]) => {
     const { error } = await supabase.rpc("reorder_accounts", { account_ids: accountIds });
     if (error) throw error;
   });
-}
-
-// Budgets forget deleted accounts.
-function useAccountMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 function detailsArgs(details: AccountDetails) {

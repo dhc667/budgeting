@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRequestPull } from "../sync/local-copy-context";
 import { useSupabase } from "../instance/instance-context";
 import type { AppSupabase } from "../supabase/client";
@@ -13,7 +13,6 @@ import {
 // Runs on the first open of each day, in the background: a failure only leaves rates as they were.
 export function useSyncExchangeRates() {
   const supabase = useSupabase();
-  const queryClient = useQueryClient();
   const requestPull = useRequestPull();
   useQuery({
     queryKey: ["exchange-rates-sync"],
@@ -21,10 +20,7 @@ export function useSyncExchangeRates() {
     retry: false,
     async queryFn() {
       await syncExchangeRates(supabase, await currenciesWithProviderRates(supabase));
-      await Promise.all([
-        requestPull(),
-        queryClient.invalidateQueries({ queryKey: ["rate-history"] }),
-      ]);
+      await requestPull();
       return null;
     },
   });

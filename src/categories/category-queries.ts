@@ -16,21 +16,19 @@ export function useCategoryHistory(categoryId: string) {
 
 export function useCreateCategory() {
   const supabase = useSupabase();
-  return useCategoryMutation(
-    async ({ spaceId, ...details }: CategoryDetails & { spaceId: string }) => {
-      const { data, error } = await supabase.rpc("create_category", {
-        space: spaceId,
-        ...detailsArgs(details),
-      });
-      if (error) throw error;
-      return data;
-    },
-  );
+  return useCopyMutation(async ({ spaceId, ...details }: CategoryDetails & { spaceId: string }) => {
+    const { data, error } = await supabase.rpc("create_category", {
+      space: spaceId,
+      ...detailsArgs(details),
+    });
+    if (error) throw error;
+    return data;
+  });
 }
 
 export function useUpdateCategory(categoryId: string) {
   const supabase = useSupabase();
-  return useCategoryMutation(async (details: CategoryDetails) => {
+  return useCopyMutation(async (details: CategoryDetails) => {
     const { error } = await supabase.rpc("update_category", {
       category_id: categoryId,
       ...detailsArgs(details),
@@ -41,18 +39,13 @@ export function useUpdateCategory(categoryId: string) {
 
 export function useDeleteCategory(categoryId: string) {
   const supabase = useSupabase();
-  return useCategoryMutation(async (moveTo: string | null) => {
+  return useCopyMutation(async (moveTo: string | null) => {
     const { error } = await supabase.rpc("delete_category", {
       category_id: categoryId,
       move_to: moveTo,
     });
     if (error) throw error;
   });
-}
-
-// Budgets follow deleted categories.
-function useCategoryMutation<Input, Output>(mutationFn: (input: Input) => Promise<Output>) {
-  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 function detailsArgs(details: CategoryDetails) {

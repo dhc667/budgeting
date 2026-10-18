@@ -1,29 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "../instance/instance-context";
 import type { Database } from "../supabase/database";
-import { useCopyMutation } from "../sync/copy-query";
-import type { Activity } from "../activity/activity";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import type { TransactionDraft } from "../transactions/transaction-queries";
+import { readRecurringHistory, readRecurringTransactions } from "./read-recurring";
 import type { Schedule } from "./schedule";
 
 export function useRecurringTransactions() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["recurring"],
-    async queryFn(): Promise<RecurringTransaction[]> {
-      const { data, error } = await supabase
-        .from("recurring_transactions")
-        .select("*")
-        .order("created_at");
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["recurring"], ({ rows }) => readRecurringTransactions(rows));
 }
 
 export function useCreateRecurringTransaction() {
   const supabase = useSupabase();
-  return useRecurringMutation(async ({ draft, schedule, recordFirst }: NewRecurring) => {
+  return useCopyMutation(async ({ draft, schedule, recordFirst }: NewRecurring) => {
     const { error } = await supabase.rpc("create_recurring_transaction", {
       ...templateArgs(draft),
       ...scheduleArgs(schedule),
@@ -34,24 +22,16 @@ export function useCreateRecurringTransaction() {
 }
 
 export function useRecurringHistory(ruleId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["recurring", ruleId, "history"],
-    async queryFn(): Promise<Activity[]> {
-      const { data, error } = await supabase.rpc("recurring_transaction_history", {
-        recurring_transaction_id: ruleId,
-      });
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["recurring", ruleId, "history"], ({ rows }) =>
+    readRecurringHistory(rows, ruleId),
+  );
 }
 
 // Refused if one was recorded or skipped since the member opened it. `restart` counts the schedule
 // from its new start, with nothing done.
 export function useUpdateRecurringTransaction(rule: RecurringTransaction) {
   const supabase = useSupabase();
-  return useRecurringMutation(async ({ draft, schedule, restart }: RuleEdit) => {
+  return useCopyMutation(async ({ draft, schedule, restart }: RuleEdit) => {
     const { error } = await supabase.rpc("update_recurring_transaction", {
       recurring_transaction_id: rule.id,
       seen_done: rule.done,
@@ -65,7 +45,7 @@ export function useUpdateRecurringTransaction(rule: RecurringTransaction) {
 
 export function usePauseRecurringTransaction(rule: RecurringTransaction) {
   const supabase = useSupabase();
-  return useRecurringMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.rpc("pause_recurring_transaction", {
       recurring_transaction_id: rule.id,
     });
@@ -75,7 +55,7 @@ export function usePauseRecurringTransaction(rule: RecurringTransaction) {
 
 export function useResumeRecurringTransaction(rule: RecurringTransaction) {
   const supabase = useSupabase();
-  return useRecurringMutation(async (nextOccurrence: number) => {
+  return useCopyMutation(async (nextOccurrence: number) => {
     const { error } = await supabase.rpc("resume_recurring_transaction", {
       recurring_transaction_id: rule.id,
       seen_done: rule.done,
@@ -87,7 +67,7 @@ export function useResumeRecurringTransaction(rule: RecurringTransaction) {
 
 export function useDeleteRecurringTransaction(rule: RecurringTransaction) {
   const supabase = useSupabase();
-  return useRecurringMutation(async () => {
+  return useCopyMutation(async () => {
     const { error } = await supabase.rpc("delete_recurring_transaction", {
       recurring_transaction_id: rule.id,
     });
@@ -98,7 +78,7 @@ export function useDeleteRecurringTransaction(rule: RecurringTransaction) {
 // `occurrence` is the one the member saw: if another recorded or skipped it meanwhile, it's refused.
 export function useRecordUpcoming() {
   const supabase = useSupabase();
-  return useRecurringMutation(async ({ rule, occurrence, date, amount, toAmount }: Recording) => {
+  return useCopyMutation(async ({ rule, occurrence, date, amount, toAmount }: Recording) => {
     const { error } = await supabase.rpc("record_recurring_transaction", {
       recurring_transaction_id: rule.id,
       occurrence,
@@ -112,18 +92,13 @@ export function useRecordUpcoming() {
 
 export function useSkipUpcoming() {
   const supabase = useSupabase();
-  return useRecurringMutation(async ({ rule, occurrence }: Upcoming) => {
+  return useCopyMutation(async ({ rule, occurrence }: Upcoming) => {
     const { error } = await supabase.rpc("skip_recurring_transaction", {
       recurring_transaction_id: rule.id,
       occurrence,
     });
     if (error) throw error;
   });
-}
-
-// Recording one moves balances, so everything a transaction touches is read again.
-function useRecurringMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
-  return useCopyMutation(mutationFn, [["recurring"], ["transactions"], ["budgets"]]);
 }
 
 // A draft may still hold what another type used; only what its own type uses is saved.
