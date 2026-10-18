@@ -1,86 +1,56 @@
-import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { setBudgetExclusions } from "../budgets/budget-queries";
 import { useSupabase } from "../instance/instance-context";
-import type { Activity } from "../activity/activity";
-import type { AppSupabase } from "../supabase/client";
-import { useCopyMutation } from "../sync/copy-query";
+import { useSignedInUser } from "../auth/session";
+import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
+import {
+  readRecentTransactions,
+  readTitleSuggestions,
+  readTransaction,
+  readTransactionHistory,
+  readTransactions,
+} from "./read-transactions";
 import type { Database } from "../supabase/database";
 
 export function useTransactions(filter: TransactionFilter) {
-  const supabase = useSupabase();
-  return useInfiniteQuery({
-    queryKey: ["transactions", "list", filter],
-    initialPageParam: 0,
-    async queryFn({ pageParam }): Promise<Transaction[]> {
-      const { data, error } = await newestFirst(selectTransactions(supabase, filter)).range(
-        pageParam,
-        pageParam + pageSize - 1,
-      );
-      if (error) throw error;
-      return data;
-    },
-    getNextPageParam: (lastPage, pages) =>
-      lastPage.length < pageSize ? undefined : pages.length * pageSize,
-    placeholderData: keepPreviousData,
+  const filterKey = JSON.stringify(filter);
+  const [asked, setAsked] = useState({ filterKey, count: pageSize });
+  const count = asked.filterKey === filterKey ? asked.count : pageSize;
+  const result = useCopyQuery(["transactions", "list", filter, count], ({ rows }) => {
+    const matching = readTransactions(rows, filter);
+    return { transactions: matching.slice(0, count), hasMore: matching.length > count };
   });
+  return {
+    ...result,
+    showMore: () => setAsked({ filterKey, count: count + pageSize }),
+  };
 }
 
 // Waits for the spaces to show, rather than first asking for those of no space at all.
 export function useRecentTransactions(spaceIds: string[] | undefined, count: number) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["transactions", "recent", spaceIds, count],
-    enabled: spaceIds !== undefined,
-    async queryFn(): Promise<Transaction[]> {
-      const { data, error } = await newestFirst(
-        selectTransactions(supabase, { spaceIds: spaceIds ?? [] }),
-      ).limit(count);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const result = useCopyQuery(["transactions", "recent", spaceIds, count], ({ rows }) =>
+    readRecentTransactions(rows, spaceIds ?? [], count),
+  );
+  return spaceIds === undefined ? { ...result, data: undefined } : result;
 }
 
 export function useTransaction(transactionId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["transactions", transactionId],
-    async queryFn(): Promise<Transaction | null> {
-      const { data, error } = await supabase
-        .from("transaction_details")
-        .select("*")
-        .eq("id", transactionId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["transactions", transactionId], ({ rows }) =>
+    readTransaction(rows, transactionId),
+  );
 }
 
 export function useTransactionHistory(transactionId: string) {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["transactions", transactionId, "history"],
-    async queryFn(): Promise<Activity[]> {
-      const { data, error } = await supabase.rpc("transaction_history", {
-        transaction_id: transactionId,
-      });
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useCopyQuery(["transactions", transactionId, "history"], ({ rows }) =>
+    readTransactionHistory(rows, transactionId),
+  );
 }
 
 export function useTitleSuggestions() {
-  const supabase = useSupabase();
-  return useQuery({
-    queryKey: ["transactions", "titles"],
-    async queryFn(): Promise<TitleSuggestion[]> {
-      const { data, error } = await supabase.rpc("title_suggestions");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const user = useSignedInUser();
+  return useCopyQuery(["transactions", "titles"], ({ rows }) =>
+    readTitleSuggestions(rows, user.id),
+  );
 }
 
 // Leaving it out of budgets is a second request: a retry after it failed finds the transaction
@@ -130,41 +100,9 @@ export function useRestoreTransaction(transactionId: string) {
 }
 
 // A transaction moves balances, counts in its category and shows in its spaces' activity, all of
-// which are read from the copy; budgets and the transaction lists still read the instance.
+// which are read from the copy; budgets still read the instance.
 function useTransactionMutation<Input>(mutationFn: (input: Input) => Promise<void>) {
-  return useCopyMutation(mutationFn, [["transactions"], ["budgets"]]);
-}
-
-function selectTransactions(supabase: AppSupabase, filter: TransactionFilter) {
-  let query = supabase.from("transaction_details").select("*");
-  if (filter.spaceIds) query = query.overlaps("space_ids", filter.spaceIds);
-  if (filter.accountIds) {
-    const ids = filter.accountIds.join(",");
-    query = query.or(`from_account_id.in.(${ids}),to_account_id.in.(${ids})`);
-  }
-  if (filter.categoryIds) query = query.in("category_id", filter.categoryIds);
-  if (filter.from) query = query.gte("date", filter.from);
-  if (filter.to) query = query.lte("date", filter.to);
-  if (filter.search) query = query.ilike("search_text", containing(filter.search));
-  return query;
-}
-
-// Without accents, as the view stores what searches match against, and with the wildcards the
-// user typed taken literally.
-function containing(search: string): string {
-  const plain = search
-    .trim()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/[\\%_]/g, "\\$&");
-  return `%${plain}%`;
-}
-
-function newestFirst(query: ReturnType<typeof selectTransactions>) {
-  return query
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false });
+  return useCopyMutation(mutationFn, [["budgets"]]);
 }
 
 // A draft may still hold what another type used; only what its own type uses is saved.

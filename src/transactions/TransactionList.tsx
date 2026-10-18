@@ -20,23 +20,19 @@ type TransactionListProps = { filter: TransactionFilter; empty?: string };
 
 export function TransactionList({ filter, empty }: TransactionListProps) {
   const { t } = useTranslation();
-  const { data, error, hasNextPage, fetchNextPage, isFetchingNextPage, isPlaceholderData } =
-    useTransactions(filter);
+  const { data, error, showMore } = useTransactions(filter);
   if (error) return <ErrorText>{t("transactions.errors.loadFailed")}</ErrorText>;
   if (!data) return null;
-  const transactions = data.pages.flat();
 
   return (
     <div className="flex flex-col gap-3">
-      <TransactionGroups transactions={transactions} accountId={seenFrom(filter)} empty={empty} />
-      {hasNextPage && (
-        // The pages shown may still be those of the filter before, until this one's first arrives.
-        <Button
-          variant="secondary"
-          disabled={isFetchingNextPage || isPlaceholderData}
-          onClick={() => void fetchNextPage()}
-          className="self-start"
-        >
+      <TransactionGroups
+        transactions={data.transactions}
+        accountId={seenFrom(filter)}
+        empty={empty}
+      />
+      {data.hasMore && (
+        <Button variant="secondary" onClick={showMore} className="self-start">
           {t("transactions.showMore")}
         </Button>
       )}
