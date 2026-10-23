@@ -35,7 +35,7 @@ export function BudgetsScreen() {
             {budgets?.length === 0 ? t("budgets.none") : t("budgets.noneShown")}
           </EmptyState>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {shown.map((budget) => (
               <li key={budget.id}>
                 <BudgetCard budget={budget} spaces={shownSpaces} />

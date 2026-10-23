@@ -17,13 +17,13 @@ export function DashboardScreen() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold">{greeting(t, profile.display_name)}</h1>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <NetWorthCard />
 
         <AccountsCard className="lg:col-span-2" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4 lg:order-last">
           <UpcomingCard />
           <BudgetsCarousel />
