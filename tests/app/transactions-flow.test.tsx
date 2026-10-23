@@ -114,6 +114,22 @@ describe("transactions", () => {
     expect(screen.queryByRole("button", { name: "Delete transaction" })).toBeNull();
   });
 
+  it("shows the date picked in the user's date format", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "" });
+    await user.click(defined((await screen.findAllByRole("link", { name: "Profile" }))[0]));
+    const formats = within(await screen.findByRole("region", { name: "Language and formats" }));
+    await user.selectOptions(formats.getByLabelText("Dates"), "day_month_year");
+    await user.click(formats.getByRole("button", { name: "Save" }));
+    await formats.findByText("Saved.");
+
+    await openNewTransaction();
+    await user.clear(screen.getByLabelText("Date"));
+    await user.type(screen.getByLabelText("Date"), "2026-03-04");
+
+    expect(screen.getByText("04/03/2026")).toBeTruthy();
+  });
+
   it("starts from the last account used, and suggests the category a title had", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "" });

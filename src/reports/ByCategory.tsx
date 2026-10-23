@@ -10,7 +10,7 @@ import { spaceName } from "../spaces/space";
 import { TransactionList } from "../transactions/TransactionList";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
-import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { CategoryPie } from "./CategoryPie";
 import { allTime, lastMonth, thisMonth, thisYear } from "./periods";
 import type { CategoryFlow } from "./read-reports";
@@ -304,15 +304,13 @@ function PeriodChoice({
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
-        <Field
+        <DateField
           label={t("reports.byCategory.from")}
-          type="date"
           value={period.from}
           onChange={(event) => onChange({ ...period, from: event.target.value })}
         />
-        <Field
+        <DateField
           label={t("reports.byCategory.to")}
-          type="date"
           value={period.to}
           onChange={(event) => onChange({ ...period, to: event.target.value })}
         />

@@ -17,6 +17,9 @@ HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
   this.open = false;
 };
 
+// Nor the pickers a date input opens.
+HTMLInputElement.prototype.showPicker = function () {};
+
 export function openApp(url: string) {
   window.location.hash = new URL(url).hash;
   render(

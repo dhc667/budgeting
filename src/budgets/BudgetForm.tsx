@@ -16,6 +16,7 @@ import { Button } from "../ui/Button";
 import { ChecklistField } from "../ui/ChecklistField";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { choiceField, submitWith, textField } from "../ui/forms";
 import { SelectField } from "../ui/SelectField";
 import type { BudgetDetails } from "./budget-queries";
@@ -159,20 +160,18 @@ function LoadedBudgetForm({
           </SelectField>
         </div>
       )}
-      <Field
+      <DateField
         label={t("budgets.form.startsOn")}
         hint={length === "repeating" ? t("budgets.form.startsOnHint") : undefined}
         name="startsOn"
-        type="date"
         value={startsOn}
         onChange={(event) => setStartsOn(event.target.value)}
         required
       />
       {length === "fixed" && (
-        <Field
+        <DateField
           label={t("budgets.form.endsOn")}
           name="endsOn"
-          type="date"
           min={startsOn}
           defaultValue={endsOn}
           required
