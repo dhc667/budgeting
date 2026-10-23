@@ -55,7 +55,7 @@ export function TransactionFilters({
         )}
       </div>
       {open && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {shownSpaces.length > 1 && (
             <SelectField
               label={t("transactions.filters.space")}
