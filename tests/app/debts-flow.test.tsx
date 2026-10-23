@@ -43,6 +43,29 @@ describe("debts", () => {
     expect(accounts.getByRole("link", { name: /Cash/ }).textContent).toMatch(/\$80\.00/);
   });
 
+  it("lists each currency owed, and tucks settled counterparties away", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Euros", openingBalance: "100", currency: "EUR" });
+    await addCounterparty("Charlie");
+    await give("Charlie", "Cash", "30");
+    await give("Charlie", "Euros", "20");
+    await addCounterparty("Dana");
+    await give("Dana", "Cash", "10");
+    await user.click(screen.getByRole("link", { name: "Dana gave me money" }));
+    await user.click(await screen.findByRole("button", { name: "Add transaction" }));
+    await screen.findByRole("heading", { name: "Dana", level: 1 });
+
+    await goHome();
+    const debts = within(await screen.findByRole("region", { name: "Debts" }));
+    const charlie = await debts.findByRole("link", { name: /Charlie/ });
+    expect(charlie.textContent).toMatch(/Owes you €20\.00/);
+    expect(charlie.textContent).toMatch(/Owes you \$30\.00/);
+    expect(debts.queryByRole("link", { name: /Dana/ })).toBeNull();
+    await user.click(debts.getByRole("button", { name: "Settled (1)" }));
+    expect(debts.getByRole("link", { name: /Dana/ })).toBeTruthy();
+  });
+
   it("records money borrowed from the transaction form's Debt tab", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "" });
