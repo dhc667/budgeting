@@ -15,6 +15,7 @@ import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { asTransaction, upcomingBy } from "./recurring";
 import {
   type Upcoming,
@@ -157,9 +158,8 @@ function RecordDialog({ upcoming, accounts, label, onClose }: RecordDialogProps)
           onChange={(event) => setToAmount(event.target.value)}
         />
       )}
-      <Field
+      <DateField
         label={t("transactions.form.date")}
-        type="date"
         max={localToday()}
         value={date}
         onChange={(event) => setDate(event.target.value)}

@@ -17,6 +17,7 @@ import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { submitWith } from "../ui/forms";
 import { Picker } from "../ui/Picker";
 import { useCounterparties, useCounterpartyTransactions, useForgive } from "./counterparty-queries";
@@ -127,10 +128,9 @@ function ForgiveForm({ counterparty, debts: debtsNow, accounts }: ForgiveFormPro
           onChange={(lines) => setLines(currency, lines)}
         />
       ))}
-      <Field
+      <DateField
         label={t("transactions.form.date")}
         name="date"
-        type="date"
         value={date}
         onChange={(event) => setDate(event.target.value)}
         max={localToday()}

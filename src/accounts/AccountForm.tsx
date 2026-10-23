@@ -10,6 +10,7 @@ import { isCheckViolation } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { choiceField, submitWith, textField } from "../ui/forms";
 import { ColorChoice } from "../colors/ColorChoice";
 import { colors } from "../colors/colors";
@@ -93,10 +94,9 @@ function LoadedAccountForm({
         required={currencyChanged}
         autoComplete="off"
       />
-      <Field
+      <DateField
         label={t("accounts.form.openingDate")}
         name="openingDate"
-        type="date"
         defaultValue={initial.openingDate}
         max={localToday()}
         required

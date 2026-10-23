@@ -21,6 +21,7 @@ import { isRaisedException, refusalReason } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { submitWithButton, textField } from "../ui/forms";
 import { ChecklistField } from "../ui/ChecklistField";
 import type { PickerOption } from "../ui/Picker";
@@ -382,10 +383,9 @@ function LoadedTransactionForm({
           </span>
         </label>
       )}
-      <Field
+      <DateField
         label={dateLabel(isRule, repeating, t)}
         name="date"
-        type="date"
         value={date}
         onChange={(event) => setDate(event.target.value)}
         max={repeating ? undefined : localToday()}

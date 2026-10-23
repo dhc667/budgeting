@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { SelectField } from "../ui/SelectField";
 import { type Schedule, units } from "./schedule";
 import { unitName } from "./recurring";
@@ -55,10 +56,9 @@ export function ScheduleFields({ initial, startsOn }: ScheduleFieldsProps) {
         ))}
       </div>
       {ending === "on" && (
-        <Field
+        <DateField
           label={t("recurring.form.endsOn")}
           name="endsOn"
-          type="date"
           min={startsOn}
           required
           defaultValue={initial?.endsOn ?? ""}

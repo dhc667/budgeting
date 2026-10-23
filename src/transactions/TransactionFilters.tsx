@@ -10,7 +10,7 @@ import { spaceName } from "../spaces/space";
 import type { Space } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
 import { ChecklistField } from "../ui/ChecklistField";
-import { Field } from "../ui/Field";
+import { DateField } from "../ui/DateField";
 import { SelectField } from "../ui/SelectField";
 import { activeCount, type ListFilters } from "./list-filters";
 
@@ -86,15 +86,13 @@ export function TransactionFilters({
             none={t("transactions.filters.allCategories")}
             several={(count) => t("transactions.filters.someCategories", { count })}
           />
-          <Field
-            type="date"
+          <DateField
             label={t("transactions.filters.from")}
             value={values.from}
             max={values.to || undefined}
             onChange={(event) => change({ from: event.target.value })}
           />
-          <Field
-            type="date"
+          <DateField
             label={t("transactions.filters.to")}
             value={values.to}
             min={values.from || undefined}
