@@ -820,6 +820,8 @@
     },
     "owesYou": "Owes you {{amount}}",
     "youOwe": "You owe {{amount}}",
+    "owesYouLabel": "Owes you",
+    "youOweLabel": "You owe",
     "settledIn": "Settled in {{currency}}",
     "settledSection_one": "Settled ({{count}})",
     "settledSection_other": "Settled ({{count}})",

@@ -8,7 +8,7 @@ import { useShownSpaces } from "../spaces/space-picker";
 import { Card, EmptyState } from "../ui/Card";
 import { useCounterparties } from "./counterparty-queries";
 import { openBalances, owedClass, owedPhrase } from "./owed";
-import type { Counterparty } from "./read-counterparties";
+import type { Counterparty, CounterpartyBalance } from "./read-counterparties";
 
 export function DebtsCard({ className }: { className?: string }) {
   const { t } = useTranslation();
@@ -59,7 +59,7 @@ function SettledCounterparties({ counterparties }: { counterparties: Counterpart
 
 function CounterpartyList({ counterparties }: { counterparties: Counterparty[] }) {
   return (
-    <ul className="-mx-2 flex flex-col">
+    <ul className="-mx-2 flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
       {counterparties.map((counterparty) => (
         <li key={counterparty.id}>
           <CounterpartyLink counterparty={counterparty} />
@@ -70,22 +70,46 @@ function CounterpartyList({ counterparties }: { counterparties: Counterparty[] }
 }
 
 function CounterpartyLink({ counterparty }: { counterparty: Counterparty }) {
-  const { t } = useTranslation();
-  const money = useMoney();
+  const open = openBalances(counterparty.balances);
   return (
     <Link
       to={`/counterparties/${counterparty.id}`}
-      className="flex min-h-11 items-center gap-3 rounded-lg px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+      className="flex min-h-11 items-start gap-3 rounded-lg px-2 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
     >
-      <ColorDot color={counterparty.color} />
-      <span className="flex-1 truncate">{counterparty.name}</span>
-      <span className="flex flex-col items-end text-sm font-medium whitespace-nowrap">
-        {openBalances(counterparty.balances).map((balance) => (
-          <span key={balance.currency} className={owedClass(balance.owed)}>
-            {owedPhrase(balance, money, t)}
-          </span>
-        ))}
+      <span className="flex h-6 items-center">
+        <ColorDot color={counterparty.color} />
+      </span>
+      <span className="flex-1 truncate leading-6">{counterparty.name}</span>
+      <span className="flex flex-col items-end gap-1.5 whitespace-nowrap">
+        <OwedGroup balances={open.filter(({ owed }) => owed > 0)} />
+        <OwedGroup balances={open.filter(({ owed }) => owed < 0)} />
       </span>
     </Link>
+  );
+}
+
+function OwedGroup({ balances }: { balances: CounterpartyBalance[] }) {
+  const { t } = useTranslation();
+  const money = useMoney();
+  const [first] = balances;
+  if (!first) return null;
+  if (balances.length === 1) {
+    return (
+      <span className={`text-sm leading-6 font-medium ${owedClass(first.owed)}`}>
+        {owedPhrase(first, money, t)}
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-col items-end text-sm font-medium tabular-nums">
+      <span className="text-xs leading-6 font-normal text-zinc-500">
+        {first.owed > 0 ? t("counterparties.owesYouLabel") : t("counterparties.youOweLabel")}
+      </span>
+      {balances.map(({ owed, currency }) => (
+        <span key={currency} className={owedClass(owed)}>
+          {money(Math.abs(owed), currency)}
+        </span>
+      ))}
+    </span>
   );
 }
