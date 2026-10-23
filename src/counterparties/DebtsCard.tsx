@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { ColorDot } from "../colors/ColorDot";
@@ -6,7 +7,7 @@ import { useMoney } from "../money/use-money";
 import { useShownSpaces } from "../spaces/space-picker";
 import { Card, EmptyState } from "../ui/Card";
 import { useCounterparties } from "./counterparty-queries";
-import { owedClass, owedSummary } from "./owed";
+import { openBalances, owedClass, owedPhrase } from "./owed";
 import type { Counterparty } from "./read-counterparties";
 
 export function DebtsCard({ className }: { className?: string }) {
@@ -17,19 +18,14 @@ export function DebtsCard({ className }: { className?: string }) {
   const shown = counterparties.filter(({ space_id }) =>
     shownSpaces.some(({ id }) => id === space_id),
   );
+  const owing = shown.filter(({ balances }) => openBalances(balances).length > 0);
+  const settled = shown.filter(({ balances }) => openBalances(balances).length === 0);
 
   return (
     <Card title={t("counterparties.title")} className={className}>
-      {shown.length === 0 && <EmptyState>{t("counterparties.none")}</EmptyState>}
-      {shown.length > 0 && (
-        <ul className="-mx-2 flex flex-col">
-          {shown.map((counterparty) => (
-            <li key={counterparty.id}>
-              <CounterpartyLink counterparty={counterparty} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {owing.length === 0 && <EmptyState>{t("counterparties.none")}</EmptyState>}
+      {owing.length > 0 && <CounterpartyList counterparties={owing} />}
+      {settled.length > 0 && <SettledCounterparties counterparties={settled} />}
       <Link
         to="/counterparties/new"
         className="flex h-11 items-center gap-2 self-start font-medium text-emerald-700 dark:text-emerald-400"
@@ -41,18 +37,54 @@ export function DebtsCard({ className }: { className?: string }) {
   );
 }
 
+function SettledCounterparties({ counterparties }: { counterparties: Counterparty[] }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const Chevron = expanded ? ChevronDown : ChevronRight;
+  return (
+    <section className="flex flex-col">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(!expanded)}
+        className="flex h-11 items-center gap-2 self-start text-sm font-medium text-zinc-500"
+      >
+        <Chevron className="size-4" />
+        {t("counterparties.settledSection", { count: counterparties.length })}
+      </button>
+      {expanded && <CounterpartyList counterparties={counterparties} />}
+    </section>
+  );
+}
+
+function CounterpartyList({ counterparties }: { counterparties: Counterparty[] }) {
+  return (
+    <ul className="-mx-2 flex flex-col">
+      {counterparties.map((counterparty) => (
+        <li key={counterparty.id}>
+          <CounterpartyLink counterparty={counterparty} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function CounterpartyLink({ counterparty }: { counterparty: Counterparty }) {
   const { t } = useTranslation();
   const money = useMoney();
   return (
     <Link
       to={`/counterparties/${counterparty.id}`}
-      className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+      className="flex min-h-11 items-center gap-3 rounded-lg px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
     >
       <ColorDot color={counterparty.color} />
       <span className="flex-1 truncate">{counterparty.name}</span>
-      <span className={`text-right text-sm font-medium ${owedClass(counterparty.balances)}`}>
-        {owedSummary(counterparty.balances, money, t)}
+      <span className="flex flex-col items-end text-sm font-medium whitespace-nowrap">
+        {openBalances(counterparty.balances).map((balance) => (
+          <span key={balance.currency} className={owedClass(balance.owed)}>
+            {owedPhrase(balance, money, t)}
+          </span>
+        ))}
       </span>
     </Link>
   );
