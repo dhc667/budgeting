@@ -820,6 +820,8 @@
     },
     "owesYou": "Te deve {{amount}}",
     "youOwe": "Você deve {{amount}}",
+    "owesYouLabel": "Te deve",
+    "youOweLabel": "Você deve",
     "settledIn": "Quitado em {{currency}}",
     "settledSection_one": "Quitada ({{count}})",
     "settledSection_other": "Quitadas ({{count}})",

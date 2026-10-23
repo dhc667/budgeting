@@ -820,6 +820,8 @@
     },
     "owesYou": "Te debe {{amount}}",
     "youOwe": "Le debes {{amount}}",
+    "owesYouLabel": "Te debe",
+    "youOweLabel": "Le debes",
     "settledIn": "Saldado en {{currency}}",
     "settledSection_one": "Saldada ({{count}})",
     "settledSection_other": "Saldadas ({{count}})",

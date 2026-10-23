@@ -59,8 +59,9 @@ describe("debts", () => {
     await goHome();
     const debts = within(await screen.findByRole("region", { name: "Debts" }));
     const charlie = await debts.findByRole("link", { name: /Charlie/ });
-    expect(charlie.textContent).toMatch(/Owes you €20\.00/);
-    expect(charlie.textContent).toMatch(/Owes you \$30\.00/);
+    expect(within(charlie).getByText("Owes you")).toBeTruthy();
+    expect(within(charlie).getByText("€20.00")).toBeTruthy();
+    expect(within(charlie).getByText("$30.00")).toBeTruthy();
     expect(debts.queryByRole("link", { name: /Dana/ })).toBeNull();
     await user.click(debts.getByRole("button", { name: "Settled (1)" }));
     expect(debts.getByRole("link", { name: /Dana/ })).toBeTruthy();
