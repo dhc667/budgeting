@@ -8,5 +8,8 @@
   html {
     @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
     -webkit-tap-highlight-color: transparent;
+    /* A name or title with no spaces would otherwise run off a phone's screen and widen the page.
+       Not break-word: that leaves a flex item as wide as its longest word. */
+    overflow-wrap: anywhere;
   }
 }
