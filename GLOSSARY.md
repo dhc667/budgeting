@@ -33,7 +33,7 @@ _Avoid_: household, group, workspace
 The space every user gets at signup, always named Private. Its owner is its only member, forever: it can't be shared, renamed or deleted.
 
 **Shared space**:
-A space any user can create and add other users of the instance to; they're members at once. Its last member can't leave, and it can be deleted only while it holds no transactions other than opening balances.
+A space any user can create and add other users of the instance to; they're members at once. No two shared spaces in the instance share a name, regardless of case, and none takes the private space's name in any of the app's languages. Its last member can't leave, and it can be deleted only while it holds no transactions other than opening balances.
 
 **Member**:
 A user who belongs to a space.
@@ -45,7 +45,7 @@ _Avoid_: space switcher, current space
 ### Money
 
 **Account**:
-A place where money is held, in a single currency, belonging to one space for good.
+A place where money is held, in a single currency, belonging to one space for good. No two accounts in a space share a name, regardless of case, archived ones included.
 _Avoid_: wallet
 
 **Archived account**:
@@ -56,7 +56,7 @@ An account in a space with more than one member; a joint pot that every member c
 _Avoid_: split, shared expense
 
 **Category**:
-A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. A subcategory always has its parent's kind, so moving it under a parent of the other kind, or changing its parent's kind, changes its own. Deleting a category moves its transactions to another category of the same kind in the same space. Every new space starts with a set of categories its members can change, named in the language the app was showing its creator; after that they are plain names that don't follow anyone's language. Every space also has two built-in categories, Debts forgiven and Debts forgiven to you, which only forgiven debts go into: they are always named in the reader's language, keep their kind, have no subcategories, and can't be deleted.
+A classification of income or expense, belonging to one space. Each category is either an expense category or an income category; that decides where it appears, not which way money can move through it. Categories nest one level: a parent category may have subcategories, and a parent includes its subcategories wherever it is used. Two categories of the same kind in a space share a name only if they have different parents, regardless of case: Food/Luxury and Fun/Luxury can both exist. A category's name can't contain a slash. A subcategory always has its parent's kind, so moving it under a parent of the other kind, or changing its parent's kind, changes its own. Deleting a category moves its transactions to another category of the same kind in the same space. Every new space starts with a set of categories its members can change, named in the language the app was showing its creator; after that they are plain names that don't follow anyone's language. Every space also has two built-in categories, Debts forgiven and Debts forgiven to you, which only forgiven debts go into: they are always named in the reader's language, keep their kind, have no subcategories, and can't be deleted.
 
 **Opening balance**:
 The transaction that records the money an account already held when it was added to the app. It is not income.
@@ -78,7 +78,7 @@ A transaction that moves money from a category into an account.
 A transaction that moves money between two accounts, possibly in different currencies and different spaces. Only someone who belongs to both spaces can change, delete or restore a transfer between them; anyone else sees just their side, coming from or going to another space.
 
 **Counterparty**:
-Anyone outside the family that money is lent to or borrowed from: a person, a company, anything. It belongs to one space, and what it owes is its debt.
+Anyone outside the family that money is lent to or borrowed from: a person, a company, anything. It belongs to one space, and what it owes is its debt. No two counterparties in a space share a name, regardless of case.
 _Avoid_: contact, debtor, creditor, lender
 
 **Debt**:
