@@ -5,7 +5,7 @@ import {
   sql,
   type SignedInUser as User,
 } from "../support/local-instance.ts";
-import { daysAgo, today } from "../support/dates.ts";
+import { daysAgo, daysBefore, today } from "../support/dates.ts";
 
 // Made-up currencies, so these tests leave the instance's real rates alone. The currencies
 // themselves stay: profiles and accounts may still point at them.
@@ -128,20 +128,21 @@ describe("saving exchange rates", () => {
 describe("latest exchange rates", () => {
   it("gives each currency its newest rate, stale when over 7 days older than the newest of all", async () => {
     const ana = await signedInUser("Ana");
+    const newest = await newestDay();
     await save(ana.client, [
-      rate(today(), fresh, 4),
-      rate(daysAgo(9), fresh, 3),
-      rate(daysAgo(7), old, 2),
-      rate(daysAgo(8), unrated, 1),
+      rate(newest, fresh, 4),
+      rate(daysBefore(newest, 9), fresh, 3),
+      rate(daysBefore(newest, 7), old, 2),
+      rate(daysBefore(newest, 8), unrated, 1),
     ]);
 
     const { data } = await ana.client.rpc("latest_exchange_rates");
 
     const ours = data?.filter(({ currency }) => [fresh, old, unrated].includes(currency));
     expect(ours?.sort((a, b) => a.currency.localeCompare(b.currency))).toEqual([
-      { currency: fresh, date: today(), rate: 4, stale: false },
-      { currency: old, date: daysAgo(7), rate: 2, stale: false },
-      { currency: unrated, date: daysAgo(8), rate: 1, stale: true },
+      { currency: fresh, date: newest, rate: 4, stale: false },
+      { currency: old, date: daysBefore(newest, 7), rate: 2, stale: false },
+      { currency: unrated, date: daysBefore(newest, 8), rate: 1, stale: true },
     ]);
   });
 });
@@ -216,6 +217,16 @@ async function displayCurrencyOf(user: User) {
 
 async function storedRates() {
   return sql`select date::text, currency, rate::text from exchange_rates where currency in ${sql([fresh, old, unrated, byHand])} order by date, currency`;
+}
+
+// The instance's real rates count towards the newest of all, and by evening in UTC the provider
+// already dates some of them tomorrow.
+async function newestDay(): Promise<string> {
+  const [stored] = await sql<
+    { date: string | null }[]
+  >`select max(date)::text as date from exchange_rates`;
+  const day = stored?.date ?? today();
+  return day > today() ? day : today();
 }
 
 async function clearRates() {
