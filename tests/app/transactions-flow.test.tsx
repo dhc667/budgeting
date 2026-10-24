@@ -276,6 +276,52 @@ describe("transactions", () => {
   });
 });
 
+describe("a transaction left half-filled", () => {
+  beforeEach(async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await openNewTransaction();
+    await user.type(screen.getByLabelText("Title"), "Market");
+    await user.type(screen.getByLabelText("Amount"), "12.50");
+    await choose("Category", "Groceries");
+    await user.type(screen.getByLabelText("Note"), "for the party");
+    await goHome();
+  });
+
+  it("is still there when the user comes back to the form", async () => {
+    await openNewTransaction();
+
+    expect(screen.getByLabelText("Title")).toHaveProperty("value", "Market");
+    expect(screen.getByLabelText("Amount")).toHaveProperty("value", "12.50");
+    expect(picked("Category")).toBe("Groceries");
+    expect(screen.getByLabelText("Note")).toHaveProperty("value", "for the party");
+  });
+
+  it("can be thrown away to start over", async () => {
+    await openNewTransaction();
+
+    await user.click(screen.getByRole("button", { name: "Start over" }));
+
+    expect(screen.getByLabelText("Title")).toHaveProperty("value", "");
+    expect(screen.getByLabelText("Amount")).toHaveProperty("value", "");
+    expect(screen.getByLabelText("Note")).toHaveProperty("value", "");
+    await goHome();
+    await openNewTransaction();
+    expect(screen.getByLabelText("Title")).toHaveProperty("value", "");
+  });
+
+  it("is gone once saved, so the next one starts blank", async () => {
+    await openNewTransaction();
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+    await screen.findByRole("heading", { name: "Transactions", level: 1 });
+
+    await openNewTransaction();
+
+    expect(screen.getByLabelText("Title")).toHaveProperty("value", "");
+    expect(screen.getByLabelText("Amount")).toHaveProperty("value", "");
+  });
+});
+
 // What the field shows: the chosen option, or the placeholder.
 describe("pickers", () => {
   it("narrow their options as the user types, but keep only an option", async () => {

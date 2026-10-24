@@ -485,7 +485,9 @@
     "new": {
       "title": "Nuevo movimiento",
       "submit": "Agregar movimiento",
-      "noAccounts": "Agrega una cuenta antes de registrar movimientos."
+      "noAccounts": "Agrega una cuenta antes de registrar movimientos.",
+      "resumed": "Retomando donde lo dejaste.",
+      "startOver": "Empezar de nuevo"
     },
     "form": {
       "type": "Tipo",

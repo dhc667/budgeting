@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Account, useAccounts } from "../accounts/account-queries";
 import { type Budget, useBudgets } from "../budgets/budget-queries";
@@ -22,7 +22,7 @@ import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { DateField } from "../ui/DateField";
-import { submitWithButton, textField } from "../ui/forms";
+import { submitWithButton } from "../ui/forms";
 import { ChecklistField } from "../ui/ChecklistField";
 import type { PickerOption } from "../ui/Picker";
 import { TitleField } from "./TitleField";
@@ -55,6 +55,8 @@ type TransactionFormProps = {
   // Fills in all that's owed for a debt the transaction settles. Only for a new one: an edited one
   // is already part of what's owed.
   offersWholeDebt?: boolean;
+  // Hears what's in the form as the user changes it, with only the amounts they typed themselves.
+  onChange?: (draft: TransactionDraft) => void;
 };
 
 type Saving =
@@ -118,6 +120,7 @@ function LoadedTransactionForm({
   spaces,
   budgets,
   offersWholeDebt = false,
+  onChange,
 }: LoadedProps) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -150,6 +153,7 @@ function LoadedTransactionForm({
   );
   const [toAmount, setToAmount] = useState(() => amountText(initial.toAmount, initial.toAccountId));
   const [date, setDate] = useState(initial.date);
+  const [note, setNote] = useState(initial.note);
   const isRule = saving.kind === "rule";
   const [repeatChecked, setRepeatChecked] = useState(isRule);
   // Recurring transactions don't give or receive money yet.
@@ -191,6 +195,37 @@ function LoadedTransactionForm({
   const amount = ownAmount ?? wholeDebtText ?? "";
   const exchanged = toAccount !== undefined && toAccount.currency !== account?.currency;
   // Rules record transactions later, so they leave nothing out of budgets.
+  const typedAmount =
+    ownAmount === null ? null : format.parseAmount(ownAmount, decimalsOf(accountId));
+  const typedToAmount = toAccount ? format.parseAmount(toAmount, decimalsOf(toAccount.id)) : null;
+
+  useEffect(() => {
+    onChange?.({
+      type,
+      date,
+      title,
+      note,
+      accountId: accountId ?? "",
+      amount: typedAmount ?? 0,
+      categoryId: pickedCategoryId,
+      toAccountId: toAccount?.id ?? null,
+      toAmount: typedToAmount,
+      counterpartyId: pickedCounterpartyId,
+    });
+  }, [
+    onChange,
+    type,
+    date,
+    title,
+    note,
+    accountId,
+    typedAmount,
+    pickedCategoryId,
+    toAccount?.id,
+    typedToAmount,
+    pickedCounterpartyId,
+  ]);
+
   const countedIn =
     tab === "expense" && !repeating && account && category
       ? budgetsCounting(budgets, { account, category, date })
@@ -248,7 +283,7 @@ function LoadedTransactionForm({
       type,
       date,
       title: title.trim(),
-      note: textField(form, "note").trim(),
+      note: note.trim(),
       accountId: account.id,
       amount: sent,
       categoryId: category?.id ?? null,
@@ -407,7 +442,8 @@ function LoadedTransactionForm({
       <Field
         label={t("transactions.form.note")}
         name="note"
-        defaultValue={initial.note}
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
         autoComplete="off"
       />
       {problem && (

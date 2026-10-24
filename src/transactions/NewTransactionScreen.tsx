@@ -13,6 +13,7 @@ import { localToday } from "../format/days";
 import { useCreateRecurringTransaction } from "../recurring/recurring-queries";
 import { BackLink } from "../ui/BackLink";
 import { Card, EmptyState } from "../ui/Card";
+import { useKeptDraft } from "./kept-draft";
 import { useLastAccount } from "./last-account";
 import { useAddTransaction } from "./transaction-queries";
 import { TransactionForm } from "./TransactionForm";
@@ -23,6 +24,8 @@ export function NewTransactionScreen() {
   const { data: accounts } = useAccounts();
   const { data: counterparties } = useCounterparties();
   const [params] = useSearchParams();
+  const { kept, keep, forget } = useKeptDraft(params.toString());
+  const [resumed, setResumed] = useState(kept !== null);
   const { data: transactions } = useCounterpartyTransactions(params.get("counterparty") ?? "");
   const { lastAccountId, remember } = useLastAccount();
   const addTransaction = useAddTransaction();
@@ -43,21 +46,40 @@ export function NewTransactionScreen() {
       </header>
       {accounts.some(({ archived }) => !archived) ? (
         <Card title={t("transactions.details")}>
+          {resumed && (
+            <p className="-mt-1 text-sm text-zinc-500">
+              {t("transactions.new.resumed")}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  forget();
+                  setResumed(false);
+                }}
+                className="font-medium text-emerald-700 dark:text-emerald-400"
+              >
+                {t("transactions.new.startOver")}
+              </button>
+            </p>
+          )}
           <TransactionForm
-            initial={{
-              type,
-              date: localToday(),
-              title: "",
-              note: "",
-              accountId: accountFor(counterparty, type, accounts, debts, lastAccountId) ?? "",
-              amount: 0,
-              categoryId: null,
-              toAccountId: null,
-              toAmount: null,
-              counterpartyId: counterparty?.id ?? null,
-            }}
+            key={resumed ? "resumed" : "blank"}
+            initial={
+              (resumed && kept) || {
+                type,
+                date: localToday(),
+                title: "",
+                note: "",
+                accountId: accountFor(counterparty, type, accounts, debts, lastAccountId) ?? "",
+                amount: 0,
+                categoryId: null,
+                toAccountId: null,
+                toAmount: null,
+                counterpartyId: counterparty?.id ?? null,
+              }
+            }
             keptAccountIds={[]}
             offersWholeDebt
+            onChange={keep}
             submitLabel={t("transactions.new.submit")}
             mutation={{
               isPending: addTransaction.isPending || createRecurring.isPending,
@@ -72,6 +94,7 @@ export function NewTransactionScreen() {
                   { ...draft, ...extras, id },
                   {
                     onSuccess: () => {
+                      forget();
                       remember(draft.accountId);
                       void navigate(backTo);
                     },
@@ -82,6 +105,7 @@ export function NewTransactionScreen() {
                   { draft, schedule, recordFirst },
                   {
                     onSuccess: () => {
+                      forget();
                       remember(draft.accountId);
                       void navigate("/recurring");
                     },

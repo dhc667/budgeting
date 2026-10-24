@@ -485,7 +485,9 @@
     "new": {
       "title": "New transaction",
       "submit": "Add transaction",
-      "noAccounts": "Add an account before recording transactions."
+      "noAccounts": "Add an account before recording transactions.",
+      "resumed": "Picking up where you left off.",
+      "startOver": "Start over"
     },
     "form": {
       "type": "Type",

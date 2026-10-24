@@ -485,7 +485,9 @@
     "new": {
       "title": "Nova transação",
       "submit": "Adicionar transação",
-      "noAccounts": "Adicione uma conta antes de registrar transações."
+      "noAccounts": "Adicione uma conta antes de registrar transações.",
+      "resumed": "Continuando de onde você parou.",
+      "startOver": "Começar de novo"
     },
     "form": {
       "type": "Tipo",
