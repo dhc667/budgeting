@@ -203,6 +203,8 @@ function transactionOf(
     space_ids: [...new Set(visible.map(({ ledger }) => ledger.space_id))],
     search_text: withoutAccents([title, note].filter((text) => text !== null).join("\n")),
     counterparty_id: counterparty?.posting.ledger_account_id ?? null,
+    debt_amount: counterparty ? Math.abs(counterparty.posting.amount) : null,
+    debt_currency: counterparty?.posting.currency ?? null,
   };
 }
 

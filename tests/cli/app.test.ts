@@ -208,6 +208,59 @@ describe("the app CLI, signed in", () => {
     expect(balances(app(["accounts", "list"]))).toEqual({ Cash: 3000 });
   });
 
+  it("pays a debt back in another currency, and changes what it took off the debt", async () => {
+    const { email } = await existingUser("Ana");
+    login(email);
+    const cash = idOf(
+      app(["accounts", "add", "--name", "Cash", "--currency", "USD", "--opening-amount", "5000"]),
+    );
+    const euros = idOf(app(["accounts", "add", "--name", "Euros", "--currency", "EUR"]));
+    const charlie = idOf(app(["counterparties", "add", "--name", "Charlie"]));
+    app([
+      "transactions",
+      "add",
+      "--type",
+      "given",
+      "--account",
+      cash,
+      "--counterparty",
+      charlie,
+      "--amount",
+      "3000",
+    ]);
+
+    const paidBack = idOf(
+      app([
+        "transactions",
+        "add",
+        "--type",
+        "received",
+        "--account",
+        euros,
+        "--counterparty",
+        charlie,
+        "--amount",
+        "2700",
+        "--debt-currency",
+        "USD",
+        "--debt-amount",
+        "3000",
+      ]),
+    );
+    expect(json(app(["counterparties", "list"]))).toMatchObject([{ owed: { USD: 0 } }]);
+
+    const changed = json(app(["transactions", "update", paidBack, "--debt-amount", "2500"]));
+
+    expect(changed).toMatchObject({
+      to_amount: 2700,
+      to_currency: "EUR",
+      debt_amount: 2500,
+      debt_currency: "USD",
+    });
+    expect(json(app(["counterparties", "list"]))).toMatchObject([{ owed: { USD: 500 } }]);
+    expect(balances(app(["accounts", "list"]))).toEqual({ Cash: 2000, Euros: 2700 });
+  });
+
   it("changes only what an update gives, keeping the rest", async () => {
     const { email } = await existingUser("Ana");
     login(email);

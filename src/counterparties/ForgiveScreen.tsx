@@ -298,6 +298,8 @@ function draftOf(
     toAccountId: null,
     toAmount: null,
     counterpartyId: counterparty.id,
+    debtCurrency: null,
+    debtAmount: null,
   };
 }
 

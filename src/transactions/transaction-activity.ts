@@ -131,10 +131,12 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
     category: category?.account_name ?? "",
     date,
   };
+  const debtExchanged = counterparty !== undefined && counterparty.currency !== moved.currency;
   const withCounterparty = {
     amount: amountOf(moved),
     account: moved.account_name,
     counterparty: counterparty?.account_name ?? "",
+    debt: counterparty ? amountOf(counterparty) : "",
     date,
   };
   switch (snapshot.type) {
@@ -145,9 +147,13 @@ function summarize(snapshot: Snapshot, { t, money, day }: Phrasing): string {
     case "income":
       return t("activity.transaction.income", withCategory);
     case "given":
-      return t("activity.transaction.given", withCounterparty);
+      return debtExchanged
+        ? t("activity.transaction.givenExchanged", withCounterparty)
+        : t("activity.transaction.given", withCounterparty);
     case "received":
-      return t("activity.transaction.received", withCounterparty);
+      return debtExchanged
+        ? t("activity.transaction.receivedExchanged", withCounterparty)
+        : t("activity.transaction.received", withCounterparty);
     case "forgave":
       return t("activity.transaction.forgave", withCounterparty);
     case "forgiven":

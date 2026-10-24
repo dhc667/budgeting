@@ -1,6 +1,5 @@
 import { type Account, openAccountsIn } from "../accounts/account-queries";
 import { groupBy } from "../group-by";
-import { sideOf } from "../transactions/transaction";
 import type { Transaction } from "../transactions/transaction-queries";
 import type { Counterparty } from "./read-counterparties";
 
@@ -56,23 +55,22 @@ function sharesOf(owed: number, moves: Move[], accounts: Account[]): DebtShare[]
   return shares;
 }
 
-// How a transaction changed what the counterparty owes, through which account. A forgiven debt both
-// leaves and reaches its account, so the side it leaves stands for it.
+// How a transaction changed what the counterparty owes, in the debt's currency, through which
+// account. A forgiven debt both leaves and reaches its account, so the side it leaves stands for it.
 function moveOf(transaction: Transaction): Move | null {
-  const { type, date, from_account_id, from_amount, from_currency } = transaction;
-  const { to_account_id, to_amount, to_currency } = transaction;
-  const leaving = sideOf(from_account_id, from_amount, from_currency);
-  const reaching = sideOf(to_account_id, to_amount, to_currency);
-  const moved = (side: typeof leaving, sign: 1 | -1) =>
-    side && { date, ...side, amount: sign * side.amount };
+  const { type, date, from_account_id, to_account_id, debt_amount, debt_currency } = transaction;
+  const moved = (accountId: string | null, sign: 1 | -1) =>
+    accountId === null || debt_amount === null || debt_currency === null
+      ? null
+      : { date, accountId, currency: debt_currency, amount: sign * debt_amount };
   switch (type) {
     case "given":
     case "forgiven":
-      return moved(leaving, 1);
+      return moved(from_account_id, 1);
     case "forgave":
-      return moved(leaving, -1);
+      return moved(from_account_id, -1);
     case "received":
-      return moved(reaching, -1);
+      return moved(to_account_id, -1);
     case "expense":
     case "refund":
     case "income":

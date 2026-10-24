@@ -132,6 +132,134 @@ describe("debts", () => {
     expect(await balance.findByText("Settled in USD")).toBeTruthy();
   });
 
+  it("settles a debt with money paid back in another currency", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Euros", openingBalance: "100", currency: "EUR" });
+    await addCounterparty("Charlie");
+    await give("Charlie", "Cash", "30");
+
+    await user.click(screen.getByRole("link", { name: "Charlie gave me money" }));
+    await choose("Account", "Euros");
+    await user.type(await screen.findByLabelText("Amount"), "27");
+    await user.click(screen.getByRole("button", { name: "In another currency" }));
+    await choose("Debt in", "USD · US Dollar");
+    await user.type(screen.getByLabelText("Debt amount"), "30");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    const balance = within(await screen.findByRole("region", { name: "Balance" }));
+    expect(await balance.findByText("Settled in USD")).toBeTruthy();
+    expect(balance.queryByText(/forgiven/)).toBeNull();
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await accounts.findByRole("link", { name: /Euros/ })).textContent).toMatch(/€127\.00/);
+    expect(accounts.getByRole("link", { name: /Cash/ }).textContent).toMatch(/\$70\.00/);
+  });
+
+  it("lends money from an account in another currency than the debt's", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Euros", openingBalance: "100", currency: "EUR" });
+    await addCounterparty("Charlie");
+
+    await user.click(screen.getByRole("link", { name: "I gave Charlie money" }));
+    await user.type(await screen.findByLabelText("Amount"), "27");
+    await user.click(screen.getByRole("button", { name: "In another currency" }));
+    await choose("Debt in", "USD · US Dollar");
+    await user.type(screen.getByLabelText("Debt amount"), "30");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    const balance = within(await screen.findByRole("region", { name: "Balance" }));
+    expect(await balance.findByText("Owes you $30.00")).toBeTruthy();
+    await goHome();
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await accounts.findByRole("link", { name: /Euros/ })).textContent).toMatch(/€73\.00/);
+  });
+
+  it("fills in all that's owed in another currency, leaving what moved to the user", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Euros", openingBalance: "100", currency: "EUR" });
+    await addCounterparty("Charlie");
+    await give("Charlie", "Cash", "30");
+
+    await user.click(screen.getByRole("link", { name: "Charlie gave me money" }));
+    await choose("Account", "Euros");
+    await user.click(await screen.findByRole("button", { name: "All that's owed: 30.00 USD" }));
+
+    expect(picked("Debt in")).toBe("USD · US Dollar");
+    expect(screen.getByLabelText<HTMLInputElement>("Debt amount").value).toBe("30.00");
+    const amount = screen.getByLabelText<HTMLInputElement>("Amount");
+    expect(amount.value).toBe("");
+    await user.type(amount, "27");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    const balance = within(await screen.findByRole("region", { name: "Balance" }));
+    expect(await balance.findByText("Settled in USD")).toBeTruthy();
+  });
+
+  it("edits money paid back in another currency with both its amounts", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Euros", openingBalance: "100", currency: "EUR" });
+    await addCounterparty("Charlie");
+    await give("Charlie", "Cash", "30");
+    await user.click(screen.getByRole("link", { name: "Charlie gave me money" }));
+    await user.type(await screen.findByLabelText("Title"), "Paid back");
+    await choose("Account", "Euros");
+    await user.type(screen.getByLabelText("Amount"), "27");
+    await user.click(screen.getByRole("button", { name: "In another currency" }));
+    await choose("Debt in", "USD · US Dollar");
+    await user.type(screen.getByLabelText("Debt amount"), "30");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    await user.click(await screen.findByRole("link", { name: /Paid back/ }));
+    const history = within(await screen.findByRole("region", { name: "History" }));
+    expect(
+      await history.findByText(
+        /€27\.00 received into “Euros” from “Charlie”, for \$30\.00 of the debt, on/,
+      ),
+    ).toBeTruthy();
+    const details = within(await screen.findByRole("region", { name: "Details" }));
+    expect(details.getByLabelText<HTMLInputElement>("Amount").value).toBe("27.00");
+    expect(picked("Debt in")).toBe("USD · US Dollar");
+    const debtAmount = details.getByLabelText<HTMLInputElement>("Debt amount");
+    expect(debtAmount.value).toBe("30.00");
+    await user.clear(debtAmount);
+    await user.type(debtAmount, "25");
+    await user.click(details.getByRole("button", { name: "Save" }));
+
+    expect(await details.findByText("Saved.")).toBeTruthy();
+    await goHome();
+    const debts = within(await screen.findByRole("region", { name: "Debts" }));
+    expect((await debts.findByRole("link", { name: /Charlie/ })).textContent).toMatch(
+      /Owes you \$5\.00/,
+    );
+  });
+
+  it("lists money paid back in another currency by what it took off the debt", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Euros", openingBalance: "100", currency: "EUR" });
+    await addCounterparty("Charlie");
+    await give("Charlie", "Cash", "30");
+    await user.click(screen.getByRole("link", { name: "Charlie gave me money" }));
+    await user.type(await screen.findByLabelText("Title"), "Paid back");
+    await choose("Account", "Euros");
+    await user.type(screen.getByLabelText("Amount"), "27");
+    await user.click(screen.getByRole("button", { name: "In another currency" }));
+    await choose("Debt in", "USD · US Dollar");
+    await user.type(screen.getByLabelText("Debt amount"), "30");
+    await user.click(screen.getByRole("button", { name: "Add transaction" }));
+
+    const paidBack = await screen.findByRole("link", { name: /Paid back/ });
+    expect(paidBack.textContent).toMatch(/\+\$30\.00/);
+    await goHome();
+    const recent = within(await screen.findByRole("region", { name: "Recent transactions" }));
+    expect((await recent.findByRole("link", { name: /Paid back/ })).textContent).toMatch(
+      /\+€27\.00/,
+    );
+  });
+
   it("takes money paid back into the account the debt went out of", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "100" });

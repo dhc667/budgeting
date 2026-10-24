@@ -17,7 +17,13 @@ import { EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
 import { openedFrom } from "./list-filters";
 import type { TransactionType } from "./transaction-writes";
-import { type ShownAmount, shownAmount, signedAmount, transactionLabel } from "./transaction";
+import {
+  type SeenFrom,
+  type ShownAmount,
+  shownAmount,
+  signedAmount,
+  transactionLabel,
+} from "./transaction";
 import {
   type ListDay,
   type Transaction,
@@ -39,7 +45,7 @@ export function TransactionList({ filter, empty }: TransactionListProps) {
     <div className="flex flex-col gap-3">
       <TransactionGroups
         transactions={data.transactions}
-        accountId={seenFrom(filter)}
+        seenFrom={seenFrom(filter)}
         empty={empty}
         days={data.days}
         totals={totals}
@@ -55,7 +61,7 @@ export function TransactionList({ filter, empty }: TransactionListProps) {
 
 type TransactionGroupsProps = {
   transactions: Transaction[];
-  accountId?: string;
+  seenFrom?: SeenFrom;
   empty?: string;
   days?: readonly ListDay[];
   totals?: DayTotals;
@@ -63,7 +69,7 @@ type TransactionGroupsProps = {
 
 export function TransactionGroups({
   transactions,
-  accountId,
+  seenFrom,
   empty,
   days,
   totals,
@@ -93,7 +99,7 @@ export function TransactionGroups({
                   accounts={accounts}
                   categories={categories}
                   counterparties={counterparties}
-                  accountId={accountId}
+                  seenFrom={seenFrom}
                 />
               </li>
             ))}
@@ -141,7 +147,7 @@ type TransactionRowProps = {
   accounts: Account[];
   categories: Category[];
   counterparties: Counterparty[];
-  accountId: string | undefined;
+  seenFrom: SeenFrom | undefined;
 };
 
 function TransactionRow({
@@ -149,7 +155,7 @@ function TransactionRow({
   accounts,
   categories,
   counterparties,
-  accountId,
+  seenFrom,
 }: TransactionRowProps) {
   const { data: users = [] } = useUsers();
   const { data: spaces = [] } = useSpaces();
@@ -169,7 +175,7 @@ function TransactionRow({
         accounts={accounts}
         categories={categories}
         counterparties={counterparties}
-        accountId={accountId}
+        seenFrom={seenFrom}
         creator={shared ? displayNameOf(users, transaction.created_by) : null}
       />
     </Link>
@@ -181,7 +187,7 @@ type TransactionSummaryProps = {
   accounts: Account[];
   categories: Category[];
   counterparties: Counterparty[];
-  accountId?: string;
+  seenFrom?: SeenFrom;
   creator?: string | null;
 };
 
@@ -190,7 +196,7 @@ export function TransactionSummary({
   accounts,
   categories,
   counterparties,
-  accountId,
+  seenFrom,
   creator = null,
 }: TransactionSummaryProps) {
   const { t } = useTranslation();
@@ -207,7 +213,7 @@ export function TransactionSummary({
   const where = otherSide
     ? nameOf(transaction.from_account_id ?? transaction.to_account_id)
     : `${nameOf(transaction.from_account_id)} → ${nameOf(transaction.to_account_id)}`;
-  const amount = shownAmount(transaction, accountId);
+  const amount = shownAmount(transaction, seenFrom);
 
   return (
     <>
@@ -244,9 +250,13 @@ export function TransactionSummary({
   );
 }
 
-// Seen from one account, a transfer shows whether it left or reached it.
-function seenFrom({ accountIds }: TransactionFilter): string | undefined {
-  return accountIds?.length === 1 ? accountIds[0] : undefined;
+// A list of one account's or one counterparty's transactions shows them as seen from it.
+function seenFrom({ accountIds, counterpartyIds }: TransactionFilter): SeenFrom | undefined {
+  const [accountId] = accountIds?.length === 1 ? accountIds : [];
+  if (accountId) return { kind: "account", id: accountId };
+  const [counterpartyId] = counterpartyIds?.length === 1 ? counterpartyIds : [];
+  if (counterpartyId) return { kind: "counterparty", id: counterpartyId };
+  return undefined;
 }
 
 function plusSign(direction: ShownAmount["direction"]): string {

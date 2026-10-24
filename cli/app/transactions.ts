@@ -102,7 +102,13 @@ async function addOne(argv: string[]) {
     toAmount:
       values["to-amount"] === undefined ? null : minorUnits(values["to-amount"], "--to-amount"),
     counterpartyId: values.counterparty ?? null,
+    debtCurrency: values["debt-currency"] ?? null,
+    debtAmount:
+      values["debt-amount"] === undefined
+        ? null
+        : minorUnits(values["debt-amount"], "--debt-amount"),
   };
+  checkDebt(draft);
   const { supabase } = await signedIn(values.env);
   const id = randomUUID();
   await addTransaction(supabase, id, draft);
@@ -115,7 +121,7 @@ async function changeOne(argv: string[]) {
   const id = onlyId(positionals, "transactions update <id> [options]");
   const { supabase } = await signedIn(values.env);
   const current = draftOf(await transaction(supabase, id), await categoriesOf(supabase));
-  await updateTransaction(supabase, id, {
+  const draft: TransactionDraft = {
     type:
       values.type === undefined
         ? current.type
@@ -132,8 +138,20 @@ async function changeOne(argv: string[]) {
         ? current.toAmount
         : minorUnits(values["to-amount"], "--to-amount"),
     counterpartyId: values.counterparty ?? current.counterpartyId,
-  });
+    debtCurrency: values["debt-currency"] ?? current.debtCurrency,
+    debtAmount:
+      values["debt-amount"] === undefined
+        ? current.debtAmount
+        : minorUnits(values["debt-amount"], "--debt-amount"),
+  };
+  checkDebt(draft);
+  await updateTransaction(supabase, id, draft);
   print(await transaction(supabase, id));
+}
+
+// Without a currency of its own, the debt is in the account's, and moves by the amount.
+function checkDebt({ debtCurrency, debtAmount }: TransactionDraft) {
+  if (debtAmount !== null && debtCurrency === null) fail("--debt-amount needs --debt-currency.");
 }
 
 async function deleteOne(argv: string[]) {
@@ -170,7 +188,7 @@ function likeEscaped(text: string): string {
 }
 
 const columns =
-  "id, type, date, title, note, from_account_id, from_amount, from_currency, to_account_id, to_amount, to_currency, category_id, counterparty_id, space_ids, one_sided, created_at, created_by";
+  "id, type, date, title, note, from_account_id, from_amount, from_currency, to_account_id, to_amount, to_currency, category_id, counterparty_id, debt_amount, debt_currency, space_ids, one_sided, created_at, created_by";
 
 const draftOptions = {
   type: { type: "string" },
@@ -183,4 +201,6 @@ const draftOptions = {
   "to-account": { type: "string" },
   "to-amount": { type: "string" },
   counterparty: { type: "string" },
+  "debt-currency": { type: "string" },
+  "debt-amount": { type: "string" },
 } satisfies ParseArgsOptionsConfig;

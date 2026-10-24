@@ -17,7 +17,18 @@ export function transactionLabel(
 
 // Seen from one account, a transfer leaves or reaches it. Seen whole, it only moves money between
 // two, so it has no sign. Neither has a forgiven debt, which reaches and leaves the same account.
-export function shownAmount(transaction: Transaction, accountId?: string): ShownAmount {
+// Seen from a counterparty, money given or received shows what it changed in the debt, which may
+// be in another currency than what moved.
+export function shownAmount(transaction: Transaction, seenFrom?: SeenFrom): ShownAmount {
+  const moved = movedAmount(transaction, seenFrom?.kind === "account" ? seenFrom.id : undefined);
+  const { debt_amount, debt_currency } = transaction;
+  if (seenFrom?.kind !== "counterparty" || debt_amount === null || debt_currency === null) {
+    return moved;
+  }
+  return { ...moved, amount: debt_amount, currency: debt_currency };
+}
+
+function movedAmount(transaction: Transaction, accountId: string | undefined): ShownAmount {
   const leaving = sideOf(
     transaction.from_account_id,
     transaction.from_amount,
@@ -55,10 +66,13 @@ export function accountsOf(transaction: Transaction): string[] {
   return [transaction.from_account_id, transaction.to_account_id].filter((id) => id !== null);
 }
 
-export function sideOf(accountId: string | null, amount: number | null, currency: string | null) {
+function sideOf(accountId: string | null, amount: number | null, currency: string | null) {
   if (accountId === null || amount === null || currency === null) return null;
   return { accountId, amount, currency };
 }
+
+// Whose list a transaction shows in.
+export type SeenFrom = { kind: "account" | "counterparty"; id: string };
 
 export type ShownAmount = {
   accountId: string;
