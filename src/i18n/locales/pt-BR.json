@@ -874,5 +874,18 @@
   },
   "money": {
     "chooseCurrency": "Escolha uma moeda"
+  },
+  "calculator": {
+    "title": "Calculadora",
+    "use": "Usar valor",
+    "clear": "Limpar",
+    "delete": "Apagar",
+    "decimalPoint": "separador decimal",
+    "plus": "mais",
+    "minus": "menos",
+    "times": "vezes",
+    "dividedBy": "dividido por",
+    "openParenthesis": "abrir parêntese",
+    "closeParenthesis": "fechar parêntese"
   }
 }

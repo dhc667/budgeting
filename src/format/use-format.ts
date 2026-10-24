@@ -4,6 +4,7 @@ import { useProfile } from "../profile/profile-queries";
 import { dayToDate } from "./days";
 import {
   type Currency,
+  decimalSeparator,
   formatAmount,
   formatCompactMoney,
   formatDate,
@@ -27,6 +28,7 @@ export function useFormat() {
       amount: (minorUnits: number, decimals: number) =>
         formatAmount(minorUnits, decimals, numberFormat),
       parseAmount: (text: string, decimals: number) => parseAmount(text, decimals, numberFormat),
+      decimalSeparator: decimalSeparator(numberFormat),
       date: (date: Date) => formatDate(date, dateFormat),
       day: (day: string) => formatDate(dayToDate(day), dateFormat),
       time: (date: Date) => new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date),

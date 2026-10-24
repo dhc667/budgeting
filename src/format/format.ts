@@ -80,7 +80,7 @@ export function parseAmount(
   decimals: number,
   format: NumberFormat | null,
 ): number | null {
-  const decimal = format ? conventions[format].decimal : deviceDecimalSeparator();
+  const decimal = decimalSeparator(format);
   const trimmed = text.trim();
   const negative = /^[-\u2212]/.test(trimmed);
   const parts = (negative ? trimmed.slice(1) : trimmed).split(decimal);
@@ -128,6 +128,10 @@ function deviceFormat(minorUnits: number, decimals: number, options: Intl.Number
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(decimal);
+}
+
+export function decimalSeparator(format: NumberFormat | null): string {
+  return format ? conventions[format].decimal : deviceDecimalSeparator();
 }
 
 function deviceDecimalSeparator(): string {

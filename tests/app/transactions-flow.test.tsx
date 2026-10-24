@@ -276,6 +276,51 @@ describe("transactions", () => {
   });
 });
 
+describe("the amount's calculator", () => {
+  beforeEach(async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await openNewTransaction();
+  });
+
+  it("works the amount out from what's already typed, sums before products", async () => {
+    await user.type(screen.getByLabelText("Amount"), "10");
+
+    await user.click(screen.getByRole("button", { name: "Calculator" }));
+    const calculator = within(await screen.findByRole("dialog", { name: "Calculator" }));
+    for (const key of ["plus", "2", "decimal point", "5", "times", "2"])
+      await user.click(calculator.getByRole("button", { name: key }));
+    await user.click(calculator.getByRole("button", { name: "Use amount" }));
+
+    expect(screen.getByLabelText("Amount")).toHaveProperty("value", "15.00");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("groups with parentheses, closing any left open", async () => {
+    await user.click(screen.getByRole("button", { name: "Calculator" }));
+    const calculator = within(await screen.findByRole("dialog", { name: "Calculator" }));
+    for (const key of ["open parenthesis", "1", "0", "plus", "5", "close parenthesis", "times"])
+      await user.click(calculator.getByRole("button", { name: key }));
+    for (const key of ["open parenthesis", "2", "minus", "1", "decimal point", "5"])
+      await user.click(calculator.getByRole("button", { name: key }));
+    await user.click(calculator.getByRole("button", { name: "Use amount" }));
+
+    expect(screen.getByLabelText("Amount")).toHaveProperty("value", "7.50");
+  });
+
+  it("leaves the amount as it was when closed without using it", async () => {
+    await user.type(screen.getByLabelText("Amount"), "10");
+
+    await user.click(screen.getByRole("button", { name: "Calculator" }));
+    const calculator = within(await screen.findByRole("dialog", { name: "Calculator" }));
+    await user.click(calculator.getByRole("button", { name: "plus" }));
+    await user.click(calculator.getByRole("button", { name: "5" }));
+    await user.click(calculator.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByLabelText("Amount")).toHaveProperty("value", "10");
+  });
+});
+
 describe("a transaction left half-filled", () => {
   beforeEach(async () => {
     await openSignedIn(uniqueName("Ana"));

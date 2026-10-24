@@ -18,6 +18,7 @@ import { scheduleFrom } from "../recurring/schedule-form";
 import { ScheduleFields } from "../recurring/ScheduleFields";
 import { type Space, useSpaces } from "../spaces/space-queries";
 import { isRaisedException, refusalReason } from "../supabase/errors";
+import { AmountField } from "../ui/AmountField";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
@@ -332,14 +333,13 @@ function LoadedTransactionForm({
           onChange={setDebt}
         />
       )}
-      <Field
+      <AmountField
         label={t("transactions.form.amount")}
         name="amount"
-        inputMode="decimal"
-        autoComplete="off"
         required
         value={amount}
-        onChange={(event) => setOwnAmount(event.target.value)}
+        decimals={decimalsOf(accountId)}
+        onChange={setOwnAmount}
         // So that typing replaces an amount filled in for the user rather than adding to it.
         onFocus={(event) => ownAmount === null && event.target.select()}
         placeholder={format.amount(0, decimalsOf(accountId))}
@@ -392,15 +392,14 @@ function LoadedTransactionForm({
         />
       )}
       {tab === "transfer" && exchanged && (
-        <Field
+        <AmountField
           label={t("transactions.form.amountReceived")}
           hint={t("transactions.form.amountReceivedHint", { currency: toAccount.currency })}
           name="toAmount"
-          inputMode="decimal"
-          autoComplete="off"
           required
           value={toAmount}
-          onChange={(event) => setToAmount(event.target.value)}
+          decimals={decimalsOf(toAccount.id)}
+          onChange={setToAmount}
           placeholder={format.amount(0, decimalsOf(toAccount.id))}
         />
       )}
