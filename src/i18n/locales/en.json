@@ -874,5 +874,18 @@
   },
   "money": {
     "chooseCurrency": "Choose a currency"
+  },
+  "calculator": {
+    "title": "Calculator",
+    "use": "Use amount",
+    "clear": "Clear",
+    "delete": "Delete",
+    "decimalPoint": "decimal point",
+    "plus": "plus",
+    "minus": "minus",
+    "times": "times",
+    "dividedBy": "divided by",
+    "openParenthesis": "open parenthesis",
+    "closeParenthesis": "close parenthesis"
   }
 }
