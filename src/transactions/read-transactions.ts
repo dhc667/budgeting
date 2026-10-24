@@ -4,7 +4,14 @@ import type { Json } from "../supabase/database.types";
 import { memberOf } from "../supabase/json";
 import { keyOfId, type RowOf, type Rows } from "../sync/copy";
 import { postingsByTransaction } from "../sync/lookups";
-import type { TitleSuggestion, Transaction, TransactionFilter } from "./transaction-queries";
+import type {
+  DayFlow,
+  ListDay,
+  TitleSuggestion,
+  Transaction,
+  TransactionFilter,
+  TransactionPage,
+} from "./transaction-queries";
 import type { TransactionType } from "./transaction-writes";
 
 type TransactionRows = Pick<Rows, "transactions" | "postings" | "ledger_accounts">;
@@ -15,6 +22,23 @@ export function readTransactions(rows: TransactionRows, filter: TransactionFilte
   return readAllTransactions(rows)
     .filter((transaction) => matches(transaction, filter))
     .sort(newestFirst);
+}
+
+// The first `count` matches, and each day they reach counted and totalled over all its matches, so a
+// day the page cuts short still shows its whole total.
+export function readTransactionPage(
+  rows: TransactionRows,
+  filter: TransactionFilter,
+  count: number,
+): TransactionPage {
+  const matching = readTransactions(rows, filter);
+  const transactions = matching.slice(0, count);
+  const shownDays = new Set(transactions.map(({ date }) => date));
+  return {
+    transactions,
+    hasMore: matching.length > count,
+    days: listDays(matching.filter(({ date }) => shownDays.has(date))),
+  };
 }
 
 export function readRecentTransactions(
@@ -81,6 +105,44 @@ export function readTitleSuggestions(rows: TransactionRows, userId: string): Tit
     if (!latest.has(key)) latest.set(key, { ...transaction, title, type });
   }
   return [...latest.values()];
+}
+
+function listDays(transactions: Transaction[]): ListDay[] {
+  const days = new Map<string, ListDay>();
+  for (const transaction of transactions) {
+    const day = days.get(transaction.date) ?? { day: transaction.date, count: 0, flows: [] };
+    days.set(transaction.date, day);
+    day.count++;
+    const flow = earnedOrSpent(transaction);
+    if (!flow) continue;
+    const sameCurrency = day.flows.find(({ currency }) => currency === flow.currency);
+    if (sameCurrency) sameCurrency.net += flow.net;
+    else day.flows.push(flow);
+  }
+  return [...days.values()];
+}
+
+// Transfers and debts move money without earning or spending it. A forgiven debt is, as in reports.
+function earnedOrSpent(transaction: Transaction): DayFlow | null {
+  const { type, from_amount, from_currency, to_amount, to_currency } = transaction;
+  switch (type) {
+    case "expense":
+    case "forgave":
+      return from_amount !== null && from_currency !== null
+        ? { currency: from_currency, net: -from_amount }
+        : null;
+    case "income":
+    case "refund":
+    case "forgiven":
+      return to_amount !== null && to_currency !== null
+        ? { currency: to_currency, net: to_amount }
+        : null;
+    case "transfer":
+    case "given":
+    case "received":
+    case null:
+      return null;
+  }
 }
 
 function readAllTransactions({

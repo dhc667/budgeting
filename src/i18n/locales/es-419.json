@@ -445,6 +445,7 @@
     "none": "Todavía no hay movimientos.",
     "noMatches": "Ningún movimiento coincide.",
     "showMore": "Ver más",
+    "dayPartlyShown": "{{shown}} de {{matching}} mostradas",
     "search": {
       "label": "Buscar",
       "placeholder": "Título o nota"

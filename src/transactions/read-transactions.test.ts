@@ -5,6 +5,7 @@ import {
   readTitleSuggestions,
   readTransaction,
   readTransactionHistory,
+  readTransactionPage,
   readTransactions,
 } from "./read-transactions";
 
@@ -198,6 +199,66 @@ describe("listing transactions", () => {
     expect(ids(readRecentTransactions(copy, ["space-1", "space-2"], 2))).toEqual([
       "new-late",
       "new-early",
+    ]);
+  });
+});
+
+describe("a page of the list", () => {
+  const copy = rows({
+    ledgers: [bank, savings, food, salary, charlie],
+    txs: [
+      tx("lunch", { date: "2026-02-02" }),
+      tx("back", { date: "2026-02-02" }),
+      tx("pay", { date: "2026-02-02" }),
+      tx("move", { date: "2026-02-02" }),
+      tx("lent", { date: "2026-02-02" }),
+      tx("euros", { date: "2026-02-02" }),
+      tx("older", { date: "2026-02-01" }),
+    ],
+    postings: [
+      pay("lunch", bank, food, 1_500),
+      pay("back", food, bank, 300),
+      pay("pay", salary, bank, 10_000),
+      pay("move", bank, savings, 700),
+      pay("lent", bank, charlie, 2_000),
+      inEuros(pay("euros", bank, food, 400)),
+      pay("older", bank, food, 100),
+    ],
+  });
+
+  it("totals what each day earned less what it spent, in each currency, but not transfers or debts", () => {
+    expect(readTransactionPage(copy, {}, 50).days).toEqual([
+      {
+        day: "2026-02-02",
+        count: 6,
+        flows: [
+          { currency: "USD", net: 8_800 },
+          { currency: "EUR", net: -400 },
+        ],
+      },
+      { day: "2026-02-01", count: 1, flows: [{ currency: "USD", net: -100 }] },
+    ]);
+  });
+
+  it("counts and totals a day the page cuts short over all of its matches", () => {
+    const page = readTransactionPage(copy, {}, 2);
+
+    expect(page.transactions).toHaveLength(2);
+    expect(page.hasMore).toBe(true);
+    expect(page.days).toEqual([expect.objectContaining({ day: "2026-02-02", count: 6 })]);
+  });
+
+  it("totals only what the filter lets through", () => {
+    expect(readTransactionPage(copy, { categoryIds: ["food"] }, 50).days).toEqual([
+      {
+        day: "2026-02-02",
+        count: 3,
+        flows: [
+          { currency: "USD", net: -1_200 },
+          { currency: "EUR", net: -400 },
+        ],
+      },
+      { day: "2026-02-01", count: 1, flows: [{ currency: "USD", net: -100 }] },
     ]);
   });
 });
@@ -408,6 +469,10 @@ function post(transaction_id: string, on: Ledger, amount: number): Posting {
 
 function pay(transaction_id: string, from: Ledger, to: Ledger, amount: number): Posting[] {
   return [post(transaction_id, from, -amount), post(transaction_id, to, amount)];
+}
+
+function inEuros(postings: Posting[]): Posting[] {
+  return postings.map((posting) => ({ ...posting, currency: "EUR" }));
 }
 
 function entry(

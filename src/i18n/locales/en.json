@@ -445,6 +445,7 @@
     "none": "No transactions yet.",
     "noMatches": "No transactions match.",
     "showMore": "Show more",
+    "dayPartlyShown": "{{shown}} of {{matching}} shown",
     "search": {
       "label": "Search",
       "placeholder": "Title or note"

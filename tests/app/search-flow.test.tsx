@@ -193,6 +193,48 @@ describe("filtering transactions", () => {
   });
 });
 
+describe("a day's total", () => {
+  it("adds up what the filters let through on that day", async () => {
+    const ana = await budgetOf(uniqueName("Ana"));
+    const account = await ana.account(ana.privateSpace, "Checking");
+    const groceries = await ana.category(ana.privateSpace, "Groceries");
+    const eatingOut = await ana.category(ana.privateSpace, "Eating out");
+    await ana.expense({ account, category: groceries, title: "Market" });
+    await ana.expense({ account, category: groceries, title: "Bakery" });
+    await ana.expense({ account, category: eatingOut, title: "Lunch", amount: 1_250 });
+    await ana.open();
+    await openTransactions();
+    const list = within(screen.getByRole("main"));
+    expect(await list.findByText("-$32.50")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /Filters/ }));
+    await pick("Category", ["Groceries"]);
+
+    expect(await list.findByText("-$20.00")).toBeTruthy();
+    expect(list.queryByText("-$32.50")).toBeNull();
+  });
+
+  it("covers the whole day when only some of it is shown, and says so", async () => {
+    const ana = await budgetOf(uniqueName("Ana"));
+    const account = await ana.account(ana.privateSpace, "Checking");
+    const category = await ana.category(ana.privateSpace, "Groceries");
+    await Promise.all(
+      Array.from({ length: 51 }, (_, each) =>
+        ana.expense({ account, category, title: `Market ${each + 1}` }),
+      ),
+    );
+    await ana.open();
+    await openTransactions();
+    const list = within(screen.getByRole("main"));
+
+    expect(await list.findByText("50 of 51 shown")).toBeTruthy();
+    expect(list.getByText("-$510.00")).toBeTruthy();
+    await user.click(list.getByRole("button", { name: "Show more" }));
+    await waitFor(() => expect(list.queryByText("50 of 51 shown")).toBeNull());
+    expect(list.getByText("-$510.00")).toBeTruthy();
+  });
+});
+
 // Recorded straight through the instance, so that notes and past dates take no trips through the
 // form, before the app opens: it would hold on to the categories it read until they go stale.
 async function budgetOf(name: string) {
@@ -246,7 +288,14 @@ async function budgetOf(name: string) {
         category_color: "blue",
         parent,
       }),
-    async expense({ account, category, title, note = null, date = daysAgo(0) }: Expense) {
+    async expense({
+      account,
+      category,
+      title,
+      note = null,
+      date = daysAgo(0),
+      amount = 1_000,
+    }: Expense) {
       await rpc(client, "add_transaction", {
         transaction_id: crypto.randomUUID(),
         transaction_type: "expense",
@@ -254,7 +303,7 @@ async function budgetOf(name: string) {
         title,
         note,
         account,
-        amount: 1_000,
+        amount,
         category,
         to_account: null,
         to_amount: null,
@@ -270,6 +319,7 @@ type Expense = {
   title: string;
   note?: string | null;
   date?: string;
+  amount?: number;
 };
 
 async function rpc<Name extends keyof Functions>(

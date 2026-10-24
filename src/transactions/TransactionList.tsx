@@ -16,14 +16,22 @@ import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
 import { openedFrom } from "./list-filters";
+import type { TransactionType } from "./transaction-writes";
 import { type ShownAmount, shownAmount, signedAmount, transactionLabel } from "./transaction";
-import { type Transaction, type TransactionFilter, useTransactions } from "./transaction-queries";
+import {
+  type ListDay,
+  type Transaction,
+  type TransactionFilter,
+  useDayTotals,
+  useTransactions,
+} from "./transaction-queries";
 
 type TransactionListProps = { filter: TransactionFilter; empty?: string };
 
 export function TransactionList({ filter, empty }: TransactionListProps) {
   const { t } = useTranslation();
   const { data, error, showMore } = useTransactions(filter);
+  const totals = useDayTotals(data?.days);
   if (error) return <ErrorText>{t("transactions.errors.loadFailed")}</ErrorText>;
   if (!data) return null;
 
@@ -33,6 +41,8 @@ export function TransactionList({ filter, empty }: TransactionListProps) {
         transactions={data.transactions}
         accountId={seenFrom(filter)}
         empty={empty}
+        days={data.days}
+        totals={totals}
       />
       {data.hasMore && (
         <Button variant="secondary" onClick={showMore} className="self-start">
@@ -43,11 +53,22 @@ export function TransactionList({ filter, empty }: TransactionListProps) {
   );
 }
 
-type TransactionGroupsProps = { transactions: Transaction[]; accountId?: string; empty?: string };
+type TransactionGroupsProps = {
+  transactions: Transaction[];
+  accountId?: string;
+  empty?: string;
+  days?: readonly ListDay[];
+  totals?: DayTotals;
+};
 
-export function TransactionGroups({ transactions, accountId, empty }: TransactionGroupsProps) {
+export function TransactionGroups({
+  transactions,
+  accountId,
+  empty,
+  days,
+  totals,
+}: TransactionGroupsProps) {
   const { t } = useTranslation();
-  const format = useFormat();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const { data: counterparties } = useCounterparties();
@@ -55,12 +76,15 @@ export function TransactionGroups({ transactions, accountId, empty }: Transactio
   if (transactions.length === 0) return <EmptyState>{empty ?? t("transactions.none")}</EmptyState>;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       {byDay(transactions).map(({ day, transactions }) => (
-        <section key={day} className="flex flex-col">
-          <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-            {format.day(day)}
-          </h3>
+        <section key={day} className="flex flex-col gap-1">
+          <DayHeader
+            day={day}
+            shown={transactions.length}
+            listDay={days?.find((listDay) => listDay.day === day)}
+            totals={totals}
+          />
           <ul className="-mx-2 flex flex-col">
             {transactions.map((transaction) => (
               <li key={transaction.id}>
@@ -79,6 +103,38 @@ export function TransactionGroups({ transactions, accountId, empty }: Transactio
     </div>
   );
 }
+
+type DayHeaderProps = {
+  day: string;
+  shown: number;
+  listDay: ListDay | undefined;
+  totals: DayTotals | undefined;
+};
+
+function DayHeader({ day, shown, listDay, totals }: DayHeaderProps) {
+  const { t } = useTranslation();
+  const format = useFormat();
+  const total = totals?.totals.get(day);
+
+  return (
+    <div className="-mx-2 flex items-baseline gap-2 rounded-lg bg-zinc-100 px-2 py-1.5 text-sm text-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200">
+      <h3 className="font-medium">{format.day(day)}</h3>
+      {listDay && shown < listDay.count && (
+        <span className="text-xs text-zinc-500">
+          {t("transactions.dayPartlyShown", { shown, matching: listDay.count })}
+        </span>
+      )}
+      {totals && total !== undefined && (
+        <span className={`ml-auto text-base font-semibold tabular-nums ${totalClass(total)}`}>
+          {total > 0 && "+"}
+          {format.money(total, totals.currency)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+type DayTotals = NonNullable<ReturnType<typeof useDayTotals>>;
 
 type TransactionRowProps = {
   transaction: Transaction;
@@ -180,7 +236,7 @@ export function TransactionSummary({
             .join(" · ")}
         </span>
       </span>
-      <span className={`font-medium tabular-nums ${amountClass[amount.direction]}`}>
+      <span className={`font-medium tabular-nums ${amountClassOf(transaction.type, amount)}`}>
         {plusSign(amount.direction)}
         {money(signedAmount(amount), amount.currency)}
       </span>
@@ -203,6 +259,23 @@ function plusSign(direction: ShownAmount["direction"]): string {
   }
 }
 
+// Money lent or paid back is gray, like a transfer: neither earned nor spent.
+function amountClassOf(type: TransactionType | null, { direction }: ShownAmount): string {
+  switch (type) {
+    case "given":
+    case "received":
+      return amountClass.between;
+    case "expense":
+    case "refund":
+    case "income":
+    case "transfer":
+    case "forgave":
+    case "forgiven":
+    case null:
+      return amountClass[direction];
+  }
+}
+
 // Already newest first, so each day's transactions keep their order.
 function byDay(transactions: Transaction[]) {
   const days: { day: string; transactions: Transaction[] }[] = [];
@@ -214,8 +287,14 @@ function byDay(transactions: Transaction[]) {
   return days;
 }
 
+function totalClass(total: number): string {
+  if (total > 0) return amountClass.in;
+  if (total < 0) return amountClass.out;
+  return "";
+}
+
 const amountClass = {
   in: "text-emerald-700 dark:text-emerald-400",
-  out: "",
+  out: "text-red-600 dark:text-red-400",
   between: "text-zinc-500",
 };
