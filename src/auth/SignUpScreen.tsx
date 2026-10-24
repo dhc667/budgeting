@@ -10,6 +10,7 @@ import { useSession } from "./session";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { PasswordField } from "../ui/PasswordField";
 import { submitWith, textField } from "../ui/forms";
 
 export function SignUpScreen() {
@@ -54,18 +55,16 @@ export function SignUpScreen() {
           required
         />
         <Field label={t("auth.email")} name="email" type="email" autoComplete="email" required />
-        <Field
+        <PasswordField
           label={t("auth.password")}
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={8}
           required
         />
-        <Field
+        <PasswordField
           label={t("auth.signUp.repeatPassword")}
           name="confirmation"
-          type="password"
           autoComplete="new-password"
           required
         />
