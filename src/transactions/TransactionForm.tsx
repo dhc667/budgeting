@@ -11,6 +11,7 @@ import { wholeDebtSettledBy } from "../counterparties/owed";
 import type { Counterparty } from "../counterparties/read-counterparties";
 import { localToday } from "../format/days";
 import { useFormat } from "../format/use-format";
+import { CurrencyPicker } from "../money/CurrencyPicker";
 import { useCurrencies } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
 import type { Schedule } from "../recurring/schedule";
@@ -134,14 +135,18 @@ function LoadedTransactionForm({
   const format = useFormat();
   const { data: currencies = [] } = useCurrencies();
   const { data: titles = [] } = useTitleSuggestions();
-  const decimalsOf = (accountId: string | undefined) => {
-    const currency = accounts.find(({ id }) => id === accountId)?.currency;
-    return currencies.find(({ code }) => code === currency)?.decimals ?? 2;
-  };
+  const decimalsIn = (currency: string | null | undefined) =>
+    currencies.find(({ code }) => code === currency)?.decimals ?? 2;
+  const decimalsOf = (accountId: string | null | undefined) =>
+    decimalsIn(accounts.find(({ id }) => id === accountId)?.currency);
   const amountText = (amount: number | null, accountId: string | null | undefined) =>
     amount === null || amount <= 0 || !accountId
       ? ""
       : format.amount(amount, decimalsOf(accountId));
+  const debtAmountText = (amount: number | null, currency: string | null) =>
+    amount === null || amount <= 0 || currency === null
+      ? ""
+      : format.amount(amount, decimalsIn(currency));
   const [tab, setTab] = useState(tabOf(initial.type));
   const [refund, setRefund] = useState(initial.type === "refund");
   const [debt, setDebt] = useState(debtTypeOf(initial.type) ?? "given");
@@ -160,6 +165,11 @@ function LoadedTransactionForm({
     initial.amount > 0 ? amountText(initial.amount, initial.accountId) : null,
   );
   const [toAmount, setToAmount] = useState(() => amountText(initial.toAmount, initial.toAccountId));
+  // Null while the debt is in the account's currency.
+  const [debtCurrency, setDebtCurrency] = useState(initial.debtCurrency);
+  const [debtAmount, setDebtAmount] = useState(() =>
+    debtAmountText(initial.debtAmount, initial.debtCurrency),
+  );
   const [date, setDate] = useState(initial.date);
   const [note, setNote] = useState(initial.note);
   const isRule = saving.kind === "rule";
@@ -174,6 +184,8 @@ function LoadedTransactionForm({
   const type = typeOf(tab, { refund, debt });
   const account = accounts.find(({ id }) => id === accountId);
   const toAccount = accounts.find(({ id }) => id === toAccountId && id !== accountId);
+  const movesMoney = type === "given" || type === "received";
+  const debtExchanged = movesMoney && debtCurrency !== null && debtCurrency !== account?.currency;
   const kind = categoryKindOf(tab);
   const offeredCategories = categories.filter(
     (category) =>
@@ -194,18 +206,31 @@ function LoadedTransactionForm({
     pickedCounterpartyId === newCounterpartyId
       ? (newCounterparty ?? undefined)
       : existingCounterparty;
-  const owed = existingCounterparty?.balances.find(
-    ({ currency }) => currency === account?.currency,
-  )?.owed;
+  const owed = debtExchanged
+    ? undefined
+    : existingCounterparty?.balances.find(({ currency }) => currency === account?.currency)?.owed;
   const wholeDebt =
     offersWholeDebt && tab === "debt" && owed !== undefined ? wholeDebtSettledBy(debt, owed) : null;
   const wholeDebtText = wholeDebt === null ? null : amountText(wholeDebt, accountId);
   const amount = ownAmount ?? wholeDebtText ?? "";
+  // Debts in other currencies than the account's that the money would settle, which the user then
+  // says how much of the account's currency paid.
+  const otherWholeDebts =
+    offersWholeDebt && movesMoney
+      ? (existingCounterparty?.balances ?? []).flatMap((balance) => {
+          const settled = wholeDebtSettledBy(debt, balance.owed);
+          if (balance.currency === account?.currency || settled === null) return [];
+          return [{ currency: balance.currency, text: debtAmountText(settled, balance.currency) }];
+        })
+      : [];
   const exchanged = toAccount !== undefined && toAccount.currency !== account?.currency;
   // Rules record transactions later, so they leave nothing out of budgets.
   const typedAmount =
     ownAmount === null ? null : format.parseAmount(ownAmount, decimalsOf(accountId));
   const typedToAmount = toAccount ? format.parseAmount(toAmount, decimalsOf(toAccount.id)) : null;
+  const typedDebtAmount = debtExchanged
+    ? format.parseAmount(debtAmount, decimalsIn(debtCurrency))
+    : null;
 
   useEffect(() => {
     onChange?.({
@@ -219,6 +244,8 @@ function LoadedTransactionForm({
       toAccountId: toAccount?.id ?? null,
       toAmount: typedToAmount,
       counterpartyId: pickedCounterpartyId,
+      debtCurrency: debtExchanged ? debtCurrency : null,
+      debtAmount: typedDebtAmount,
     });
   }, [
     onChange,
@@ -232,6 +259,9 @@ function LoadedTransactionForm({
     toAccount?.id,
     typedToAmount,
     pickedCounterpartyId,
+    debtExchanged,
+    debtCurrency,
+    typedDebtAmount,
   ]);
 
   const countedIn =
@@ -268,6 +298,8 @@ function LoadedTransactionForm({
     setToAccountId(draft.toAccountId ?? "");
     setOwnAmount(amountText(draft.amount, picked?.id ?? accountId));
     setToAmount(amountText(draft.toAmount, draft.toAccountId));
+    setDebtCurrency(draft.debtCurrency);
+    setDebtAmount(debtAmountText(draft.debtAmount, draft.debtCurrency));
   };
 
   const save = (form: FormData, button: string | null) => {
@@ -284,6 +316,8 @@ function LoadedTransactionForm({
       toAccount,
       exchanged,
       toAmount: amountReceived,
+      debtExchanged,
+      debtAmount: typedDebtAmount,
     });
     setProblem(found);
     if (found || sent === null) return;
@@ -298,6 +332,8 @@ function LoadedTransactionForm({
       toAccountId: toAccount?.id ?? null,
       toAmount: amountReceived,
       counterpartyId: counterparty?.id ?? null,
+      debtCurrency: debtExchanged ? debtCurrency : null,
+      debtAmount: typedDebtAmount,
     };
     switch (saving.kind) {
       case "rule":
@@ -363,6 +399,24 @@ function LoadedTransactionForm({
           })}
         </button>
       )}
+      {otherWholeDebts
+        .filter(
+          ({ currency, text }) =>
+            !(debtExchanged && debtCurrency === currency && debtAmount === text),
+        )
+        .map(({ currency, text }) => (
+          <button
+            key={currency}
+            type="button"
+            onClick={() => {
+              setDebtCurrency(currency);
+              setDebtAmount(text);
+            }}
+            className="-mt-2 self-start text-sm font-medium text-emerald-700 dark:text-emerald-400"
+          >
+            {t("transactions.form.wholeDebt", { amount: text, currency })}
+          </button>
+        ))}
       <AccountPicker
         label={tab === "transfer" ? t("transactions.form.from") : t("transactions.form.account")}
         accounts={accounts}
@@ -397,6 +451,46 @@ function LoadedTransactionForm({
             setPickedCounterpartyId(newCounterpartyId);
           }}
         />
+      )}
+      {movesMoney && account && debtCurrency === null && (
+        <button
+          type="button"
+          onClick={() => setDebtCurrency(account.currency)}
+          className="-mt-2 self-start text-sm font-medium text-emerald-700 dark:text-emerald-400"
+        >
+          {t("transactions.form.otherCurrency")}
+        </button>
+      )}
+      {movesMoney && debtCurrency !== null && (
+        <>
+          <CurrencyPicker
+            label={t("transactions.form.debtIn")}
+            value={debtCurrency}
+            onChange={setDebtCurrency}
+          />
+          {debtExchanged && (
+            <AmountField
+              label={t("transactions.form.debtAmount")}
+              hint={t("transactions.form.debtAmountHint", { currency: debtCurrency })}
+              name="debtAmount"
+              required
+              value={debtAmount}
+              decimals={decimalsIn(debtCurrency)}
+              onChange={setDebtAmount}
+              placeholder={format.amount(0, decimalsIn(debtCurrency))}
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setDebtCurrency(null);
+              setDebtAmount("");
+            }}
+            className="-mt-2 self-start text-sm font-medium text-emerald-700 dark:text-emerald-400"
+          >
+            {t("transactions.form.sameCurrency")}
+          </button>
+        </>
       )}
       {tab === "transfer" && exchanged && (
         <AmountField
@@ -526,6 +620,8 @@ type ProblemInput = {
   toAccount: Account | undefined;
   exchanged: boolean;
   toAmount: number | null;
+  debtExchanged: boolean;
+  debtAmount: number | null;
 };
 
 function findProblem({
@@ -536,13 +632,17 @@ function findProblem({
   toAccount,
   exchanged,
   toAmount,
+  debtExchanged,
+  debtAmount,
 }: ProblemInput): Problem | null {
   if (amount === null || amount <= 0) return "amount";
   switch (otherSideOf(type)) {
     case "category":
       return category ? null : "category";
     case "counterparty":
-      return counterparty ? null : "counterparty";
+      if (!counterparty) return "counterparty";
+      if (debtExchanged && (debtAmount === null || debtAmount <= 0)) return "debtAmount";
+      return null;
     case "toAccount":
       if (!toAccount) return "toAccount";
       if (exchanged && (toAmount === null || toAmount <= 0)) return "toAmount";
@@ -554,6 +654,7 @@ function problemMessage(problem: Problem, t: TFunction, example: string): string
   switch (problem) {
     case "amount":
     case "toAmount":
+    case "debtAmount":
       return t("transactions.errors.amount", { example });
     case "category":
       return t("transactions.errors.category");
@@ -575,4 +676,4 @@ function dateLabel(isRule: boolean, repeating: boolean, t: TFunction): string {
   return repeating ? t("recurring.form.startsOn") : t("transactions.form.date");
 }
 
-type Problem = "amount" | "category" | "counterparty" | "toAccount" | "toAmount";
+type Problem = "amount" | "category" | "counterparty" | "toAccount" | "toAmount" | "debtAmount";

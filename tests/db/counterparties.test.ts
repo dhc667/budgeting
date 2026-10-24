@@ -72,6 +72,45 @@ describe("money given to or received from a counterparty", () => {
     });
   });
 
+  it("gives money for a debt in another currency, with what it added to the debt", async () => {
+    const id = await addTransaction(
+      ana,
+      given({ amount: 2_500, debt_currency: "EUR", to_amount: 2_300 }),
+    );
+
+    expect(await balanceOf(ana, checking)).toBe(7_500);
+    expect(await detailsOf(ana, id)).toMatchObject({
+      type: "given",
+      from_amount: 2_500,
+      from_currency: "USD",
+      debt_amount: 2_300,
+      debt_currency: "EUR",
+    });
+  });
+
+  it("refuses a debt in another currency without what the money changed in it", async () => {
+    const missing = await ana.client.rpc("add_transaction", given({ debt_currency: "EUR" }));
+    const zero = await ana.client.rpc(
+      "add_transaction",
+      given({ transaction_type: "received", debt_currency: "EUR", to_amount: 0 }),
+    );
+
+    const refusal = "money given or received in another currency needs the debt amount above zero";
+    expect(missing.error?.message).toBe(refusal);
+    expect(zero.error?.message).toBe(refusal);
+  });
+
+  it("refuses to forgive a debt in another currency than the account's", async () => {
+    await addTransaction(ana, given({ debt_currency: "EUR", to_amount: 900 }));
+
+    const { error } = await ana.client.rpc(
+      "add_transaction",
+      given({ transaction_type: "forgave", debt_currency: "EUR", to_amount: 900 }),
+    );
+
+    expect(error?.message).toBe("a debt is forgiven in its own currency");
+  });
+
   it("refuses a counterparty from another space", async () => {
     const ownSpace = await privateSpaceOf(ana);
     const stranger = await addCounterparty(ana, ownSpace.id, "Stranger");

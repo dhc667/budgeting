@@ -534,11 +534,17 @@ isOneToOne: false
                   ]
                 },"transaction_details": {
                   Row: {
-                    "category_id": string | null,"counterparty_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"search_text": string | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
+                    "category_id": string | null,"counterparty_id": string | null,"created_at": string | null,"created_by": string | null,"date": string | null,"debt_amount": number | null,"debt_currency": string | null,"from_account_id": string | null,"from_amount": number | null,"from_currency": string | null,"id": string | null,"note": string | null,"one_sided": boolean | null,"search_text": string | null,"space_ids": (string)[] | null,"title": string | null,"to_account_id": string | null,"to_amount": number | null,"to_currency": string | null,"type": Database["public"]['Enums']["transaction_type"] | null
                   }
                   ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "postings_currency_currencies_code_fk"
+      columns: ["debt_currency"]
+isOneToOne: false
+      referencedRelation: "currencies"
+      referencedColumns: ["code"]
+    },{
       foreignKeyName: "postings_currency_currencies_code_fk"
       columns: ["from_currency"]
 isOneToOne: false
@@ -656,7 +662,7 @@ isOneToOne: false
 { Args: { "added_at": string,"space": string }; Returns: undefined
                            },
 "add_transaction":
-{ Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
+{ Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"debt_currency"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
                            },
 "budget_history":
 { Args: { "budget_id": string }; Returns: {
@@ -925,6 +931,8 @@ isOneToOne: false
 "created_at": string | null,
 "created_by": string | null,
 "date": string | null,
+"debt_amount": number | null,
+"debt_currency": string | null,
 "from_account_id": string | null,
 "from_amount": number | null,
 "from_currency": string | null,
@@ -965,7 +973,7 @@ isOneToOne: false
         isSetofReturn: true
       } },
 "transaction_sides":
-{ Args: { "account": string,"amount": number,"other_side": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: {
+{ Args: { "account": string,"amount": number,"debt_currency"?: string,"other_side": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: {
               "side_account": string,"side_amount": number,"side_currency": string
             }[]
                            },
@@ -990,7 +998,7 @@ isOneToOne: false
 { Args: { "account": string,"amount": number,"category": string,"ends_on": string,"every": number,"note": string,"recurring_transaction_id": string,"restart": boolean,"seen_done": number,"starts_on": string,"times": number,"title": string,"to_account": string,"to_amount": number,"transaction_type": Database["public"]['Enums']["transaction_type"],"unit": Database["public"]['Enums']["repeat_unit"] }; Returns: undefined
                            },
 "update_transaction":
-{ Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
+{ Args: { "account": string,"amount": number,"category": string,"counterparty"?: string,"debt_currency"?: string,"note": string,"title": string,"to_account": string,"to_amount": number,"transaction_date": string,"transaction_id": string,"transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: undefined
                            },
 "usable_account":
 { Args: { "account": string,"used_before": (string)[] }; Returns: {
@@ -1018,7 +1026,7 @@ isOneToOne: false
 { Args: { "transaction_type": Database["public"]['Enums']["transaction_type"] }; Returns: boolean
                            },
 "write_postings":
-{ Args: { "account": string,"amount": number,"other_side": string,"to_account": string,"to_amount": number,"transaction": string,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: undefined
+{ Args: { "account": string,"amount": number,"debt_currency"?: string,"other_side": string,"to_account": string,"to_amount": number,"transaction": string,"transaction_type": Database["public"]['Enums']["transaction_type"],"used_before": (string)[] }; Returns: undefined
                            }
           }
           Enums: {

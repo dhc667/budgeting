@@ -37,6 +37,9 @@ export async function restoreTransaction(supabase: AppSupabase, transactionId: s
 export function draftOf(transaction: DraftSource, categories: Category[]): TransactionDraft {
   const type = transaction.type ?? typeFromCategory(transaction, categories);
   const leaves = leavesAccount(type);
+  const accountCurrency = leaves ? transaction.from_currency : transaction.to_currency;
+  const debtExchanged =
+    transaction.debt_currency !== null && transaction.debt_currency !== accountCurrency;
   return {
     type,
     date: transaction.date,
@@ -48,6 +51,8 @@ export function draftOf(transaction: DraftSource, categories: Category[]): Trans
     toAccountId: type === "transfer" ? transaction.to_account_id : null,
     toAmount: type === "transfer" ? transaction.to_amount : null,
     counterpartyId: transaction.counterparty_id,
+    debtCurrency: debtExchanged ? transaction.debt_currency : null,
+    debtAmount: debtExchanged ? transaction.debt_amount : null,
   };
 }
 
@@ -63,9 +68,23 @@ function draftArgs(draft: TransactionDraft) {
     amount: draft.amount,
     category: otherSide === "category" ? draft.categoryId : null,
     to_account: otherSide === "toAccount" ? draft.toAccountId : null,
-    to_amount: otherSide === "toAccount" ? draft.toAmount : null,
+    to_amount: toAmountOf(draft),
     counterparty: otherSide === "counterparty" ? draft.counterpartyId : null,
+    debt_currency: otherSide === "counterparty" ? draft.debtCurrency : null,
   };
+}
+
+// The amount reaching the other account of a transfer, or what money given or received in another
+// currency changed in the debt.
+function toAmountOf(draft: TransactionDraft): number | null {
+  switch (otherSideOf(draft.type)) {
+    case "toAccount":
+      return draft.toAmount;
+    case "counterparty":
+      return draft.debtCurrency === null ? null : draft.debtAmount;
+    case "category":
+      return null;
+  }
 }
 
 // Where the money comes from or goes to, besides the account the draft names. A forgiven debt also
@@ -126,13 +145,18 @@ type DraftSource = Pick<
   | "to_amount"
   | "category_id"
   | "counterparty_id"
+  | "debt_amount"
+  | "debt_currency"
+  | "from_currency"
+  | "to_currency"
 >;
 
 type Category = Pick<Database["public"]["Views"]["categories"]["Row"], "id" | "kind">;
 
 export type TransactionType = Database["public"]["Enums"]["transaction_type"];
 
-// Amounts in minor units of the account they leave or reach, always above zero.
+// Amounts in minor units of the account they leave or reach, always above zero. A debt in another
+// currency than the account's has its own amount, in minor units of that currency.
 export type TransactionDraft = {
   type: TransactionType;
   date: string;
@@ -144,4 +168,6 @@ export type TransactionDraft = {
   toAccountId: string | null;
   toAmount: number | null;
   counterpartyId: string | null;
+  debtCurrency: string | null;
+  debtAmount: number | null;
 };

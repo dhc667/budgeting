@@ -84,6 +84,8 @@ export function asTransaction(rule: RecurringTransaction, accounts: Account[]): 
     space_ids: [rule.space_id],
     search_text: "",
     counterparty_id: null,
+    debt_amount: null,
+    debt_currency: null,
   };
 }
 

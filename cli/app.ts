@@ -53,7 +53,10 @@ Transactions:
   transactions show <id>
   transactions add --type expense|refund|income|transfer|given|received|forgave|forgiven
       --account <id> --amount <n> [--category <id>] [--to-account <id>] [--to-amount <n>]
-      [--counterparty <id>] [--date <date>] [--title <text>] [--note <text>]
+      [--counterparty <id>] [--debt-currency <code> --debt-amount <n>]
+      [--date <date>] [--title <text>] [--note <text>]
+      given and received may move a debt in another currency than the account's: --debt-amount
+      is what they changed in it, in that currency
       forgave and forgiven settle a debt without money moving: the amount counts as spending
       from the account, or income to it, in a built-in category
   transactions update <id> [same options as add]     What isn't given keeps its value

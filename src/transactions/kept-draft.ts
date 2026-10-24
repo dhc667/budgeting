@@ -43,4 +43,6 @@ const draftSchema = z.object({
   toAccountId: z.nullable(z.string()),
   toAmount: z.nullable(z.number()),
   counterpartyId: z.nullable(z.string()),
+  debtCurrency: z.nullable(z.string()),
+  debtAmount: z.nullable(z.number()),
 });

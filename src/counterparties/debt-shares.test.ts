@@ -66,6 +66,33 @@ describe("sharing a debt among accounts", () => {
     ]);
   });
 
+  it("leaves out money that moved a debt in another currency than its account's", () => {
+    const debts = debtShares(
+      dad([
+        { currency: "CUP", owed: 700 },
+        { currency: "USD", owed: 0 },
+      ]),
+      [
+        given("2026-01-10", cash, 500),
+        given("2026-02-10", bank, 200),
+        given("2026-03-10", { ...savings, currency: "USD" }, 1_000),
+        received("2026-04-10", cash, 24_000, { currency: "USD", amount: 1_000 }),
+      ],
+      [cash, bank],
+    );
+
+    expect(debts).toEqual([
+      {
+        currency: "CUP",
+        owed: 700,
+        shares: [
+          { accountId: "bank", amount: 200 },
+          { accountId: "cash", amount: 500 },
+        ],
+      },
+    ]);
+  });
+
   it("moves what went through an archived account onto another", () => {
     const debts = debtShares(
       dad([{ currency: "CUP", owed: 800 }]),
@@ -99,12 +126,21 @@ function dad(balances: Pick<CounterpartyBalance, "currency" | "owed">[]): Counte
   };
 }
 
-function given(date: string, account: Account, amount: number): Transaction {
-  return { ...transaction(date, "given"), ...leaving(account, amount) };
+// The debt is in the account's currency unless said otherwise.
+function given(date: string, account: Account, amount: number, debt?: Debt): Transaction {
+  return {
+    ...transaction(date, "given"),
+    ...leaving(account, amount),
+    ...owing(debt ?? { currency: account.currency, amount }),
+  };
 }
 
-function received(date: string, account: Account, amount: number): Transaction {
-  return { ...transaction(date, "received"), ...reaching(account, amount) };
+function received(date: string, account: Account, amount: number, debt?: Debt): Transaction {
+  return {
+    ...transaction(date, "received"),
+    ...reaching(account, amount),
+    ...owing(debt ?? { currency: account.currency, amount }),
+  };
 }
 
 function forgave(date: string, account: Account, amount: number): Transaction {
@@ -112,12 +148,19 @@ function forgave(date: string, account: Account, amount: number): Transaction {
     ...transaction(date, "forgave"),
     ...leaving(account, amount),
     ...reaching(account, amount),
+    ...owing({ currency: account.currency, amount }),
   };
 }
 
 function leaving(account: Account, amount: number) {
   return { from_account_id: account.id, from_amount: amount, from_currency: account.currency };
 }
+
+function owing({ currency, amount }: Debt) {
+  return { debt_currency: currency, debt_amount: amount };
+}
+
+type Debt = { currency: string; amount: number };
 
 function reaching(account: Account, amount: number) {
   return { to_account_id: account.id, to_amount: amount, to_currency: account.currency };
@@ -141,6 +184,8 @@ function transaction(date: string, type: Transaction["type"]): Transaction {
     to_currency: null,
     category_id: null,
     counterparty_id: "dad",
+    debt_amount: null,
+    debt_currency: null,
     space_ids: ["space-1"],
     search_text: "",
   };

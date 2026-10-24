@@ -75,6 +75,8 @@ export function NewTransactionScreen() {
                 toAccountId: null,
                 toAmount: null,
                 counterpartyId: counterparty?.id ?? null,
+                debtCurrency: null,
+                debtAmount: null,
               }
             }
             keptAccountIds={[]}

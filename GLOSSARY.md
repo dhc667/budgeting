@@ -86,10 +86,10 @@ What a counterparty and a space owe each other in one currency: everything given
 _Avoid_: loan, IOU, credit
 
 **Money given**:
-A transaction that moves money out of an account to a counterparty in the same space, whether lending it or paying back what the space owes.
+A transaction that moves money out of an account to a counterparty in the same space, whether lending it or paying back what the space owes. What left the account and what it added to the debt may be in different currencies, each with its own amount.
 
 **Money received**:
-A transaction that moves money from a counterparty into an account in the same space, whether borrowing it or being paid back.
+A transaction that moves money from a counterparty into an account in the same space, whether borrowing it or being paid back. What reached the account and what it took off the debt may be in different currencies, each with its own amount.
 
 **Forgiven debt**:
 A transaction that settles some or all of a debt without money moving, never more than is owed. When the space forgives a counterparty, the amount counts as spending from one of its accounts, in Debts forgiven; when a counterparty forgives the space, it counts as income to one, in Debts forgiven to you. The account's balance doesn't change. Forgiving a debt across several accounts is one forgiven debt per account.

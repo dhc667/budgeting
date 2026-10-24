@@ -295,6 +295,13 @@
       "when": 1792361449437,
       "tag": "0041_invites_from_the_app_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792805296131,
+      "tag": "0042_debts_across_currencies",
+      "breakpoints": true
     }
   ]
 }
