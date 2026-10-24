@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { localToday } from "../format/days";
 import { useProfile } from "../profile/profile-queries";
+import { useShownSpaces } from "../spaces/space-picker";
 import { useSpaces } from "../spaces/space-queries";
 import { SpaceSelect } from "../spaces/SpaceSelect";
 import { BackLink } from "../ui/BackLink";
@@ -15,9 +16,10 @@ export function NewAccountScreen() {
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const { data: spaces } = useSpaces();
+  const shownSpaces = useShownSpaces();
   const [chosenSpaceId, setChosenSpaceId] = useState<string>();
   const createAccount = useCreateAccount();
-  const spaceId = chosenSpaceId ?? spaces?.[0]?.id;
+  const spaceId = chosenSpaceId ?? shownSpaces?.[0]?.id ?? spaces?.[0]?.id;
   if (!profile || !spaces || !spaceId) return null;
 
   return (
