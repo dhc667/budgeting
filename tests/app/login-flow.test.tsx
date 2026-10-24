@@ -76,6 +76,16 @@ describe("joining with an invite", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByRole("heading", { name: /, Ana$/ })).toBeTruthy();
   });
+
+  it("shows each password typed on its own", async () => {
+    openApp(await inviteLink());
+    const [first] = await screen.findAllByRole("button", { name: "Show password" });
+
+    await user.click(defined(first));
+
+    expect(screen.getByLabelText("Password")).toHaveProperty("type", "text");
+    expect(screen.getByLabelText("Repeat password")).toHaveProperty("type", "password");
+  });
 });
 
 describe("inviting someone from the app", () => {
@@ -132,6 +142,18 @@ describe("signing in", () => {
     openApp("http://localhost:3000/#/");
 
     expect(await screen.findByRole("heading", { name: /, Carla$/ })).toBeTruthy();
+  });
+
+  it("shows the password typed, on request, and hides it again", async () => {
+    openApp(signInLink());
+    const field = await screen.findByLabelText("Password");
+    await user.type(field, "my secret");
+
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    expect(field).toHaveProperty("type", "text");
+
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(field).toHaveProperty("type", "password");
   });
 
   it("asks a device that was never connected to scan an invite", async () => {

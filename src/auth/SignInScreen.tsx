@@ -8,6 +8,7 @@ import { useSession } from "./session";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { PasswordField } from "../ui/PasswordField";
 import { submitWith, textField } from "../ui/forms";
 
 export function SignInScreen() {
@@ -31,10 +32,9 @@ export function SignInScreen() {
     <AuthLayout title={t("auth.signIn.title")}>
       <form onSubmit={submitWith(signIn.mutate)} className="flex flex-col gap-4">
         <Field label={t("auth.email")} name="email" type="email" autoComplete="email" required />
-        <Field
+        <PasswordField
           label={t("auth.password")}
           name="password"
-          type="password"
           autoComplete="current-password"
           required
         />

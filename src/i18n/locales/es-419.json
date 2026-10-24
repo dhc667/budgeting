@@ -96,6 +96,8 @@
   "auth": {
     "email": "Correo electrónico",
     "password": "Contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "signOut": "Cerrar sesión",
     "disconnect": "Desconectar",
     "signIn": {

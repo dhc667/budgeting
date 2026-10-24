@@ -16,6 +16,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
+import { PasswordField } from "../ui/PasswordField";
 import { choiceField, submitWith, textField } from "../ui/forms";
 import { SelectField } from "../ui/SelectField";
 import { type Profile, useProfile, useUpdateProfile } from "./profile-queries";
@@ -195,18 +196,16 @@ function PasswordForm() {
   return (
     <Card title={t("profile.password.title")}>
       <form onSubmit={submitWith(changePassword.mutate)} className="flex flex-col gap-4">
-        <Field
+        <PasswordField
           label={t("profile.password.new")}
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={8}
           required
         />
-        <Field
+        <PasswordField
           label={t("profile.password.repeat")}
           name="confirmation"
-          type="password"
           autoComplete="new-password"
           required
         />
