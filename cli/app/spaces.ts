@@ -1,29 +1,41 @@
-import { fail } from "../fail.ts";
-import type { AppSupabase } from "../../src/supabase/client.ts";
 import { createSpace } from "../../src/spaces/space-writes.ts";
-import { type Commands, dataOf, noPositionals, parseCommand, print, required } from "./command.ts";
+import { type Commands, dataOf, noPositionals, parseCommand, required } from "./command.ts";
+import { loadDirectory, type Space } from "./directory.ts";
+import {
+  contextOf,
+  idField,
+  type Output,
+  printRows,
+  printWritten,
+  type View,
+  withOutput,
+} from "./output.ts";
 import { signedIn } from "./session.ts";
 
-export const spaceCommands: Commands = { "spaces list": listSpaces, "spaces add": addSpace };
+const spaceView: View<Space> = {
+  fields: [
+    idField("id", (space) => space.id),
+    { name: "name", json: (space) => space.name },
+    { name: "private", json: (space) => space.private },
+  ],
+  columns: ["id", "name", "private"],
+};
 
-async function listSpaces(argv: string[]) {
+export const spaceCommands: Commands = {
+  "spaces list": withOutput(spaceView, listSpaces),
+  "spaces add": withOutput(spaceView, addSpace, { quiet: true }),
+};
+
+async function listSpaces(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
   noPositionals(positionals, "spaces list");
   const { supabase, userId } = await signedIn(values.env);
-  const spaces = await dataOf(
-    supabase.from("spaces").select("id, name, private_owner").order("created_at"),
-  );
-  print(
-    spaces.map(({ id, name, private_owner }) => ({
-      id,
-      name,
-      private: private_owner === userId,
-    })),
-  );
+  const directory = await loadDirectory(supabase, userId);
+  printRows(output, spaceView, directory.spaces, contextOf(directory));
 }
 
 // Members are added from the app. Starter categories follow the user's language, English if unset.
-async function addSpace(argv: string[]) {
+async function addSpace(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, { name: { type: "string" } });
   noPositionals(positionals, "spaces add --name <name>");
   const { supabase, userId } = await signedIn(values.env);
@@ -35,22 +47,6 @@ async function addSpace(argv: string[]) {
     memberIds: [],
     starterLanguage: profile.language ?? "en",
   });
-  const space = await dataOf(supabase.from("spaces").select("id, name").eq("id", id).single());
-  print({ ...space, private: false });
-}
-
-export async function spaceOrPrivate(
-  supabase: AppSupabase,
-  userId: string,
-  spaceId: string | undefined,
-): Promise<string> {
-  if (spaceId) return spaceId;
-  const { data, error } = await supabase
-    .from("spaces")
-    .select("id")
-    .eq("private_owner", userId)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) fail("You have no private space; pass --space.");
-  return data.id;
+  const directory = await loadDirectory(supabase, userId);
+  printWritten(output, spaceView, directory.space(id, "id"), contextOf(directory));
 }

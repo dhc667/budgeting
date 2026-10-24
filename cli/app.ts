@@ -10,8 +10,28 @@ import { transactionCommands } from "./app/transactions.ts";
 const usage = `Usage: pnpm app <command> [options] [--env <file>]
 
 Uses the app as the signed-in user: the same rules apply as on their phone, and what they can't
-see or change, neither can these commands. Reads and writes print JSON. Amounts are whole numbers
-in the currency's minor units (1250 is 12.50 USD). Dates are like 2026-10-18 and default to today.
+see or change, neither can these commands. Dates are like 2026-10-18 and default to today.
+
+Naming things:
+  Wherever a space, account, category or counterparty goes, give its name or its id. Names match
+  whatever their case or spacing. A category goes by its path, Food/Necessary; a bare name is a
+  top-level one. --space private is your private space. An id can be cut short to any start of
+  it 8 characters or longer, as lists show it; transactions go by id alone. A name or id that
+  could mean more than one thing is refused, with the candidates listed.
+  On a transaction, --category and --counterparty are looked up in its account's space, and
+  accounts in all your spaces, since a transfer can cross them.
+
+Amounts:
+  In whole units of their currency, as people write them: --amount 3477.23, and 1250 is 1250.00.
+  Each is in its own account's currency: --amount the account's, --to-amount the other account's,
+  --debt-amount --debt-currency's. One below zero goes after an equals sign:
+  --opening-amount=-2500.
+
+Output:
+  A table on a terminal; when piped, tab-separated lines with a header row.
+  --json                 List the fields a command has, without running it
+  --json <f1,f2,...>     Print those fields as JSON, nulls included
+  --quiet                On add, update and restore print only the id; on delete, nothing
 
 Session:
   login [--email <email>] [--password-stdin]   Sign in; asks for the password unless piped in
@@ -23,44 +43,48 @@ Spaces:
   spaces add --name <name>                     Just you in it; add members from the app
 
 Accounts (--space defaults to your private space):
-  accounts list [--space <id>] [--archived]
-  accounts add --name <name> --currency <code> [--space <id>] [--color <color>]
-      [--opening-amount <n>] [--opening-date <date>]
-  accounts update <id> [--name ...] [--currency ...] [--color ...] [--opening-amount ...]
+  accounts list [--space <space>] [--archived]
+  accounts add --name <name> --currency <code> [--space <space>] [--color <color>]
+      [--opening-amount <amount>] [--opening-date <date>]
+  accounts update <account> [--name ...] [--currency ...] [--color ...] [--opening-amount ...]
       [--opening-date ...]
-  accounts archive <id> | accounts unarchive <id>
-  accounts delete <id>
+  accounts archive <account> | accounts unarchive <account>
+  accounts delete <account>
 
 Categories (--space defaults to your private space):
-  categories list [--space <id>] [--kind expense|income]
-  categories add --name <name> --kind expense|income [--space <id>] [--icon <lucide name>]
-      [--color <color>] [--parent <id>]
-  categories update <id> [--name ...] [--kind ...] [--icon ...] [--color ...]
-      [--parent <id> | --no-parent]
-  categories delete <id> [--move-to <id>]      Its transactions move to --move-to
-  Built-in categories, those with a built_in, take only forgiven debts: they keep their kind and
-  place, have no stored name, and can't be deleted.
+  categories list [--space <space>] [--kind expense|income]
+  categories add --name <name> --kind expense|income [--space <space>] [--icon <lucide name>]
+      [--color <color>] [--parent <category>]
+  categories update <category> [--name ...] [--kind ...] [--icon ...] [--color ...]
+      [--parent <category> | --no-parent]
+  categories delete <category> [--move-to <category>]
+  --parent and --move-to are looked up in the category's space and kind. A category with
+  subcategories can't be deleted. One that transactions or recurring transactions use needs
+  --move-to, where they go; deleted transactions don't count. Built-in categories take only
+  forgiven debts: they keep their kind and place, and can't be deleted.
 
 Counterparties: whoever money is lent to or borrowed from (--space defaults to your private space):
-  counterparties list [--space <id>]           With what each owes per currency (below zero, you owe)
-  counterparties add --name <name> [--space <id>] [--color <color>]
-  counterparties update <id> [--name ...] [--color ...]
-  counterparties delete <id>                   Only one that no transaction uses
+  counterparties list [--space <space>]        With what each owes per currency (below zero, you owe)
+  counterparties add --name <name> [--space <space>] [--color <color>]
+  counterparties update <counterparty> [--name ...] [--color ...]
+  counterparties delete <counterparty>         Only one that no transaction uses
 
 Transactions:
-  transactions list [--space <id>] [--account <id>] [--category <id>] [--counterparty <id>]
-      [--from <date>] [--to <date>] [--search <text>] [--limit <n>]
-  transactions show <id>
+  transactions list [--space <space>] [--account <account>] [--category <category>]
+      [--counterparty <counterparty>] [--from <date>] [--to <date>] [--search <text>]
+      [--limit <n>]
+  transactions show <transaction>
   transactions add --type expense|refund|income|transfer|given|received|forgave|forgiven
-      --account <id> --amount <n> [--category <id>] [--to-account <id>] [--to-amount <n>]
-      [--counterparty <id>] [--debt-currency <code> --debt-amount <n>]
-      [--date <date>] [--title <text>] [--note <text>]
+      --account <account> --amount <amount> [--category <category>] [--to-account <account>]
+      [--to-amount <amount>] [--counterparty <counterparty>]
+      [--debt-currency <code> --debt-amount <amount>] [--date <date>] [--title <text>]
+      [--note <text>]
       given and received may move a debt in another currency than the account's: --debt-amount
       is what they changed in it, in that currency
       forgave and forgiven settle a debt without money moving: the amount counts as spending
       from the account, or income to it, in a built-in category
-  transactions update <id> [same options as add]     What isn't given keeps its value
-  transactions delete <id> | transactions restore <id>
+  transactions update <transaction> [same options as add]     What isn't given keeps its value
+  transactions delete <transaction> | transactions restore <transaction>
 
 Options:
   --env <file>   Instance settings (default: .env.instance); the session is kept in <file>.session

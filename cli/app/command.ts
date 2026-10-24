@@ -27,29 +27,16 @@ export function required<T>(value: T | undefined, flag: string): T {
   return value;
 }
 
-export function minorUnits(text: string, flag: string): number {
-  const amount = integer(text, flag);
-  if (amount <= 0) fail(`${flag} must be above zero.`);
-  return amount;
-}
-
-// Amounts are integers in each currency's minor units (ADR 0010): 1250 is 12.50 USD.
-export function integer(text: string, flag: string): number {
-  if (!/^-?\d+$/.test(text)) fail(`${flag} must be a whole number of minor units, like 1250.`);
+export function positiveWhole(text: string, flag: string): number {
+  if (!/^\d+$/.test(text) || Number(text) === 0) {
+    fail(`${flag} must be a whole number above zero, like 50.`);
+  }
   return Number(text);
 }
 
 export function day(text: string, flag: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || Number.isNaN(Date.parse(text))) {
     fail(`${flag} must be a date like 2026-10-18.`);
-  }
-  return text;
-}
-
-// Ids go into PostgREST filter strings, where anything else could add a condition of its own.
-export function uuid(text: string, flag: string): string {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text)) {
-    fail(`${flag} must be an id, like 0b6f9a0e-6c1d-4f7e-9a51-2f3c8d1e4b7a.`);
   }
   return text;
 }
@@ -66,8 +53,4 @@ export async function dataOf<Response extends { data: unknown; error: Error | nu
   const response = await query;
   if (response.error) throw response.error;
   return response.data;
-}
-
-export function print(value: unknown) {
-  console.log(JSON.stringify(value, null, 2));
 }
