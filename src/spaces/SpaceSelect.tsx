@@ -10,7 +10,7 @@ type SpaceSelectProps = {
   onChange: (spaceId: string) => void;
 };
 
-// Every space is offered, whatever the space picker shows. The only one there is shows grayed out.
+// Only the spaces the space picker shows are offered. The only one shown is grayed out.
 export function SpaceSelect({ label, spaces, value, onChange }: SpaceSelectProps) {
   const { t } = useTranslation();
   return (

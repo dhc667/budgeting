@@ -9,6 +9,7 @@ import {
   openNewAccount,
   openNewTransaction,
   openSignedIn,
+  openSpaces,
   picked,
   recordTransaction,
   uniqueName,
@@ -221,25 +222,9 @@ describe("the space picker", () => {
 
     expect(await screen.findByRole("heading", { name: "Spaces", level: 1 })).toBeTruthy();
   });
-
-  it("never narrows what forms offer", async () => {
-    await openSignedIn(uniqueName("Ana"));
-    await createSharedSpace("Family", []);
-    await goHome();
-
-    await user.click(defined((await screen.findAllByRole("button", { name: "All spaces" }))[0]));
-    await user.click(screen.getByRole("checkbox", { name: "Family" }));
-    await openNewAccount();
-
-    const spaces = within(screen.getByLabelText("Space"));
-    expect(spaces.getAllByRole("option").map(({ textContent }) => textContent)).toEqual([
-      "Private",
-      "Family",
-    ]);
-  });
 });
 
-describe("a new account, counterparty or transaction", () => {
+describe("forms", () => {
   describe("with the space picker narrowed to one space", () => {
     beforeEach(async () => {
       await openSignedIn(uniqueName("Ana"));
@@ -248,31 +233,50 @@ describe("a new account, counterparty or transaction", () => {
       await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
       await recordTransaction({ amount: "5", account: "Wallet", category: "Groceries" });
       await goHome();
-      await user.click(defined(screen.getAllByRole("button", { name: "All spaces" })[0]));
-      await user.click(screen.getByRole("checkbox", { name: "Private" }));
+      await hideSpace("Private");
     });
 
-    it("starts an account in the space shown", async () => {
+    it("put a new account in that space, grayed out", async () => {
       await openNewAccount();
 
+      expect(spaceOptions()).toEqual(["Family"]);
       expect(chosenOption("Space")).toBe("Family");
+      expect(screen.getByLabelText("Space")).toHaveProperty("disabled", true);
     });
 
-    it("starts a counterparty in the space shown", async () => {
+    it("put a new counterparty in that space", async () => {
       const debts = within(await screen.findByRole("region", { name: "Debts" }));
       await user.click(debts.getByRole("link", { name: "Add a counterparty" }));
 
       expect(chosenOption(await screen.findByLabelText("Space"))).toBe("Family");
+      expect(spaceOptions()).toEqual(["Family"]);
     });
 
-    it("starts a transaction from an account in the space shown", async () => {
+    it("offer a new transaction only that space's accounts", async () => {
       await openNewTransaction();
 
       expect(picked("Account")).toBe("Joint");
+      await user.click(screen.getByRole("combobox", { name: "Account" }));
+      expect(screen.getAllByRole("option").map(({ textContent }) => textContent)).toEqual([
+        expect.stringMatching(/^Joint/),
+      ]);
     });
   });
 
-  it("shows the only space there is, grayed out", async () => {
+  it("offer every space shown, and only those", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await createSharedSpace("Family", []);
+    await createSharedSpace("Trip", []);
+    await goHome();
+    await hideSpace("Trip");
+
+    await openNewAccount();
+
+    expect(spaceOptions()).toEqual(["Private", "Family"]);
+    expect(screen.getByLabelText("Space")).toHaveProperty("disabled", false);
+  });
+
+  it("show the only space there is, grayed out", async () => {
     await openSignedIn(uniqueName("Ana"));
 
     await openNewAccount();
@@ -280,7 +284,74 @@ describe("a new account, counterparty or transaction", () => {
     expect(chosenOption("Space")).toBe("Private");
     expect(screen.getByLabelText("Space")).toHaveProperty("disabled", true);
   });
+
+  it("keep offering a transaction's own account in a space the picker hides", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await createSharedSpace("Family", []);
+    await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
+    await recordTransaction({
+      amount: "5",
+      account: "Wallet",
+      category: "Groceries",
+      title: "Bread",
+    });
+    await user.click(await screen.findByRole("link", { name: /Bread/ }));
+
+    await hideSpace("Private");
+
+    expect(picked("Account")).toBe("Wallet");
+  });
+
+  it("give or take money from a counterparty's own space, even if the picker hides it", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await createSharedSpace("Family", []);
+    await addAccount({ name: "Wallet", space: "Private", openingBalance: "100" });
+    await goHome();
+    const debts = within(await screen.findByRole("region", { name: "Debts" }));
+    await user.click(debts.getByRole("link", { name: "Add a counterparty" }));
+    await user.type(await screen.findByLabelText("Name"), "Charlie");
+    await user.click(screen.getByRole("button", { name: "Add counterparty" }));
+    await screen.findByRole("heading", { name: "Charlie", level: 1 });
+
+    await hideSpace("Private");
+    await user.click(screen.getByRole("link", { name: "I gave Charlie money" }));
+
+    expect(await screen.findByRole("heading", { name: "New transaction" })).toBeTruthy();
+    expect(picked("Account")).toBe("Wallet");
+  });
 });
+
+describe("the spaces shown", () => {
+  it("are all of them again once none of those chosen is left", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await createSharedSpace("Family", []);
+    await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
+    await goHome();
+    await hideSpace("Private");
+    await openSpaces();
+    await user.click(await screen.findByRole("link", { name: /^Family/ }));
+    await user.click(await screen.findByRole("button", { name: "Delete space" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Delete Family?" }));
+    await user.click(dialog.getByRole("button", { name: "Delete" }));
+    await screen.findByRole("heading", { name: "Spaces" });
+
+    await goHome();
+
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect(await accounts.findByRole("link", { name: /Wallet/ })).toBeTruthy();
+  });
+});
+
+async function hideSpace(name: string) {
+  await user.click(defined((await screen.findAllByRole("button", { name: "All spaces" }))[0]));
+  await user.click(screen.getByRole("checkbox", { name }));
+}
+
+function spaceOptions(): (string | null)[] {
+  return within(screen.getByLabelText("Space"))
+    .getAllByRole("option")
+    .map(({ textContent }) => textContent);
+}
 
 function chosenOption(field: string | HTMLElement): string | null {
   const select = typeof field === "string" ? screen.getByLabelText(field) : field;

@@ -31,6 +31,12 @@ describe("reading spaces", () => {
   });
 });
 
+describe("reading no spaces at all", () => {
+  it("gives none, rather than an empty list, for a user who has just been deleted", () => {
+    expect(readSpaces({ spaces: new Map(), space_members: new Map() })).toBeUndefined();
+  });
+});
+
 describe("reading a space's activity", () => {
   it("has the space's entries, newest first", () => {
     const activity = readSpaceActivity(
