@@ -5,7 +5,6 @@ import {
   updateCounterparty,
 } from "../../src/counterparties/counterparty-writes.ts";
 import type { AppSupabase } from "../../src/supabase/client.ts";
-import { fail } from "../fail.ts";
 import {
   choice,
   type Commands,
@@ -13,33 +12,142 @@ import {
   noPositionals,
   onlyId,
   parseCommand,
-  print,
   required,
 } from "./command.ts";
-import { signedIn } from "./session.ts";
-import { spaceOrPrivate } from "./spaces.ts";
+import { type Counterparty, loadDirectory, signedInDirectory } from "./directory.ts";
+import { formatAmount, wholeUnits } from "./money.ts";
+import {
+  contextOf,
+  idField,
+  type Output,
+  printDeleted,
+  printRows,
+  printWritten,
+  type View,
+  withOutput,
+  withQuiet,
+} from "./output.ts";
 
-export const counterpartyCommands: Commands = {
-  "counterparties list": listCounterparties,
-  "counterparties add": addCounterparty,
-  "counterparties update": changeCounterparty,
-  "counterparties delete": removeCounterparty,
+// What it owes per currency: above zero it owes the space, below the space owes it.
+const counterpartyView: View<OwingCounterparty> = {
+  fields: [
+    idField("id", (counterparty) => counterparty.id),
+    idField("space_id", (counterparty) => counterparty.space_id),
+    {
+      name: "space",
+      json: (counterparty, { directory }) => directory.spaceName(counterparty.space_id),
+    },
+    { name: "name", json: (counterparty) => counterparty.name },
+    { name: "color", json: (counterparty) => counterparty.color },
+    {
+      name: "owed",
+      json: (counterparty, { directory }) =>
+        Object.fromEntries(
+          counterparty.owed.map(({ currency, minorUnits }) => [
+            currency,
+            wholeUnits(minorUnits, directory.decimals(currency)),
+          ]),
+        ),
+      text: (counterparty, { directory }) =>
+        counterparty.owed
+          .map(({ currency, minorUnits }) =>
+            formatAmount(minorUnits, currency, directory.decimals(currency)),
+          )
+          .join(", "),
+    },
+  ],
+  columns: ["id", "space", "name", "owed"],
 };
 
-// Each with what it owes per currency: above zero it owes the space, below the space owes it.
-async function listCounterparties(argv: string[]) {
+export const counterpartyCommands: Commands = {
+  "counterparties list": withOutput(counterpartyView, listCounterparties),
+  "counterparties add": withOutput(counterpartyView, addCounterparty, { quiet: true }),
+  "counterparties update": withOutput(counterpartyView, changeCounterparty, { quiet: true }),
+  "counterparties delete": withQuiet(removeCounterparty),
+};
+
+async function listCounterparties(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, { space: { type: "string" } });
-  noPositionals(positionals, "counterparties list [--space <id>]");
-  const { supabase, userId } = await signedIn(values.env);
-  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
-  const counterparties = await dataOf(
-    supabase
-      .from("ledger_accounts")
-      .select("id, space_id, name, color")
-      .eq("kind", "counterparty")
-      .eq("space_id", spaceId)
-      .order("name"),
+  noPositionals(positionals, "counterparties list [--space <space>]");
+  const { supabase, directory } = await signedInDirectory(values.env);
+  const space = directory.spaceOrPrivate(values.space);
+  const counterparties = directory.counterparties.filter(({ space_id }) => space_id === space.id);
+  printRows(
+    output,
+    counterpartyView,
+    await withOwed(supabase, counterparties),
+    contextOf(directory),
   );
+}
+
+async function addCounterparty(argv: string[], output: Output) {
+  const { values, positionals } = parseCommand(argv, {
+    space: { type: "string" },
+    name: { type: "string" },
+    color: { type: "string" },
+  });
+  noPositionals(
+    positionals,
+    "counterparties add --name <name> [--space <space>] [--color <color>]",
+  );
+  const { supabase, userId, directory } = await signedInDirectory(values.env);
+  const space = directory.spaceOrPrivate(values.space);
+  const id = await createCounterparty(supabase, space.id, {
+    name: required(values.name, "--name"),
+    color:
+      values.color === undefined
+        ? "slate"
+        : choice(values.color, Constants.public.Enums.color, "--color"),
+  });
+  await printCounterparty(output, supabase, userId, id);
+}
+
+// What isn't given keeps its value.
+async function changeCounterparty(argv: string[], output: Output) {
+  const { values, positionals } = parseCommand(argv, {
+    name: { type: "string" },
+    color: { type: "string" },
+  });
+  const named = onlyId(
+    positionals,
+    "counterparties update <counterparty> [--name <name>] [--color <color>]",
+  );
+  const { supabase, userId, directory } = await signedInDirectory(values.env);
+  const current = directory.counterparty(named, "counterparty");
+  await updateCounterparty(supabase, current.id, {
+    name: values.name ?? current.name,
+    color:
+      values.color === undefined
+        ? current.color
+        : choice(values.color, Constants.public.Enums.color, "--color"),
+  });
+  await printCounterparty(output, supabase, userId, current.id);
+}
+
+async function removeCounterparty(argv: string[], output: Output) {
+  const { values, positionals } = parseCommand(argv, {});
+  const named = onlyId(positionals, "counterparties delete <counterparty>");
+  const { supabase, directory } = await signedInDirectory(values.env);
+  const { id } = directory.counterparty(named, "counterparty");
+  await deleteCounterparty(supabase, id);
+  printDeleted(output, "counterparty", directory.shortId(id));
+}
+
+async function printCounterparty(
+  output: Output,
+  supabase: AppSupabase,
+  userId: string,
+  id: string,
+) {
+  const directory = await loadDirectory(supabase, userId);
+  const [counterparty] = await withOwed(supabase, [directory.counterparty(id, "id")]);
+  if (counterparty) printWritten(output, counterpartyView, counterparty, contextOf(directory));
+}
+
+async function withOwed(
+  supabase: AppSupabase,
+  counterparties: Counterparty[],
+): Promise<OwingCounterparty[]> {
   const postings = await dataOf(
     supabase
       .from("postings")
@@ -49,75 +157,18 @@ async function listCounterparties(argv: string[]) {
         counterparties.map(({ id }) => id),
       ),
   );
-  print(
-    counterparties.map((counterparty) => ({
+  return counterparties.map((counterparty) => {
+    const owed = new Map<string, number>();
+    for (const { ledger_account_id, currency, amount } of postings) {
+      if (ledger_account_id === counterparty.id) {
+        owed.set(currency, (owed.get(currency) ?? 0) + amount);
+      }
+    }
+    return {
       ...counterparty,
-      owed: owedByCurrency(postings.filter((p) => p.ledger_account_id === counterparty.id)),
-    })),
-  );
-}
-
-async function addCounterparty(argv: string[]) {
-  const { values, positionals } = parseCommand(argv, {
-    space: { type: "string" },
-    name: { type: "string" },
-    color: { type: "string" },
+      owed: [...owed].map(([currency, minorUnits]) => ({ currency, minorUnits })),
+    };
   });
-  noPositionals(positionals, "counterparties add --name <name> [--space <id>] [--color <color>]");
-  const { supabase, userId } = await signedIn(values.env);
-  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
-  const id = await createCounterparty(supabase, spaceId, {
-    name: required(values.name, "--name"),
-    color:
-      values.color === undefined
-        ? "slate"
-        : choice(values.color, Constants.public.Enums.color, "--color"),
-  });
-  print(await counterparty(supabase, id));
 }
 
-// What isn't given keeps its value.
-async function changeCounterparty(argv: string[]) {
-  const { values, positionals } = parseCommand(argv, {
-    name: { type: "string" },
-    color: { type: "string" },
-  });
-  const id = onlyId(positionals, "counterparties update <id> [--name <name>] [--color <color>]");
-  const { supabase } = await signedIn(values.env);
-  const current = await counterparty(supabase, id);
-  await updateCounterparty(supabase, id, {
-    name: values.name ?? current.name,
-    color:
-      values.color === undefined
-        ? current.color
-        : choice(values.color, Constants.public.Enums.color, "--color"),
-  });
-  print(await counterparty(supabase, id));
-}
-
-async function removeCounterparty(argv: string[]) {
-  const { values, positionals } = parseCommand(argv, {});
-  const id = onlyId(positionals, "counterparties delete <id>");
-  const { supabase } = await signedIn(values.env);
-  await deleteCounterparty(supabase, id);
-  print({ deleted: id });
-}
-
-async function counterparty(supabase: AppSupabase, id: string) {
-  const found = await dataOf(
-    supabase
-      .from("ledger_accounts")
-      .select("id, space_id, name, color")
-      .eq("kind", "counterparty")
-      .eq("id", id)
-      .maybeSingle(),
-  );
-  if (!found?.name || !found.color) fail(`No counterparty ${id} that you can see.`);
-  return { ...found, name: found.name, color: found.color };
-}
-
-function owedByCurrency(postings: { currency: string; amount: number }[]): Record<string, number> {
-  const owed: Record<string, number> = {};
-  for (const { currency, amount } of postings) owed[currency] = (owed[currency] ?? 0) + amount;
-  return owed;
-}
+type OwingCounterparty = Counterparty & { owed: { currency: string; minorUnits: number }[] };

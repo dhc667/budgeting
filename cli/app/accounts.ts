@@ -13,130 +13,167 @@ import { fail } from "../fail.ts";
 import {
   choice,
   type Commands,
-  dataOf,
   day,
-  integer,
   noPositionals,
   onlyId,
   parseCommand,
-  print,
   required,
 } from "./command.ts";
-import { signedIn } from "./session.ts";
-import { spaceOrPrivate } from "./spaces.ts";
+import { type Account, type Directory, loadDirectory, signedInDirectory } from "./directory.ts";
+import { parseAmount } from "./money.ts";
+import {
+  amountField,
+  contextOf,
+  idField,
+  type Output,
+  printDeleted,
+  printRows,
+  printWritten,
+  type View,
+  withOutput,
+  withQuiet,
+} from "./output.ts";
 
-export const accountCommands: Commands = {
-  "accounts list": listAccounts,
-  "accounts add": addAccount,
-  "accounts update": changeAccount,
-  "accounts archive": (argv) => setArchived(argv, true),
-  "accounts unarchive": (argv) => setArchived(argv, false),
-  "accounts delete": removeAccount,
+const accountView: View<Account> = {
+  fields: [
+    idField("id", (account) => account.id),
+    idField("space_id", (account) => account.space_id),
+    { name: "space", json: (account, { directory }) => directory.spaceName(account.space_id) },
+    { name: "name", json: (account) => account.name },
+    { name: "currency", json: (account) => account.currency },
+    { name: "color", json: (account) => account.color },
+    amountField("balance", (account) => ({
+      minorUnits: account.balance,
+      currency: account.currency,
+    })),
+    amountField("opening_balance", (account) => ({
+      minorUnits: account.opening_balance,
+      currency: account.currency,
+    })),
+    { name: "opening_date", json: (account) => account.opening_date },
+    { name: "archived", json: (account) => account.archived },
+    { name: "has_transactions", json: (account) => account.has_transactions },
+  ],
+  columns: ["id", "space", "name", "balance", "archived"],
 };
 
-async function listAccounts(argv: string[]) {
+export const accountCommands: Commands = {
+  "accounts list": withOutput(accountView, listAccounts),
+  "accounts add": withOutput(accountView, addAccount, { quiet: true }),
+  "accounts update": withOutput(accountView, changeAccount, { quiet: true }),
+  "accounts archive": withOutput(accountView, (argv, output) => setArchived(argv, output, true)),
+  "accounts unarchive": withOutput(accountView, (argv, output) => setArchived(argv, output, false)),
+  "accounts delete": withQuiet(removeAccount),
+};
+
+async function listAccounts(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {
     space: { type: "string" },
     archived: { type: "boolean", default: false },
   });
-  noPositionals(positionals, "accounts list [--space <id>] [--archived]");
-  const { supabase, userId } = await signedIn(values.env);
-  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
-  let query = supabase.from("accounts").select(columns).eq("space_id", spaceId).order("position");
-  if (!values.archived) query = query.eq("archived", false);
-  print(await dataOf(query));
+  noPositionals(positionals, "accounts list [--space <space>] [--archived]");
+  const { directory } = await signedInDirectory(values.env);
+  const space = directory.spaceOrPrivate(values.space);
+  const accounts = directory.accounts.filter(
+    ({ space_id, archived }) => space_id === space.id && (values.archived || !archived),
+  );
+  printRows(output, accountView, accounts, contextOf(directory));
 }
 
-async function addAccount(argv: string[]) {
+async function addAccount(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {
     space: { type: "string" },
     ...detailOptions,
   });
   noPositionals(positionals, "accounts add --name <name> --currency <code> [options]");
-  const { supabase, userId } = await signedIn(values.env);
-  const spaceId = await spaceOrPrivate(supabase, userId, values.space);
-  const id = await createAccount(supabase, spaceId, {
+  const { supabase, userId, directory } = await signedInDirectory(values.env);
+  const space = directory.spaceOrPrivate(values.space);
+  const currency = currencyCode(required(values.currency, "--currency"));
+  const id = await createAccount(supabase, space.id, {
     name: required(values.name, "--name"),
-    currency: currency(required(values.currency, "--currency")),
+    currency,
     color:
       values.color === undefined
         ? "blue"
         : choice(values.color, Constants.public.Enums.color, "--color"),
-    openingAmount:
-      values["opening-amount"] === undefined
-        ? 0
-        : integer(values["opening-amount"], "--opening-amount"),
+    openingAmount: openingAmount(values["opening-amount"], currency, directory) ?? 0,
     openingDate:
       values["opening-date"] === undefined
         ? localToday()
         : day(values["opening-date"], "--opening-date"),
   });
-  print(await account(supabase, id));
+  await printAccount(output, supabase, userId, id);
 }
 
 // What isn't given keeps its value.
-async function changeAccount(argv: string[]) {
+async function changeAccount(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, detailOptions);
-  const id = onlyId(positionals, "accounts update <id> [options]");
-  const { supabase } = await signedIn(values.env);
-  const current = await account(supabase, id);
+  const named = onlyId(positionals, "accounts update <account> [options]");
+  const { supabase, userId, directory } = await signedInDirectory(values.env);
+  const current = directory.account(named, "account");
+  const currency = values.currency === undefined ? current.currency : currencyCode(values.currency);
   const details: AccountDetails = {
     name: values.name ?? current.name,
-    currency: values.currency === undefined ? current.currency : currency(values.currency),
+    currency,
     color:
       values.color === undefined
         ? current.color
         : choice(values.color, Constants.public.Enums.color, "--color"),
     openingAmount:
-      values["opening-amount"] === undefined
-        ? current.opening_balance
-        : integer(values["opening-amount"], "--opening-amount"),
+      openingAmount(values["opening-amount"], currency, directory) ?? current.opening_balance,
     openingDate:
       values["opening-date"] === undefined
         ? (current.opening_date ?? localToday())
         : day(values["opening-date"], "--opening-date"),
   };
-  await updateAccount(supabase, id, details);
-  print(await account(supabase, id));
+  await updateAccount(supabase, current.id, details);
+  await printAccount(output, supabase, userId, current.id);
 }
 
-async function setArchived(argv: string[], archived: boolean) {
+async function setArchived(argv: string[], output: Output, archived: boolean) {
   const { values, positionals } = parseCommand(argv, {});
-  const id = onlyId(positionals, `accounts ${archived ? "archive" : "unarchive"} <id>`);
-  const { supabase } = await signedIn(values.env);
-  await account(supabase, id);
+  const named = onlyId(positionals, `accounts ${archived ? "archive" : "unarchive"} <account>`);
+  const { supabase, userId, directory } = await signedInDirectory(values.env);
+  const { id } = directory.account(named, "account");
   await archiveAccount(supabase, id, archived);
-  print(await account(supabase, id));
+  await printAccount(output, supabase, userId, id);
 }
 
 // A delete the rules refuse matches no rows rather than failing, so only a second look can tell.
-async function removeAccount(argv: string[]) {
+async function removeAccount(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
-  const id = onlyId(positionals, "accounts delete <id>");
-  const { supabase } = await signedIn(values.env);
-  await account(supabase, id);
+  const named = onlyId(positionals, "accounts delete <account>");
+  const { supabase, userId, directory } = await signedInDirectory(values.env);
+  const { id } = directory.account(named, "account");
+  const shortId = directory.shortId(id);
   await deleteAccount(supabase, id);
-  if (await findAccount(supabase, id)) fail(`Account ${id} was not deleted.`);
-  print({ deleted: id });
+  const after = await loadDirectory(supabase, userId);
+  if (after.accounts.some((account) => account.id === id)) {
+    fail(`Account ${shortId} was not deleted.`);
+  }
+  printDeleted(output, "account", shortId);
 }
 
-async function account(supabase: AppSupabase, id: string) {
-  const found = await findAccount(supabase, id);
-  if (!found) fail(`No account ${id} that you can see.`);
-  return found;
+async function printAccount(output: Output, supabase: AppSupabase, userId: string, id: string) {
+  const directory = await loadDirectory(supabase, userId);
+  printWritten(output, accountView, directory.account(id, "id"), contextOf(directory));
 }
 
-async function findAccount(supabase: AppSupabase, id: string) {
-  return dataOf(supabase.from("accounts").select(columns).eq("id", id).maybeSingle());
+// An opening balance is in its account's currency, and can be below zero, like a card's debt.
+function openingAmount(
+  text: string | undefined,
+  currency: string,
+  directory: Directory,
+): number | null {
+  if (text === undefined) return null;
+  const decimals = directory.decimals(currency);
+  return parseAmount(text, "--opening-amount", { code: currency, decimals }, { signed: true });
 }
 
-function currency(code: string): string {
+function currencyCode(code: string): string {
   if (!/^[A-Z]{3}$/.test(code)) fail("--currency must be a three-letter code, like USD.");
   return code;
 }
-
-const columns =
-  "id, space_id, name, currency, color, balance, opening_balance, opening_date, archived, has_transactions";
 
 const detailOptions = {
   name: { type: "string" },

@@ -121,10 +121,11 @@ runs the instance, `app` commands for anyone with an account.
 ```bash
 pnpm app login                     # asks for email and password
 pnpm app accounts list
-pnpm app transactions add --type expense --account <id> --amount 1250 --category <id>
+pnpm app transactions add --type expense --account Cash --amount 12.50 --category Food/Groceries
 ```
 
-Commands print JSON. Amounts are whole numbers in the currency's minor units: 1250 is 12.50 USD.
+Things go by name or by the start of their id, and amounts are written as people write them.
+Lists print a table, or tab-separated lines when piped; `--json <fields>` prints JSON.
 The session is saved beside the env file, in `.env.instance.session`, readable only by you;
 `pnpm app logout` ends it without signing out other devices. Run `pnpm app --help` for every
 command.

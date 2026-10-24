@@ -6,9 +6,20 @@ import type { AppSupabase } from "../../src/supabase/client.ts";
 import type { Database } from "../../src/supabase/database.ts";
 import { instanceFromEnv, readEnvFile } from "../env.ts";
 import { fail } from "../fail.ts";
-import { type Commands, dataOf, noPositionals, parseCommand, print } from "./command.ts";
+import { type Commands, dataOf, noPositionals, parseCommand } from "./command.ts";
+import { type Output, printRow, type View, withOutput } from "./output.ts";
 
-export const sessionCommands: Commands = { login, logout, whoami };
+const whoamiView: View<Whoami, null> = {
+  fields: [
+    { name: "instance", json: (me) => me.instance },
+    { name: "user_id", json: (me) => me.user_id },
+    { name: "email", json: (me) => me.email },
+    { name: "display_name", json: (me) => me.display_name },
+  ],
+  columns: ["instance", "user_id", "email", "display_name"],
+};
+
+export const sessionCommands: Commands = { login, logout, whoami: withOutput(whoamiView, whoami) };
 
 export async function signedIn(
   envPath: string,
@@ -64,7 +75,7 @@ async function logout(argv: string[]) {
   console.log(`Signed out of ${hostOf(values.env)}.`);
 }
 
-async function whoami(argv: string[]) {
+async function whoami(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
   noPositionals(positionals, "whoami");
   const { supabase, userId } = await signedIn(values.env);
@@ -72,12 +83,13 @@ async function whoami(argv: string[]) {
     supabase.from("profiles").select("display_name").eq("id", userId).single(),
   );
   const { data } = await supabase.auth.getUser();
-  print({
+  const me: Whoami = {
     instance: hostOf(values.env),
-    userId,
+    user_id: userId,
     email: data.user?.email ?? null,
-    displayName: profile.display_name,
-  });
+    display_name: profile.display_name,
+  };
+  printRow(output, whoamiView, me, null);
 }
 
 function userClient(envPath: string): AppSupabase {
@@ -128,3 +140,5 @@ async function readStdin(): Promise<string> {
 function hostOf(envPath: string): string {
   return new URL(instanceFromEnv(readEnvFile(envPath)).supabaseUrl).host;
 }
+
+type Whoami = { instance: string; user_id: string; email: string | null; display_name: string };
