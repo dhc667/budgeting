@@ -15,7 +15,8 @@ import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
 import { ScreenLink, ScreenLinks } from "../ui/ScreenLinks";
 import { SelectField } from "../ui/SelectField";
-import { isPrivate, nameErrorMessage, spaceName } from "./space";
+import { useNameField } from "../ui/name-field";
+import { isPrivate, nameClashMessage, nameErrorMessage, spaceName } from "./space";
 import {
   type Space,
   useAddMember,
@@ -73,15 +74,33 @@ export function SpaceNotFound() {
 
 function RenameForm({ space }: { space: Space }) {
   const { t } = useTranslation();
+  const { data: spaces = [] } = useSpaces();
   const rename = useRenameSpace(space.id);
+  const nameField = useNameField(space.name ?? "", rename.error);
+  const nameError = nameClashMessage(
+    nameField.name,
+    { spaces, spaceId: space.id, refused: nameField.refused },
+    t,
+  );
+  const save = (form: FormData) => {
+    if (nameError) return;
+    const name = textField(form, "name").trim();
+    nameField.saving(name);
+    rename.mutate(name);
+  };
+  const saveError = rename.error && nameErrorMessage(rename.error, t);
   return (
     <Card title={t("spaces.name")}>
-      <form
-        onSubmit={submitWith((form) => rename.mutate(textField(form, "name").trim()))}
-        className="flex flex-col gap-4"
-      >
-        <Field label={t("spaces.name")} name="name" defaultValue={space.name ?? ""} required />
-        {rename.error && <ErrorText>{nameErrorMessage(rename.error, t)}</ErrorText>}
+      <form onSubmit={submitWith(save)} className="flex flex-col gap-4">
+        <Field
+          label={t("spaces.name")}
+          name="name"
+          defaultValue={space.name ?? ""}
+          onChange={(event) => nameField.setName(event.target.value)}
+          error={nameError}
+          required
+        />
+        {saveError && <ErrorText>{saveError}</ErrorText>}
         {rename.isSuccess && <p className="text-sm text-emerald-600">{t("spaces.saved")}</p>}
         <Button type="submit" disabled={rename.isPending} className="self-start">
           {t("spaces.rename")}

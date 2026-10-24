@@ -1,10 +1,13 @@
 import { type ComponentProps, useId } from "react";
+import { describedBy } from "./described-by";
+import { ErrorText } from "./ErrorText";
 
-type FieldProps = ComponentProps<"input"> & { label: string; hint?: string };
+type FieldProps = ComponentProps<"input"> & { label: string; hint?: string; error?: string };
 
-export function Field({ label, hint, ...props }: FieldProps) {
+export function Field({ label, hint, error, ...props }: FieldProps) {
   const id = useId();
   const hintId = useId();
+  const errorId = useId();
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-medium">
@@ -13,7 +16,8 @@ export function Field({ label, hint, ...props }: FieldProps) {
       <input
         id={id}
         className={inputClass}
-        aria-describedby={hint ? hintId : undefined}
+        aria-describedby={describedBy(hint && hintId, error && errorId)}
+        aria-invalid={error ? true : undefined}
         {...props}
       />
       {hint && (
@@ -21,6 +25,7 @@ export function Field({ label, hint, ...props }: FieldProps) {
           {hint}
         </p>
       )}
+      {error && <ErrorText id={errorId}>{error}</ErrorText>}
     </div>
   );
 }

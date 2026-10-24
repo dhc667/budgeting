@@ -14,6 +14,7 @@ import {
   sql,
   uniqueEmail,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import type { Enums } from "../../src/supabase/database.types.ts";
 
@@ -52,7 +53,7 @@ describe("starter categories", () => {
 
   it("come with a new shared space, in the language its creator asked for", async () => {
     const [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-    const familyId = await createSpace(ana, "Família", [ben], "pt-BR");
+    const familyId = await createSpace(ana, uniqueName("Família"), [ben], "pt-BR");
 
     const categories = await categoriesOf(ben, familyId);
 
@@ -92,7 +93,7 @@ describe("starter categories", () => {
   it("aren't listed as added in the space's activity", async () => {
     const ana = await signedInUser("Ana");
     const privateId = (await privateSpaceOf(ana)).id;
-    const familyId = await createSpace(ana, "Family", []);
+    const familyId = await createSpace(ana, uniqueName("Family"), []);
 
     for (const spaceId of [privateId, familyId]) {
       expect(await categoriesOf(ana, spaceId)).not.toEqual([]);
@@ -107,8 +108,8 @@ describe("starter categories", () => {
       signedInUser("Carla"),
     ]);
     const anaPrivate = (await privateSpaceOf(ana)).id;
-    const familyId = await createSpace(ben, "Family", [ana]);
-    const clubId = await createSpace(carla, "Club", [ana], "pt-BR");
+    const familyId = await createSpace(ben, uniqueName("Family"), [ana]);
+    const clubId = await createSpace(carla, uniqueName("Club"), [ana], "pt-BR");
     await chooseLanguage(ana, "pt-BR");
     await chooseLanguage(ben, "es-419");
     const spaces = [anaPrivate, familyId, clubId];
@@ -117,6 +118,9 @@ describe("starter categories", () => {
       await tx`
         delete from ledger_accounts
         where space_id in ${tx(spaces)} and kind in ('expense', 'income')`;
+      // It ran before names were unique, on spaces with no categories at all. Here it reaches
+      // every space in the instance, and most have them.
+      await tx`drop index top_level_category_names_per_space_and_kind`;
       const activityBefore = await activityCount(tx, spaces);
       await tx.unsafe(readFileSync(backfillMigration, "utf8"));
       const rows = await tx<{ space_id: string; name: string }[]>`
@@ -140,7 +144,7 @@ describe("nesting", () => {
 
   beforeEach(async () => {
     [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-    familyId = await createSpace(ana, "Family", [ben]);
+    familyId = await createSpace(ana, uniqueName("Family"), [ben]);
   });
 
   it("puts subcategories under a parent, and transactions in either", async () => {
@@ -273,12 +277,88 @@ describe("nesting", () => {
       expect.stringMatching(/one level deep|subcategories can't become one/),
     ]);
   });
+});
 
-  it("allows duplicate names", async () => {
-    const first = await addCategory(ana, familyId, { category_name: "Food" });
-    const second = await addCategory(ana, familyId, { category_name: "Food" });
+describe("a category's name", () => {
+  let ana: User;
+  let familyId: string;
 
-    expect(first).not.toEqual(second);
+  beforeEach(async () => {
+    ana = await signedInUser("Ana");
+    familyId = await createSpace(ana, uniqueName("Family"), []);
+  });
+
+  it("is no other top-level category's of its kind, whatever its case or spacing", async () => {
+    await addCategory(ana, familyId, { category_name: "Pet  Care" });
+
+    const { error } = await ana.client.rpc("create_category", {
+      ...newCategory(familyId),
+      category_name: " pet care ",
+    });
+
+    expect(error?.code).toBe("23505");
+  });
+
+  it("is no other subcategory's under its parent", async () => {
+    const food = await addCategory(ana, familyId, { category_name: "Food" });
+    await addCategory(ana, familyId, { category_name: "Luxury", parent: food });
+
+    const { error } = await ana.client.rpc("create_category", {
+      ...newCategory(familyId),
+      category_name: "LUXURY",
+      parent: food,
+    });
+
+    expect(error?.code).toBe("23505");
+  });
+
+  it("can be another kind's, another parent's subcategory's, or a top-level one's beside a subcategory", async () => {
+    const food = await addCategory(ana, familyId, { category_name: "Food" });
+    const fun = await addCategory(ana, familyId, { category_name: "Fun" });
+
+    await addCategory(ana, familyId, { category_name: "Luxury", parent: food });
+    await addCategory(ana, familyId, { category_name: "Luxury", parent: fun });
+    await addCategory(ana, familyId, { category_name: "Luxury" });
+    await addCategory(ana, familyId, { category_name: "Luxury", category_kind: "income" });
+    await addCategory(ana, familyId, { category_name: "Café" });
+    await addCategory(ana, familyId, { category_name: "Cafe" });
+
+    const names = (await categoriesOf(ana, familyId)).map(({ name }) => name);
+    expect(names.filter((name) => name === "Luxury")).toHaveLength(4);
+  });
+
+  it("keeps a subcategory from moving under a parent that has one by its name", async () => {
+    const food = await addCategory(ana, familyId, { category_name: "Food" });
+    const fun = await addCategory(ana, familyId, { category_name: "Fun" });
+    await addCategory(ana, familyId, { category_name: "Luxury", parent: food });
+    const luxury = await addCategory(ana, familyId, { category_name: "Luxury", parent: fun });
+
+    const { error } = await updateCategory(ana, luxury, { category_name: "Luxury", parent: food });
+
+    expect(error?.code).toBe("23505");
+    expect(await categoryOf(ana, luxury)).toMatchObject({ parent_id: fun });
+  });
+
+  it("keeps a top-level category from changing to a kind that has one by its name", async () => {
+    await addCategory(ana, familyId, { category_name: "Refunds", category_kind: "income" });
+    const refunds = await addCategory(ana, familyId, { category_name: "Refunds" });
+
+    const { error } = await updateCategory(ana, refunds, {
+      category_name: "Refunds",
+      category_kind: "income",
+    });
+
+    expect(error?.code).toBe("23505");
+    expect(await categoryOf(ana, refunds)).toMatchObject({ kind: "expense" });
+  });
+
+  it("has no slash", async () => {
+    const { error } = await ana.client.rpc("create_category", {
+      ...newCategory(familyId),
+      category_name: "Food/Luxury",
+    });
+
+    expect(error?.code).toBe("23514");
   });
 });
 
@@ -294,20 +374,20 @@ describe("editing a category", () => {
       signedInUser("Ben"),
       signedInUser("Carla"),
     ]);
-    familyId = await createSpace(ana, "Family", [ben]);
+    familyId = await createSpace(ana, uniqueName("Family"), [ben]);
   });
 
   it("changes its name, icon and color, and records it in the space's activity", async () => {
     const food = await addCategory(ana, familyId, { category_name: "Food" });
 
     await updateCategory(ben, food, {
-      category_name: "Groceries",
+      category_name: "Produce",
       category_icon: "apple",
       category_color: "lime",
     });
 
     expect(await categoryOf(ana, food)).toMatchObject({
-      name: "Groceries",
+      name: "Produce",
       icon: "apple",
       color: "lime",
     });
@@ -318,7 +398,7 @@ describe("editing a category", () => {
         row_id: food,
         changed_by: ben.userId,
         old: { name: "Food" },
-        new: { name: "Groceries" },
+        new: { name: "Produce" },
       },
     ]);
   });
@@ -335,7 +415,7 @@ describe("editing a category", () => {
   it("works on categories alone, never on accounts or opening balances", async () => {
     const food = await addCategory(ana, familyId, { category_name: "Food" });
     const account = await addAccount(ana, familyId);
-    const otherAccount = await addAccount(ana, familyId);
+    const otherAccount = await addAccount(ana, familyId, "Savings");
     const openingBalance = await openingBalanceCategoryOf(familyId);
     await recordTransaction(ana, account, food, 500);
 
@@ -406,7 +486,7 @@ describe("deleting a category", () => {
       signedInUser("Ben"),
       signedInUser("Carla"),
     ]);
-    familyId = await createSpace(ana, "Family", [ben]);
+    familyId = await createSpace(ana, uniqueName("Family"), [ben]);
     account = await addAccount(ana, familyId);
   });
 
@@ -431,7 +511,7 @@ describe("deleting a category", () => {
 
   it("moves its transactions to the category chosen, recording one entry that says where", async () => {
     const food = await addCategory(ana, familyId, { category_name: "Food" });
-    const groceries = await addCategory(ana, familyId, { category_name: "Groceries" });
+    const groceries = await addCategory(ana, familyId, { category_name: "Produce" });
     await recordTransaction(ana, account, food, 500);
     await recordTransaction(ana, account, food, 200);
     const transactionActivityBefore = await transactionActivityCount(ana, familyId);
@@ -448,7 +528,7 @@ describe("deleting a category", () => {
       action: "delete",
       row_id: food,
       changed_by: ben.userId,
-      old: { name: "Food", moved_to: { id: groceries, name: "Groceries" }, moved_transactions: 2 },
+      old: { name: "Food", moved_to: { id: groceries, name: "Produce" }, moved_transactions: 2 },
       new: null,
     });
     expect(await transactionActivityCount(ana, familyId)).toBe(transactionActivityBefore);
@@ -467,7 +547,7 @@ describe("deleting a category", () => {
   it("refuses to move its transactions anywhere but another category of its kind in its space", async () => {
     const food = await addCategory(ana, familyId, { category_name: "Food" });
     const salary = await addCategory(ana, familyId, {
-      category_name: "Salary",
+      category_name: "Wages",
       category_kind: "income",
     });
     const elsewhere = await addCategory(ana, (await privateSpaceOf(ana)).id, {
@@ -489,7 +569,7 @@ describe("deleting a category", () => {
 
   it("lets one of two categories deleted into each other at once go", async () => {
     const food = await addCategory(ana, familyId, { category_name: "Food" });
-    const groceries = await addCategory(ana, familyId, { category_name: "Groceries" });
+    const groceries = await addCategory(ana, familyId, { category_name: "Produce" });
     await recordTransaction(ana, account, food, 500);
     await recordTransaction(ana, account, groceries, 200);
 
@@ -635,10 +715,10 @@ async function transactionActivityCount(user: User, spaceId: string): Promise<nu
   return defined(count);
 }
 
-async function addAccount(user: User, spaceId: string): Promise<string> {
+async function addAccount(user: User, spaceId: string, name = "Checking"): Promise<string> {
   const { data, error } = await user.client.rpc("create_account", {
     space: spaceId,
-    account_name: "Checking",
+    account_name: name,
     account_currency: "USD",
     account_color: "blue",
     opening_amount: 0,

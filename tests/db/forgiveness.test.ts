@@ -6,6 +6,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import { today } from "../support/dates.ts";
 
@@ -18,7 +19,7 @@ let charlie: string;
 
 beforeEach(async () => {
   ana = await signedInUser("Ana");
-  familyId = await createSpace(ana, "Family", []);
+  familyId = await createSpace(ana, uniqueName("Family"), []);
   checking = await addAccount(ana, familyId, "Checking");
   charlie = await addCounterparty(ana, familyId, "Charlie");
 });

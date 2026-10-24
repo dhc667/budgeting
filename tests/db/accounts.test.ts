@@ -6,6 +6,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import { today } from "../support/dates.ts";
 
@@ -22,7 +23,7 @@ beforeEach(async () => {
     signedInUser("Ben"),
     signedInUser("Carla"),
   ]);
-  familyId = await createSpace(ana, "Family", [ben]);
+  familyId = await createSpace(ana, uniqueName("Family"), [ben]);
 });
 
 describe("adding an account", () => {
@@ -112,6 +113,36 @@ describe("adding an account", () => {
     const second = await addAccount(ben, familyId, { account_name: "Second" });
 
     expect(await orderOf(ana, familyId)).toEqual([first, second]);
+  });
+});
+
+describe("an account's name", () => {
+  it("is no other account's in its space, archived ones included, whatever its case or spacing", async () => {
+    const archived = await addAccount(ana, familyId, { account_name: "Joint  Savings" });
+    await ana.client.from("accounts").update({ archived: true }).eq("id", archived);
+    const other = await addAccount(ana, familyId, { account_name: "Cash" });
+
+    const added = await ben.client.rpc("create_account", {
+      ...newAccount(familyId),
+      account_name: "joint savings",
+    });
+    const renamed = await ben.client.rpc("update_account", {
+      ...accountChanges(other),
+      account_name: " JOINT SAVINGS ",
+    });
+
+    expect(added.error?.code).toBe("23505");
+    expect(renamed.error?.code).toBe("23505");
+  });
+
+  it("can be another space's account's", async () => {
+    await addAccount(ana, familyId);
+
+    const { error } = await ana.client.rpc("create_account", {
+      ...newAccount((await privateSpaceOf(ana)).id),
+    });
+
+    expect(error).toBeNull();
   });
 });
 
@@ -229,7 +260,7 @@ describe("an account with other transactions", () => {
 
   beforeEach(async () => {
     checking = await addAccount(ana, familyId, { opening_amount: 100 });
-    savings = await addAccount(ana, familyId);
+    savings = await addAccount(ana, familyId, { account_name: "Savings" });
     await transfer(checking, savings, 40);
   });
 
@@ -337,8 +368,8 @@ describe("the activity record", () => {
   });
 
   it("doesn't log reordering", async () => {
-    const first = await addAccount(ana, familyId);
-    const second = await addAccount(ana, familyId);
+    const first = await addAccount(ana, familyId, { account_name: "First" });
+    const second = await addAccount(ana, familyId, { account_name: "Second" });
 
     await ana.client.rpc("reorder_accounts", { account_ids: [second, first] });
 

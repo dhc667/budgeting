@@ -6,7 +6,9 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
+import { privateSpaceNames } from "../../src/spaces/space.ts";
 
 afterAll(() => sql.end());
 
@@ -78,16 +80,17 @@ describe("a shared space", () => {
   });
 
   it("is created with the members chosen, who see it at once", async () => {
-    const spaceId = await createSpace(ana, "Family", [ben]);
+    const family = uniqueName("Family");
+    const spaceId = await createSpace(ana, family, [ben]);
 
     const { data } = await ben.client.from("spaces").select("name").eq("id", spaceId);
 
-    expect(data).toEqual([{ name: "Family" }]);
+    expect(data).toEqual([{ name: family }]);
     expect(await membersOf(ben, spaceId)).toEqual(sorted([ana.userId, ben.userId]));
   });
 
   it("is hidden from non-members, with its members and activity", async () => {
-    const spaceId = await createSpace(ana, "Family", [ben]);
+    const spaceId = await createSpace(ana, uniqueName("Family"), [ben]);
 
     const spaces = await carla.client.from("spaces").select("id").eq("id", spaceId);
     const members = await carla.client.from("space_members").select("id").eq("space_id", spaceId);
@@ -106,18 +109,39 @@ describe("a shared space", () => {
     expect(error).not.toBeNull();
   });
 
-  it("can be renamed by any member, but not by anyone else", async () => {
-    const spaceId = await createSpace(ana, "Family", [ben]);
+  it("takes a name no other shared space in the instance has, whatever its case or spacing", async () => {
+    const beachHouse = uniqueName("Beach  House");
+    await createSpace(ana, beachHouse, []);
+    const cabinId = await createSpace(carla, uniqueName("Cabin"), []);
+    const sameName = `  ${beachHouse.toUpperCase().replace(/\s+/g, " ")} `;
 
-    await carla.client.from("spaces").update({ name: "Hijacked" }).eq("id", spaceId);
-    await ben.client.from("spaces").update({ name: "Home" }).eq("id", spaceId);
+    const created = await carla.client.rpc("create_space", {
+      space_name: sameName,
+      member_ids: [],
+      starter_language: "en",
+    });
+    const renamed = await carla.client.from("spaces").update({ name: sameName }).eq("id", cabinId);
+
+    expect(created.error?.code).toBe("23505");
+    expect(renamed.error?.code).toBe("23505");
+  });
+
+  it("can be renamed by any member, but not by anyone else", async () => {
+    const spaceId = await createSpace(ana, uniqueName("Family"), [ben]);
+    const home = uniqueName("Home");
+
+    await carla.client
+      .from("spaces")
+      .update({ name: uniqueName("Hijacked") })
+      .eq("id", spaceId);
+    await ben.client.from("spaces").update({ name: home }).eq("id", spaceId);
 
     const { data } = await ana.client.from("spaces").select("name").eq("id", spaceId);
-    expect(data).toEqual([{ name: "Home" }]);
+    expect(data).toEqual([{ name: home }]);
   });
 
   it("lets any member add any user, who is a member at once", async () => {
-    const spaceId = await createSpace(ana, "Family", [ben]);
+    const spaceId = await createSpace(ana, uniqueName("Family"), [ben]);
 
     const { error } = await ben.client
       .from("space_members")
@@ -128,7 +152,7 @@ describe("a shared space", () => {
   });
 
   it("doesn't let a non-member join on their own", async () => {
-    const spaceId = await createSpace(ana, "Family", []);
+    const spaceId = await createSpace(ana, uniqueName("Family"), []);
 
     const { error } = await carla.client
       .from("space_members")
@@ -139,7 +163,7 @@ describe("a shared space", () => {
   });
 
   it("lets a member remove another member, or leave", async () => {
-    const spaceId = await createSpace(ana, "Family", [ben, carla]);
+    const spaceId = await createSpace(ana, uniqueName("Family"), [ben, carla]);
 
     await ana.client
       .from("space_members")
@@ -156,7 +180,7 @@ describe("a shared space", () => {
   });
 
   it("doesn't let its last member leave", async () => {
-    const spaceId = await createSpace(ana, "Family", []);
+    const spaceId = await createSpace(ana, uniqueName("Family"), []);
 
     const { error } = await ana.client
       .from("space_members")
@@ -168,7 +192,7 @@ describe("a shared space", () => {
   });
 
   it("can be deleted by a member, activity and all", async () => {
-    const spaceId = await createSpace(ana, "Family", [ben]);
+    const spaceId = await createSpace(ana, uniqueName("Family"), [ben]);
 
     await carla.client.from("spaces").delete().eq("id", spaceId);
     const stillThere = await ben.client.from("spaces").select("id").eq("id", spaceId);
@@ -184,12 +208,29 @@ describe("a shared space", () => {
   });
 });
 
+describe("a private space's name", () => {
+  const names = [...new Set(privateSpaceNames)].flatMap((name) => [name, name.toUpperCase()]);
+
+  it.each(names)("in each of the app's languages, %s, is no shared space's", async (name) => {
+    const ana = await signedInUser("Ana");
+
+    const { error } = await ana.client.rpc("create_space", {
+      space_name: name,
+      member_ids: [],
+      starter_language: "en",
+    });
+
+    expect(error?.code).toBe("23514");
+  });
+});
+
 describe("the activity record", () => {
   it("logs who changed a shared space, when, and what it was before", async () => {
     const [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-    const spaceId = await createSpace(ana, "Family", []);
+    const [family, home] = [uniqueName("Family"), uniqueName("Home")];
+    const spaceId = await createSpace(ana, family, []);
 
-    await ana.client.from("spaces").update({ name: "Home" }).eq("id", spaceId);
+    await ana.client.from("spaces").update({ name: home }).eq("id", spaceId);
     await ana.client.from("space_members").insert({ space_id: spaceId, user_id: ben.userId });
 
     const { data } = await ben.client
@@ -204,8 +245,8 @@ describe("the activity record", () => {
         table_name: "spaces",
         action: "update",
         changed_by: ana.userId,
-        old: expect.objectContaining({ name: "Family" }) as unknown,
-        new: expect.objectContaining({ name: "Home" }) as unknown,
+        old: expect.objectContaining({ name: family }) as unknown,
+        new: expect.objectContaining({ name: home }) as unknown,
       },
       expect.objectContaining({
         table_name: "space_members",
@@ -218,7 +259,7 @@ describe("the activity record", () => {
 
   it("can't be written by users", async () => {
     const ana = await signedInUser("Ana");
-    const spaceId = await createSpace(ana, "Family", []);
+    const spaceId = await createSpace(ana, uniqueName("Family"), []);
 
     const { error } = await ana.client.from("activity").delete().eq("space_id", spaceId);
 
@@ -240,7 +281,7 @@ describe("deleting a user", () => {
 
   it("works for a user others added to a shared space", async () => {
     const [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-    const spaceId = await createSpace(ana, "Family", [ben]);
+    const spaceId = await createSpace(ana, uniqueName("Family"), [ben]);
 
     const { error } = await admin.auth.admin.deleteUser(ben.userId);
 
@@ -249,19 +290,22 @@ describe("deleting a user", () => {
   });
 
   const history: [string, (ana: User, ben: User) => Promise<unknown>][] = [
-    ["created a space", (ana) => createSpace(ana, "Family", [])],
+    ["created a space", (ana) => createSpace(ana, uniqueName("Family"), [])],
     [
       "renamed a space",
       async (ana, ben) => {
-        const spaceId = await createSpace(ben, "Family", [ana]);
-        await ana.client.from("spaces").update({ name: "Home" }).eq("id", spaceId);
+        const spaceId = await createSpace(ben, uniqueName("Family"), [ana]);
+        await ana.client
+          .from("spaces")
+          .update({ name: uniqueName("Home") })
+          .eq("id", spaceId);
       },
     ],
     [
       "added a member",
       async (ana, ben) => {
         const carla = await signedInUser("Carla");
-        const spaceId = await createSpace(ben, "Family", [ana]);
+        const spaceId = await createSpace(ben, uniqueName("Family"), [ana]);
         await ana.client.from("space_members").insert({ space_id: spaceId, user_id: carla.userId });
       },
     ],

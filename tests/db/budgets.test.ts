@@ -6,6 +6,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import { daysAgo, today } from "../support/dates.ts";
 
@@ -25,7 +26,7 @@ beforeEach(async () => {
     signedInUser("Ben"),
     signedInUser("Carla"),
   ]);
-  familyId = await createSpace(ana, "Family", [ben]);
+  familyId = await createSpace(ana, uniqueName("Family"), [ben]);
   checking = await addAccount(ana, familyId, "Checking");
   groceries = await categoryIn(ana, familyId, "Groceries");
   eatingOut = await categoryIn(ana, familyId, "Eating out");

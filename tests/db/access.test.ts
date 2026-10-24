@@ -9,6 +9,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 
 // Ben shares a space with Ana, but not her private space: if anyone could reach into it, he
@@ -21,7 +22,7 @@ let sharedAccount: string;
 
 beforeAll(async () => {
   [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-  const shared = await createSpace(ana, "Ana & Ben", [ben]);
+  const shared = await createSpace(ana, uniqueName("Ana & Ben"), [ben]);
   sharedAccount = await addAccount(ana, shared, "Joint");
   mine = await fillPrivateSpace(ana);
 });
@@ -360,7 +361,11 @@ const tableWrites: Write[] = [
     }),
   (user, { budget }) => user.client.from("budgets").update({ amount: 1 }).eq("id", budget),
   (user, { budget }) => user.client.from("budgets").delete().eq("id", budget),
-  (user, { space }) => user.client.from("spaces").update({ name: "Ben's" }).eq("id", space),
+  (user, { space }) =>
+    user.client
+      .from("spaces")
+      .update({ name: uniqueName("Ben's") })
+      .eq("id", space),
   (user, { space }) => user.client.from("spaces").delete().eq("id", space),
   (user, { space }) =>
     user.client.from("space_members").insert({ space_id: space, user_id: user.userId }),

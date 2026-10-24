@@ -101,6 +101,41 @@ describe("categories", () => {
     expect(deleteCard.queryByRole("button")).toBeNull();
   });
 
+  it("says which category one would clash with, as the user types or moves it", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await openSpace("Private");
+    await user.click(await screen.findByRole("link", { name: "Add category" }));
+    await user.type(await screen.findByLabelText("Name"), " groceries");
+
+    expect(
+      screen.getByRole("textbox", {
+        name: "Name",
+        description: "There's already a top-level expense category named Groceries.",
+      }),
+    ).toBeTruthy();
+
+    await user.clear(screen.getByLabelText("Name"));
+    await user.type(screen.getByLabelText("Name"), "Organic");
+    await user.selectOptions(screen.getByLabelText("Parent category"), "Groceries");
+    await user.click(screen.getByRole("button", { name: "Add category" }));
+    await screen.findByRole("heading", { name: "Organic", level: 1 });
+    await user.click(screen.getByRole("link", { name: "Back to Private" }));
+    await user.click(await screen.findByRole("link", { name: "Add category" }));
+    await user.type(await screen.findByLabelText("Name"), "Organic");
+    await user.selectOptions(screen.getByLabelText("Parent category"), "Shopping");
+    await user.click(screen.getByRole("button", { name: "Add category" }));
+    await screen.findByRole("heading", { name: "Organic", level: 1 });
+
+    await user.selectOptions(screen.getByLabelText("Parent category"), "Groceries");
+
+    expect(
+      screen.getByRole("combobox", {
+        name: "Parent category",
+        description: "Groceries already has a subcategory named Organic.",
+      }),
+    ).toBeTruthy();
+  });
+
   it("keeps a built-in category's name, kind and place, and won't delete it", async () => {
     await openSignedIn(uniqueName("Ana"));
 

@@ -6,6 +6,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import { today } from "../support/dates.ts";
 
@@ -19,7 +20,7 @@ let charlie: string;
 
 beforeEach(async () => {
   [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-  familyId = await createSpace(ana, "Family", []);
+  familyId = await createSpace(ana, uniqueName("Family"), []);
   checking = await addAccount(ana, familyId, "Checking");
   charlie = await addCounterparty(ana, familyId, "  Charlie  ");
 });
@@ -203,6 +204,30 @@ describe("counterparties", () => {
       name: "Charlie B.",
       color: "green",
     });
+  });
+
+  it("each have a name no other in their space has, whatever its case or spacing", async () => {
+    await addCounterparty(ana, familyId, "Acme  Inc");
+
+    const added = await ana.client.rpc("create_counterparty", {
+      space: familyId,
+      counterparty_name: "acme inc",
+      counterparty_color: "red",
+    });
+    const renamed = await ana.client.rpc("update_counterparty", {
+      counterparty_id: charlie,
+      counterparty_name: " ACME INC ",
+      counterparty_color: "red",
+    });
+    const elsewhere = await ana.client.rpc("create_counterparty", {
+      space: (await privateSpaceOf(ana)).id,
+      counterparty_name: "Acme Inc",
+      counterparty_color: "red",
+    });
+
+    expect(added.error?.code).toBe("23505");
+    expect(renamed.error?.code).toBe("23505");
+    expect(elsewhere.error).toBeNull();
   });
 
   it("are deleted only while no transaction uses them", async () => {

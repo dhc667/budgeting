@@ -1,0 +1,7 @@
+CREATE UNIQUE INDEX "account_names_per_space" ON "ledger_accounts" USING btree ("space_id",lower(btrim(regexp_replace("name", '[[:space:]]+', ' ', 'g')))) WHERE "ledger_accounts"."kind" = 'account';--> statement-breakpoint
+CREATE UNIQUE INDEX "counterparty_names_per_space" ON "ledger_accounts" USING btree ("space_id",lower(btrim(regexp_replace("name", '[[:space:]]+', ' ', 'g')))) WHERE "ledger_accounts"."kind" = 'counterparty';--> statement-breakpoint
+CREATE UNIQUE INDEX "top_level_category_names_per_space_and_kind" ON "ledger_accounts" USING btree ("space_id","kind",lower(btrim(regexp_replace("name", '[[:space:]]+', ' ', 'g')))) WHERE "ledger_accounts"."kind" in ('expense', 'income') and "ledger_accounts"."parent_id" is null;--> statement-breakpoint
+CREATE UNIQUE INDEX "subcategory_names_per_parent" ON "ledger_accounts" USING btree ("parent_id",lower(btrim(regexp_replace("name", '[[:space:]]+', ' ', 'g')))) WHERE "ledger_accounts"."parent_id" is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX "shared_space_names" ON "spaces" USING btree (lower(btrim(regexp_replace("name", '[[:space:]]+', ' ', 'g'))));--> statement-breakpoint
+ALTER TABLE "ledger_accounts" ADD CONSTRAINT "category_name_without_slash" CHECK ("ledger_accounts"."kind" not in ('expense', 'income') or position('/' in "ledger_accounts"."name") = 0);--> statement-breakpoint
+ALTER TABLE "spaces" ADD CONSTRAINT "name_not_reserved" CHECK (lower(btrim(regexp_replace("spaces"."name", '[[:space:]]+', ' ', 'g'))) not in ('private', 'privado'));

@@ -166,6 +166,8 @@ function EditCard({ counterparty }: { counterparty: Counterparty }) {
   return (
     <Card title={t("counterparties.details")}>
       <CounterpartyForm
+        spaceId={counterparty.space_id}
+        counterpartyId={counterparty.id}
         initial={{ name: counterparty.name, color: counterparty.color }}
         submitLabel={t("counterparties.form.save")}
         mutation={updateCounterparty}
