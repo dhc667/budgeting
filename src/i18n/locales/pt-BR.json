@@ -445,6 +445,7 @@
     "none": "Nenhuma transação ainda.",
     "noMatches": "Nenhuma transação corresponde.",
     "showMore": "Mostrar mais",
+    "dayPartlyShown": "{{shown}} de {{matching}} exibidas",
     "search": {
       "label": "Buscar",
       "placeholder": "Título ou nota"

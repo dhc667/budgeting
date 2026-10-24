@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { setBudgetExclusions } from "../budgets/budget-queries";
 import { createCounterparty } from "../counterparties/counterparty-writes";
 import { useSupabase } from "../instance/instance-context";
+import { useCurrencies } from "../money/currency-queries";
+import { useProfile } from "../profile/profile-queries";
+import { useBackfillMissingRates, useRateHistory } from "../rates/rate-queries";
 import type { AppSupabase } from "../supabase/client";
 import { useSignedInUser } from "../auth/session";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
+import { dayTotals } from "./day-totals";
 import {
   readRecentTransactions,
   readTitleSuggestions,
   readTransaction,
   readTransactionHistory,
-  readTransactions,
+  readTransactionPage,
 } from "./read-transactions";
 import {
   addTransaction,
@@ -26,14 +30,34 @@ export function useTransactions(filter: TransactionFilter) {
   const [paging, setPaging] = useState({ filterKey, count: pageSize });
   if (paging.filterKey !== filterKey) setPaging({ filterKey, count: pageSize });
   const count = paging.filterKey === filterKey ? paging.count : pageSize;
-  const result = useCopyQuery(["transactions", "list", filter, count], ({ rows }) => {
-    const matching = readTransactions(rows, filter);
-    return { transactions: matching.slice(0, count), hasMore: matching.length > count };
-  });
+  const result = useCopyQuery(["transactions", "list", filter, count], ({ rows }) =>
+    readTransactionPage(rows, filter, count),
+  );
   return {
     ...result,
     showMore: () => setPaging({ filterKey, count: count + pageSize }),
   };
+}
+
+// Undefined until the display currency and the rates of those days have loaded.
+export function useDayTotals(days: readonly ListDay[] = noDays) {
+  const { data: currencies } = useCurrencies();
+  const { data: profile } = useProfile();
+  const currency = currencies?.find(({ code }) => code === profile?.display_currency);
+  const dated = useMemo(
+    () => days.flatMap(({ day, flows }) => flows.map(({ currency }) => ({ currency, day }))),
+    [days],
+  );
+  const { data: history } = useRateHistory(profile?.display_currency ?? "USD", dated);
+  const result = useMemo(
+    () =>
+      currencies && currency && history
+        ? { currency, ...dayTotals(days, { currencies, currency, history }) }
+        : undefined,
+    [days, currencies, currency, history],
+  );
+  useBackfillMissingRates(result?.missing ?? []);
+  return result;
 }
 
 // Waits for the spaces to show, rather than first asking for those of no space at all.
@@ -107,6 +131,7 @@ export function useRestoreTransaction(transactionId: string) {
 }
 
 const pageSize = 50;
+const noDays: ListDay[] = [];
 
 // What saving a transaction does besides: the budgets it's left out of, and the counterparty it
 // creates, named in the form.
@@ -126,6 +151,14 @@ export type TransactionFilter = {
   to?: string;
   search?: string;
 };
+
+export type TransactionPage = { transactions: Transaction[]; hasMore: boolean; days: ListDay[] };
+
+// A day of the list, over every transaction on it that matches, shown or not.
+export type ListDay = { day: string; count: number; flows: DayFlow[] };
+
+// What the day earned less what it spent, in one currency.
+export type DayFlow = { currency: string; net: number };
 
 export type TitleSuggestion =
   Database["public"]["Functions"]["title_suggestions"]["Returns"][number];
