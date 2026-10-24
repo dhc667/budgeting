@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { sameName } from "../../src/names.ts";
 import type { Database } from "../../src/supabase/database.ts";
 import {
   createSpace,
@@ -228,6 +229,31 @@ describe("counterparties", () => {
     expect(added.error?.code).toBe("23505");
     expect(renamed.error?.code).toBe("23505");
     expect(elsewhere.error).toBeNull();
+  });
+
+  it("can have an account's name", async () => {
+    await expect(addCounterparty(ana, familyId, "Checking")).resolves.toBeTruthy();
+  });
+
+  // The app finds clashes before saving, so it has to compare names as the unique indexes do.
+  it.each([
+    ["Café", "CAFÉ"],
+    ["José", "Jose"],
+    ["Straße", "STRASSE"],
+    ["Ana\tMaria", "ana maria"],
+    ["Bea\nMaria", "Bea Maria"],
+    ["Eva Maria", "Eva Maria"],
+    ["Ivo Maria", "Ivo Maria"],
+  ])("clash as the app says: %j and %j", async (first, second) => {
+    await addCounterparty(ana, familyId, first);
+
+    const { error } = await ana.client.rpc("create_counterparty", {
+      space: familyId,
+      counterparty_name: second,
+      counterparty_color: "blue",
+    });
+
+    expect(error?.code === "23505").toBe(sameName(first, second));
   });
 
   it("are deleted only while no transaction uses them", async () => {

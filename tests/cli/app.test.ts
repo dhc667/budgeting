@@ -419,6 +419,204 @@ describe("the app CLI, signed in", () => {
     ]);
   });
 
+  it("goes by private for the user's private space, whatever it's called", () => {
+    added(["accounts", "add", "--space", "PRIVATE", "--name", "Cash", "--currency", "USD"]);
+
+    expect(json(app(["accounts", "list", "--space", "private", "--json", "space"]))).toEqual([
+      { space: "Private" },
+    ]);
+  });
+
+  it("refuses a name that is also the start of another's id", () => {
+    const cash = added(["accounts", "add", "--name", "Cash", "--currency", "USD"]);
+    const prefix = cash.slice(0, 8);
+    const named = added(["accounts", "add", "--name", prefix, "--currency", "USD"]);
+
+    const run = app(["accounts", "archive", prefix]);
+
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain(`account: ${prefix} could be any of these`);
+    expect(run.stderr).toContain(`Cash in Private (${prefix})`);
+    expect(run.stderr).toContain(`${prefix} in Private (${named.slice(0, 8)})`);
+  });
+
+  it("looks a category up by its path, in the account's space and the transaction's kind", () => {
+    const family = uniqueName("Family");
+    added(["spaces", "add", "--name", family]);
+    added(["accounts", "add", "--name", "Cash", "--currency", "USD"]);
+    added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+    added(["categories", "add", "--name", "Lunch", "--kind", "expense", "--parent", "Food"]);
+    added(["categories", "add", "--space", family, "--name", "Pets", "--kind", "expense"]);
+    added(["counterparties", "add", "--space", family, "--name", "Charlie"]);
+    const add = (type: string, flags: string[]) =>
+      app(["transactions", "add", "--type", type, "--account", "Cash", "--amount", "5", ...flags]);
+
+    const refusals = [
+      add("expense", ["--category", "Lunch"]),
+      add("income", ["--category", "Food"]),
+      add("expense", ["--category", "Pets"]),
+      add("given", ["--counterparty", "Charlie"]),
+    ];
+
+    expect(refusals.map(({ stderr }) => stderr.trim())).toEqual([
+      "--category: nothing is called Lunch, and no id starts with it.",
+      "--category: nothing is called Food, and no id starts with it.",
+      "--category: nothing is called Pets, and no id starts with it.",
+      "--counterparty: nothing is called Charlie, and no id starts with it.",
+    ]);
+    expect(balances()).toEqual({ Cash: 0 });
+  });
+
+  it("takes an opening balance below zero, and a transfer's amount in each currency", () => {
+    added(["accounts", "add", "--name", "Card", "--currency", "USD", "--opening-amount=-2500"]);
+    added(["accounts", "add", "--name", "Euros", "--currency", "EUR"]);
+
+    added(
+      ["transactions", "add", "--type", "transfer", "--account", "Card"].concat([
+        "--to-account",
+        "Euros",
+        "--amount",
+        "11",
+        "--to-amount",
+        "9.5",
+      ]),
+    );
+
+    expect(balances()).toEqual({ Card: -2511, Euros: 9.5 });
+  });
+
+  it("prints a table on a terminal, and one thing as its fields", () => {
+    const cash = added(
+      ["accounts", "add", "--name", "Cash", "--currency", "USD"].concat([
+        "--opening-amount",
+        "1234.5",
+      ]),
+    );
+
+    expect(onTerminal(["accounts", "list"])).toEqual([
+      "ID        SPACE    NAME  BALANCE      ARCHIVED",
+      `${cash.slice(0, 8)}  Private  Cash  1234.50 USD  false`,
+    ]);
+    expect(onTerminal(["whoami"])).toEqual([
+      `instance:      ${new URL(instance.supabaseUrl).host}`,
+      `user_id:       ${ana.userId}`,
+      `email:         ${ana.email}`,
+      "display_name:  Ana",
+    ]);
+  });
+
+  it("refuses --json on a delete, and prints nothing for a deleted transaction with --quiet", () => {
+    added(["accounts", "add", "--name", "Cash", "--currency", "USD"]);
+    added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+    const lunch = added(
+      ["transactions", "add", "--type", "expense", "--account", "Cash"].concat([
+        "--amount",
+        "12.50",
+        "--category",
+        "Food",
+      ]),
+    );
+
+    const refused = app(["accounts", "delete", "Cash", "--json", "id"]);
+    const deleted = app(["transactions", "delete", lunch, "--quiet"]);
+
+    expect([refused.status, refused.stderr.trim()]).toEqual([
+      1,
+      "--json is for commands that print what they read or write.",
+    ]);
+    expect([deleted.status, deleted.stdout]).toEqual([0, ""]);
+    expect(app(["transactions", "show", lunch]).status).toBe(1);
+  });
+
+  it("refuses a transfer's category", () => {
+    added(["accounts", "add", "--name", "Cash", "--currency", "USD"]);
+    added(["accounts", "add", "--name", "Bank", "--currency", "USD"]);
+    added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+
+    const run = app(
+      ["transactions", "add", "--type", "transfer", "--account", "Cash"].concat([
+        "--to-account",
+        "Bank",
+        "--amount",
+        "5",
+        "--category",
+        "Food",
+      ]),
+    );
+
+    expect(run.status).toBe(1);
+    expect(run.stderr.trim()).toBe(
+      "A transfer has no category: --category is for expenses, refunds and income.",
+    );
+  });
+
+  it("lists a space's categories by path, and moves one under another and back out", () => {
+    added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+    added(["categories", "add", "--name", "Tips", "--kind", "income"]);
+
+    const moved = json(
+      app(
+        ["categories", "update", "Tips", "--parent", "Food", "--kind", "expense"].concat([
+          "--json",
+          "path,kind",
+        ]),
+      ),
+    );
+    const listed = json(app(["categories", "list", "--kind", "expense", "--json", "path"]));
+    const back = json(
+      app(
+        ["categories", "update", "Food/Tips", "--no-parent", "--kind", "income"].concat([
+          "--json",
+          "path,kind",
+        ]),
+      ),
+    );
+
+    expect(moved).toEqual({ path: "Food/Tips", kind: "expense" });
+    expect(listed).toEqual(expect.arrayContaining([{ path: "Food" }, { path: "Food/Tips" }]));
+    expect(back).toEqual({ path: "Tips", kind: "income" });
+  });
+
+  it("renames and deletes a counterparty, and unarchives an account", () => {
+    added(["accounts", "add", "--name", "Cash", "--currency", "USD"]);
+    added(["counterparties", "add", "--name", "Charlie"]);
+    app(["accounts", "archive", "Cash"]);
+
+    const renamed = json(
+      app(["counterparties", "update", "charlie", "--name", "Charles", "--json", "name"]),
+    );
+    const deleted = app(["counterparties", "delete", "Charles"]);
+    const unarchived = json(app(["accounts", "unarchive", "Cash", "--json", "archived"]));
+
+    expect(renamed).toEqual({ name: "Charles" });
+    expect(deleted.stdout).toMatch(/^Deleted counterparty [0-9a-f]{8}\.\n$/);
+    expect(json(app(["counterparties", "list", "--json", "name"]))).toEqual([]);
+    expect(unarchived).toEqual({ archived: false });
+  });
+
+  it("lists transactions by space, category and counterparty", () => {
+    const family = uniqueName("Family");
+    added(["spaces", "add", "--name", family]);
+    added(["accounts", "add", "--name", "Cash", "--currency", "USD", "--opening-amount", "100"]);
+    added(["accounts", "add", "--space", family, "--name", "Joint", "--currency", "USD"]);
+    added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+    added(["counterparties", "add", "--name", "Charlie"]);
+    const add = (title: string, flags: string[]) =>
+      added(["transactions", "add", "--title", title, "--amount", "5", ...flags]);
+    add("Lunch", ["--type", "expense", "--account", "Cash", "--category", "Food"]);
+    add("Loan", ["--type", "given", "--account", "Cash", "--counterparty", "Charlie"]);
+    add("Pot", ["--type", "transfer", "--account", "Cash", "--to-account", "Joint"]);
+    const titles = (flags: string[]) =>
+      z
+        .array(z.object({ title: z.string() }))
+        .parse(json(app(["transactions", "list", ...flags, "--json", "title"])))
+        .map(({ title }) => title);
+
+    expect(titles(["--category", "Food"])).toEqual(["Lunch"]);
+    expect(titles(["--counterparty", "Charlie"])).toEqual(["Loan"]);
+    expect(titles(["--space", family])).toEqual(["Pot"]);
+  });
+
   it("can't name a space the user isn't in", async () => {
     const owner = await existingUser("Bea");
     const ownerSpace = await privateSpaceOf({
@@ -449,6 +647,16 @@ function app(args: string[], input = "") {
     encoding: "utf8",
     input,
   });
+}
+
+// The output a person sees: script gives the command a terminal of its own.
+function onTerminal(args: string[]): string[] {
+  const command = ["node", "cli/app.ts", ...args, "--env", envFile].join(" ");
+  const run = spawnSync("script", ["--quiet", "--return", "--command", command, "/dev/null"], {
+    encoding: "utf8",
+  });
+  if (run.status !== 0) throw new Error(`pnpm app failed: ${run.stdout}`);
+  return run.stdout.trimEnd().split(/\r?\n/);
 }
 
 // Runs an add or update, and gives back the id of what it wrote.

@@ -352,13 +352,39 @@ describe("a category's name", () => {
     expect(await categoryOf(ana, refunds)).toMatchObject({ kind: "expense" });
   });
 
-  it("has no slash", async () => {
+  it("keeps a subcategory from moving to the top level beside one by its name", async () => {
+    const food = await addCategory(ana, familyId, { category_name: "Food" });
+    await addCategory(ana, familyId, { category_name: "Luxury" });
+    const luxury = await addCategory(ana, familyId, { category_name: "Luxury", parent: food });
+
+    const { error } = await updateCategory(ana, luxury, { category_name: "luxury", parent: null });
+
+    expect(error?.code).toBe("23505");
+    expect(await categoryOf(ana, luxury)).toMatchObject({ parent_id: food });
+  });
+
+  it("can be a category's in another space", async () => {
+    await addCategory(ana, familyId, { category_name: "Luxury" });
+
     const { error } = await ana.client.rpc("create_category", {
+      ...newCategory((await privateSpaceOf(ana)).id),
+      category_name: "Luxury",
+    });
+
+    expect(error).toBeNull();
+  });
+
+  it("has no slash, added or renamed", async () => {
+    const food = await addCategory(ana, familyId, { category_name: "Food" });
+
+    const added = await ana.client.rpc("create_category", {
       ...newCategory(familyId),
       category_name: "Food/Luxury",
     });
+    const renamed = await updateCategory(ana, food, { category_name: "Food/Luxury" });
 
-    expect(error?.code).toBe("23514");
+    expect(added.error?.code).toBe("23514");
+    expect(renamed.error?.code).toBe("23514");
   });
 });
 

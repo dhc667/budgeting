@@ -11,7 +11,8 @@ import {
   uniqueName,
   user,
 } from "../support/app";
-import { defined, sql } from "../support/local-instance";
+import { createCounterparty } from "../../src/counterparties/counterparty-writes";
+import { defined, signedInAs, sql } from "../support/local-instance";
 
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
@@ -307,6 +308,50 @@ describe("debts", () => {
     expect(accounts.getByRole("link", { name: /Bank/ }).textContent).toMatch(/\$80\.00/);
   });
 
+  it("says which counterparty a name is taken by, as the user types", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addCounterparty("Charlie");
+
+    const details = within(screen.getByRole("region", { name: "Counterparty" }));
+    expect(details.getByRole("textbox", { name: "Name", description: nameHint })).toBeTruthy();
+    await openNewCounterparty();
+    await user.type(screen.getByLabelText("Name"), "charlie ");
+    expect(
+      screen.getByRole("textbox", {
+        name: "Name",
+        description: `${nameHint} This space already has a counterparty named Charlie.`,
+      }),
+    ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Add counterparty" }));
+
+    expect(screen.getByRole("heading", { name: "New counterparty", level: 1 })).toBeTruthy();
+  });
+
+  it("refuses a counterparty's name taken elsewhere while the form was open", async () => {
+    const ana = await openSignedIn(uniqueName("Ana"));
+    await openNewCounterparty();
+    const elsewhere = await signedInAs(ana.email);
+    const space = await elsewhere
+      .from("spaces")
+      .select("id")
+      .eq("private_owner", ana.userId)
+      .single();
+    await createCounterparty(elsewhere, defined(space.data).id, { name: "Dana", color: "slate" });
+
+    await user.type(screen.getByLabelText("Name"), "Dana");
+    await user.click(screen.getByRole("button", { name: "Add counterparty" }));
+
+    expect(
+      await screen.findByRole("textbox", {
+        name: "Name",
+        description: `${nameHint} This space already has a counterparty named Dana.`,
+      }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("alert").map(({ textContent }) => textContent)).toEqual([
+      "This space already has a counterparty named Dana.",
+    ]);
+  });
+
   it("deletes a counterparty only while no money has moved with it", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "50" });
@@ -335,10 +380,17 @@ async function give(counterparty: string, account: string, amount: string) {
 }
 
 async function addCounterparty(name: string) {
-  await goHome();
-  const debts = within(await screen.findByRole("region", { name: "Debts" }));
-  await user.click(debts.getByRole("link", { name: "Add a counterparty" }));
-  await user.type(await screen.findByLabelText("Name"), name);
+  await openNewCounterparty();
+  await user.type(screen.getByLabelText("Name"), name);
   await user.click(screen.getByRole("button", { name: "Add counterparty" }));
   await screen.findByRole("heading", { name, level: 1 });
 }
+
+async function openNewCounterparty() {
+  await goHome();
+  const debts = within(await screen.findByRole("region", { name: "Debts" }));
+  await user.click(debts.getByRole("link", { name: "Add a counterparty" }));
+  await screen.findByRole("heading", { name: "New counterparty", level: 1 });
+}
+
+const nameHint = "A person, a company, anyone you lend money to or borrow it from.";

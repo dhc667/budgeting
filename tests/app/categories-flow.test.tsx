@@ -2,6 +2,7 @@
 import { cleanup, screen, within } from "@testing-library/react";
 import i18n from "i18next";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCategory } from "../../src/categories/category-writes";
 import {
   addAccount,
   createSharedSpace,
@@ -134,6 +135,66 @@ describe("categories", () => {
         description: "Groceries already has a subcategory named Organic.",
       }),
     ).toBeTruthy();
+  });
+
+  it("won't add a category with a taken name in its kind, or a slash in its name", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await openSpace("Private");
+    await user.click(await screen.findByRole("link", { name: "Add category" }));
+    await user.type(await screen.findByLabelText("Name"), "Salary");
+    expect(screen.getByRole("textbox", { name: "Name", description: "" })).toBeTruthy();
+
+    await user.click(screen.getByLabelText("Income"));
+    expect(
+      screen.getByRole("textbox", {
+        name: "Name",
+        description: "There's already a top-level income category named Salary.",
+      }),
+    ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Add category" }));
+    expect(screen.getByRole("heading", { name: "New category", level: 1 })).toBeTruthy();
+
+    await user.clear(screen.getByLabelText("Name"));
+    await user.type(screen.getByLabelText("Name"), "Food/Drink");
+
+    expect(
+      screen.getByRole("textbox", {
+        name: "Name",
+        description: "A category's name can't contain a slash.",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("refuses a category's name taken elsewhere while the form was open", async () => {
+    const ana = await openSignedIn(uniqueName("Ana"));
+    await openSpace("Private");
+    await user.click(await screen.findByRole("link", { name: "Add category" }));
+    const elsewhere = await signedInAs(ana.email);
+    const space = await elsewhere
+      .from("spaces")
+      .select("id")
+      .eq("private_owner", ana.userId)
+      .single();
+    await createCategory(elsewhere, defined(space.data).id, {
+      name: "Pets",
+      kind: "expense",
+      icon: "tag",
+      color: "blue",
+      parentId: null,
+    });
+
+    await user.type(await screen.findByLabelText("Name"), "Pets");
+    await user.click(screen.getByRole("button", { name: "Add category" }));
+
+    expect(
+      await screen.findByRole("textbox", {
+        name: "Name",
+        description: "There's already a top-level expense category named Pets.",
+      }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("alert").map(({ textContent }) => textContent)).toEqual([
+      "There's already a top-level expense category named Pets.",
+    ]);
   });
 
   it("keeps a built-in category's name, kind and place, and won't delete it", async () => {
