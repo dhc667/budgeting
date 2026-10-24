@@ -15,7 +15,8 @@ import {
   uniqueName,
   user,
 } from "../support/app";
-import { defined, sql } from "../support/local-instance";
+import { createAccount } from "../../src/accounts/account-writes";
+import { defined, signedInAs, sql } from "../support/local-instance";
 
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
@@ -127,6 +128,71 @@ describe("accounts", () => {
     await user.click(screen.getByRole("button", { name: "Add account" }));
 
     expect((await screen.findByRole("alert")).textContent).toMatch(/Enter an amount like/);
+  });
+
+  it("says which account a name is taken by, archived or not, as the user types", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Spare", openingBalance: "" });
+    const archive = within(screen.getByRole("region", { name: "Archive" }));
+    await user.click(archive.getByRole("button", { name: "Archive account" }));
+    await archive.findByRole("button", { name: "Unarchive" });
+    await addAccount({ name: "Cash", openingBalance: "" });
+
+    const details = within(screen.getByRole("region", { name: "Details" }));
+    expect(details.getByRole("textbox", { name: "Name", description: "" })).toBeTruthy();
+    await openNewAccount();
+    await user.type(screen.getByLabelText("Name"), "  CASH");
+    expect(
+      screen.getByRole("textbox", {
+        name: "Name",
+        description: "This space already has an account named Cash.",
+      }),
+    ).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Add account" }));
+    expect(screen.getByRole("heading", { name: "New account", level: 1 })).toBeTruthy();
+
+    await user.clear(screen.getByLabelText("Name"));
+    await user.type(screen.getByLabelText("Name"), "spare");
+
+    expect(
+      screen.getByRole("textbox", {
+        name: "Name",
+        description: "This space already has an archived account named Spare.",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("refuses a name taken elsewhere while the form was open, until the name changes", async () => {
+    const ana = await openSignedIn(uniqueName("Ana"));
+    await openNewAccount();
+    const elsewhere = await signedInAs(ana.email);
+    const space = await elsewhere
+      .from("spaces")
+      .select("id")
+      .eq("private_owner", ana.userId)
+      .single();
+    await createAccount(elsewhere, defined(space.data).id, {
+      name: "Cash",
+      currency: "USD",
+      color: "blue",
+      openingAmount: 0,
+      openingDate: "2026-01-01",
+    });
+
+    await user.type(screen.getByLabelText("Name"), "Cash");
+    await user.click(screen.getByRole("button", { name: "Add account" }));
+
+    expect(
+      await screen.findByRole("textbox", {
+        name: "Name",
+        description: "This space already has an account named Cash.",
+      }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("alert").map(({ textContent }) => textContent)).toEqual([
+      "This space already has an account named Cash.",
+    ]);
+    await user.type(screen.getByLabelText("Name"), " box");
+    expect(screen.getByRole("textbox", { name: "Name", description: "" })).toBeTruthy();
   });
 
   it("archives an account holding money only once confirmed, and lists it apart", async () => {

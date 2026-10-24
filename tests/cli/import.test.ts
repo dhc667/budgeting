@@ -155,15 +155,72 @@ describe("importing a file into a user's private space", () => {
     expect(await signedInAs(email).then(balances)).toEqual([]);
   });
 
-  it("refuses the same file twice", async () => {
+  it("refuses the same file twice, even with its names written another way", async () => {
     const { email } = await existingUser("Importer");
     importFile(email, sampleFile());
+    const file = sampleFile();
 
-    const run = importFile(email, sampleFile());
+    const run = importFile(email, {
+      ...file,
+      accounts: file.accounts.map((a) => ({ ...a, name: ` ${a.name.toLowerCase()} ` })),
+      transactions: [],
+    });
 
     expect(run.status).toBe(1);
     expect(run.stderr).toContain("already has Cash USD, Bank EUR");
     expect(await signedInAs(email).then(newestFirst)).toHaveLength(4);
+  });
+
+  it("matches names as the instance compares them, whatever their case or spacing", async () => {
+    const { email } = await existingUser("Importer");
+    const file = sampleFile();
+
+    const run = importFile(email, {
+      ...file,
+      categories: file.categories.map((c) => (c.name === "Salary" ? { ...c, name: "SALARY" } : c)),
+      transactions: file.transactions.map((t) => ({
+        ...t,
+        account: t.account.toLowerCase(),
+        ...(t.toAccount && { toAccount: "bank  eur" }),
+        ...(t.category && { category: t.category.toUpperCase() }),
+        ...(t.subcategory && { subcategory: ` ${t.subcategory.toLowerCase()}` }),
+      })),
+    });
+
+    expect(run.stderr).toBe("");
+    const user = await signedInAs(email);
+    expect(await balances(user)).toEqual([
+      { name: "Cash USD", currency: "USD", balance: 7650 },
+      { name: "Bank EUR", currency: "EUR", balance: 1000 },
+    ]);
+    const categories = await categoryNames(user);
+    expect(categories.filter((c) => c.toLowerCase() === "income/salary")).toEqual([
+      "income/Salary",
+    ]);
+  });
+
+  it("refuses account names that repeat, or a transfer to its own account, in another case", async () => {
+    const { email } = await existingUser("Importer");
+    const file = sampleFile();
+
+    const run = importFile(email, {
+      ...file,
+      accounts: [...file.accounts, { name: "cash usd", currency: "USD", color: "teal" }],
+      transactions: [
+        {
+          type: "transfer",
+          date: "2025-01-02",
+          account: "Bank EUR",
+          amount: 100,
+          toAccount: "BANK EUR",
+        },
+      ],
+    });
+
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain("Account names repeat");
+    expect(run.stderr).toContain("A transfer needs two different accounts");
+    expect(await signedInAs(email).then(balances)).toEqual([]);
   });
 });
 

@@ -154,6 +154,36 @@ describe("spaces", () => {
     ).toBeTruthy();
   });
 
+  it("won't rename a space to another's name, or to the private space's", async () => {
+    const [family, home] = [uniqueName("Family"), uniqueName("Home")];
+    await openSignedIn(uniqueName("Ana"));
+    await createSharedSpace(home, []);
+    await createSharedSpace(family, []);
+
+    const nameCard = within(screen.getByRole("region", { name: "Name" }));
+    expect(nameCard.getByRole("textbox", { name: "Name", description: "" })).toBeTruthy();
+    await user.clear(nameCard.getByLabelText("Name"));
+    await user.type(nameCard.getByLabelText("Name"), ` ${home.toLowerCase()}`);
+    expect(
+      nameCard.getByRole("textbox", {
+        name: "Name",
+        description: `There's already a space named ${home}.`,
+      }),
+    ).toBeTruthy();
+    await user.click(nameCard.getByRole("button", { name: "Rename" }));
+    expect(screen.getByRole("heading", { name: family, level: 1 })).toBeTruthy();
+
+    await user.clear(nameCard.getByLabelText("Name"));
+    await user.type(nameCard.getByLabelText("Name"), "PRIVATE");
+
+    expect(
+      nameCard.getByRole("textbox", {
+        name: "Name",
+        description: "Private is what everyone's private space is called. Pick another name.",
+      }),
+    ).toBeTruthy();
+  });
+
   it("lets a member leave, and the space is gone from their list", async () => {
     const family = uniqueName("Family");
     const benName = uniqueName("Ben");

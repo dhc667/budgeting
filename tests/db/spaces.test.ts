@@ -209,18 +209,24 @@ describe("a shared space", () => {
 });
 
 describe("a private space's name", () => {
-  const names = [...new Set(privateSpaceNames)].flatMap((name) => [name, name.toUpperCase()]);
+  const names = [...new Set(privateSpaceNames)].flatMap((name) => [
+    name,
+    ` ${name.toUpperCase()}  `,
+  ]);
 
-  it.each(names)("in each of the app's languages, %s, is no shared space's", async (name) => {
+  it.each(names)("in each of the app's languages, %j, is no shared space's", async (name) => {
     const ana = await signedInUser("Ana");
+    const spaceId = await createSpace(ana, uniqueName("Family"), []);
 
-    const { error } = await ana.client.rpc("create_space", {
+    const created = await ana.client.rpc("create_space", {
       space_name: name,
       member_ids: [],
       starter_language: "en",
     });
+    const renamed = await ana.client.from("spaces").update({ name }).eq("id", spaceId);
 
-    expect(error?.code).toBe("23514");
+    expect(created.error?.code).toBe("23514");
+    expect(renamed.error?.code).toBe("23514");
   });
 });
 
