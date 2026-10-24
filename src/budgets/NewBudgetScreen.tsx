@@ -3,12 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { localToday } from "../format/days";
 import { useProfile } from "../profile/profile-queries";
-import { spaceName } from "../spaces/space";
 import { useShownSpaces } from "../spaces/space-picker";
 import { useSpaces } from "../spaces/space-queries";
+import { SpaceSelect } from "../spaces/SpaceSelect";
 import { BackLink } from "../ui/BackLink";
 import { Card } from "../ui/Card";
-import { SelectField } from "../ui/SelectField";
 import { useCreateBudget } from "./budget-queries";
 import { BudgetForm } from "./BudgetForm";
 
@@ -46,19 +45,12 @@ export function NewBudgetScreen() {
           }}
           spaceId={spaceId}
           extraFields={
-            spaces.length > 1 && (
-              <SelectField
-                label={t("budgets.form.space")}
-                value={spaceId}
-                onChange={(event) => setChosenSpaceId(event.target.value)}
-              >
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {spaceName(space, t)}
-                  </option>
-                ))}
-              </SelectField>
-            )
+            <SpaceSelect
+              label={t("budgets.form.space")}
+              spaces={spaces}
+              value={spaceId}
+              onChange={setChosenSpaceId}
+            />
           }
           submitLabel={t("budgets.new.submit")}
           mutation={createBudget}

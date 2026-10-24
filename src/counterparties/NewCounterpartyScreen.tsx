@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { useShownSpaces } from "../spaces/space-picker";
 import { useSpaces } from "../spaces/space-queries";
 import { SpaceSelect } from "../spaces/SpaceSelect";
 import { BackLink } from "../ui/BackLink";
@@ -12,9 +13,10 @@ export function NewCounterpartyScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: spaces } = useSpaces();
+  const shownSpaces = useShownSpaces();
   const [chosenSpaceId, setChosenSpaceId] = useState<string>();
   const createCounterparty = useCreateCounterparty();
-  const spaceId = chosenSpaceId ?? spaces?.[0]?.id;
+  const spaceId = chosenSpaceId ?? shownSpaces?.[0]?.id ?? spaces?.[0]?.id;
   if (!spaces || !spaceId) return null;
 
   return (

@@ -7,7 +7,9 @@ import {
   goHome,
   openApp,
   openNewAccount,
+  openNewTransaction,
   openSignedIn,
+  picked,
   recordTransaction,
   uniqueName,
   user,
@@ -236,6 +238,54 @@ describe("the space picker", () => {
     ]);
   });
 });
+
+describe("a new account, counterparty or transaction", () => {
+  describe("with the space picker narrowed to one space", () => {
+    beforeEach(async () => {
+      await openSignedIn(uniqueName("Ana"));
+      await createSharedSpace("Family", []);
+      await addAccount({ name: "Joint", space: "Family", openingBalance: "" });
+      await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
+      await recordTransaction({ amount: "5", account: "Wallet", category: "Groceries" });
+      await goHome();
+      await user.click(defined(screen.getAllByRole("button", { name: "All spaces" })[0]));
+      await user.click(screen.getByRole("checkbox", { name: "Private" }));
+    });
+
+    it("starts an account in the space shown", async () => {
+      await openNewAccount();
+
+      expect(chosenOption("Space")).toBe("Family");
+    });
+
+    it("starts a counterparty in the space shown", async () => {
+      const debts = within(await screen.findByRole("region", { name: "Debts" }));
+      await user.click(debts.getByRole("link", { name: "Add a counterparty" }));
+
+      expect(chosenOption(await screen.findByLabelText("Space"))).toBe("Family");
+    });
+
+    it("starts a transaction from an account in the space shown", async () => {
+      await openNewTransaction();
+
+      expect(picked("Account")).toBe("Joint");
+    });
+  });
+
+  it("shows the only space there is, grayed out", async () => {
+    await openSignedIn(uniqueName("Ana"));
+
+    await openNewAccount();
+
+    expect(chosenOption("Space")).toBe("Private");
+    expect(screen.getByLabelText("Space")).toHaveProperty("disabled", true);
+  });
+});
+
+function chosenOption(field: string | HTMLElement): string | null {
+  const select = typeof field === "string" ? screen.getByLabelText(field) : field;
+  return within(select).getByRole("option", { selected: true }).textContent;
+}
 
 function balanceShown(): string {
   return within(screen.getByRole("region", { name: "Balance" })).getByText(/\d/).textContent;
