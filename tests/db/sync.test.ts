@@ -8,6 +8,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import { addAccount } from "../support/accounts.ts";
 import { daysAgo, today } from "../support/dates.ts";
@@ -35,7 +36,7 @@ beforeEach(async () => {
     signedInUser("Ben"),
     signedInUser("Carla"),
   ]);
-  familyId = await createSpace(ana, "Family", [ben]);
+  familyId = await createSpace(ana, uniqueName("Family"), [ben]);
   checking = await addAccount(ana, familyId, "Checking");
   groceries = await categoryIn(ana, familyId, "Groceries");
 });
@@ -284,7 +285,7 @@ describe("a later pull", () => {
   it("lists a space the user joined", async () => {
     const { version, space_ids } = await pull(ana);
 
-    const tripId = await createSpace(ben, "Trip", [ana]);
+    const tripId = await createSpace(ben, uniqueName("Trip"), [ana]);
 
     const pulled = await pull(ana, version);
     expect(space_ids).not.toContain(tripId);

@@ -7,6 +7,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance.ts";
 import { today } from "../support/dates.ts";
 
@@ -26,7 +27,7 @@ beforeEach(async () => {
     signedInUser("Ben"),
     signedInUser("Carla"),
   ]);
-  familyId = await createSpace(ana, "Family", [ben]);
+  familyId = await createSpace(ana, uniqueName("Family"), [ben]);
   checking = await addAccount(ana, familyId, "Checking", { opening_amount: 10_000 });
   groceries = await categoryIn(ana, familyId, "Groceries");
   salary = await categoryIn(ana, familyId, "Salary");
@@ -497,7 +498,7 @@ describe("restoring a deleted transaction", () => {
   });
 
   it("refuses when the space on the other side of a transfer was deleted", async () => {
-    const trip = await createSpace(ana, "Trip", []);
+    const trip = await createSpace(ana, uniqueName("Trip"), []);
     const kitty = await addAccount(ana, trip, "Kitty");
     const id = await addTransaction(ana, transfer(checking, kitty, 1_000));
     await ana.client.rpc("delete_transaction", { transaction_id: id });
@@ -669,7 +670,7 @@ describe("title suggestions", () => {
   });
 
   it("leave out a transfer the user now sees one side of", async () => {
-    const tripId = await createSpace(ana, "Trip", [carla]);
+    const tripId = await createSpace(ana, uniqueName("Trip"), [carla]);
     const tripCash = await addAccount(ana, tripId, "Trip cash");
     const id = await addTransaction(ana, {
       ...transfer(checking, tripCash, 500),

@@ -3,14 +3,16 @@ import { createElement, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ColorChoice } from "../colors/ColorChoice";
 import { colors } from "../colors/colors";
-import { isCheckViolation, isRaisedException } from "../supabase/errors";
+import { findNamed, sameName } from "../names";
+import { isRaisedException, isUniqueViolation, violatedConstraint } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { choiceField, submitWith, textField } from "../ui/forms";
+import { useNameField } from "../ui/name-field";
 import { SelectField } from "../ui/SelectField";
 import { categoryKinds, categoryTree, kindName } from "./category";
-import { type CategoryKind, useCategories } from "./category-queries";
+import { type Category, type CategoryKind, useCategories } from "./category-queries";
 import type { CategoryDetails } from "./category-writes";
 import { iconFor, iconLabel, iconNames } from "./icons";
 
@@ -42,21 +44,29 @@ export function CategoryForm({
   const parent = categories.find(({ id }) => id === parentId);
   const kind = parent?.kind ?? ownKind;
   const hasSubcategories = categories.some(({ parent_id }) => parent_id === categoryId);
-  const parents = categoryTree(
-    categories.filter(
-      ({ space_id, id, built_in }) =>
-        space_id === spaceId && id !== categoryId && built_in === null,
-    ),
-  ).map(({ category }) => category);
+  const others = categories.filter(
+    ({ space_id, id, built_in }) => space_id === spaceId && id !== categoryId && built_in === null,
+  );
+  const parents = categoryTree(others).map(({ category }) => category);
+  const nameField = useNameField(initial.name, mutation.error);
+  const nameProblem = builtIn
+    ? undefined
+    : nameProblemIn(others, { name: nameField.name, kind, parent, refused: nameField.refused }, t);
+  // Moved as it was, it clashes because of where it went.
+  const clashFromMove = parentId !== initial.parentId && sameName(nameField.name, initial.name);
 
-  const save = (form: FormData) =>
+  const save = (form: FormData) => {
+    if (nameProblem) return;
+    const name = builtIn ? initial.name : textField(form, "name").trim();
+    nameField.saving(name);
     onSave({
-      name: builtIn ? initial.name : textField(form, "name").trim(),
+      name,
       kind,
       icon: choiceField(form, "icon", iconNames) ?? initial.icon,
       color: choiceField(form, "color", colors) ?? initial.color,
       parentId,
     });
+  };
 
   return (
     <form onSubmit={submitWith(save)} className="flex flex-col gap-4">
@@ -68,11 +78,14 @@ export function CategoryForm({
             label={t("categories.form.name")}
             name="name"
             defaultValue={initial.name}
+            onChange={(event) => nameField.setName(event.target.value)}
+            error={clashFromMove ? undefined : nameProblem}
             required
           />
           <SelectField
             label={t("categories.form.parent")}
             hint={hasSubcategories ? t("categories.form.parentFixed") : undefined}
+            error={clashFromMove ? nameProblem : undefined}
             value={parentId ?? ""}
             onChange={(event) => setParentId(event.target.value || null)}
             disabled={hasSubcategories}
@@ -109,7 +122,9 @@ export function CategoryForm({
       )}
       <IconChoice defaultValue={initial.icon} />
       <ColorChoice defaultValue={initial.color} />
-      {mutation.error && <ErrorText>{saveErrorMessage(mutation.error, t)}</ErrorText>}
+      {mutation.error && !isUniqueViolation(mutation.error) && (
+        <ErrorText>{saveErrorMessage(mutation.error, t)}</ErrorText>
+      )}
       {mutation.isSuccess && (
         <p className="text-sm text-emerald-600">{t("categories.form.saved")}</p>
       )}
@@ -187,8 +202,39 @@ function IconChoice({ defaultValue }: { defaultValue: string }) {
   );
 }
 
+// No two siblings share a name; the top-level categories of a kind count as siblings.
+function nameProblemIn(
+  others: Category[],
+  details: { name: string; kind: CategoryKind; parent: Category | undefined; refused: boolean },
+  t: TFunction,
+): string | undefined {
+  const { name, kind, parent, refused } = details;
+  if (name.includes("/")) return t("categories.errors.nameSlash");
+  const siblings = others.filter((category) =>
+    parent
+      ? category.parent_id === parent.id
+      : category.parent_id === null && category.kind === kind,
+  );
+  const clash = findNamed(siblings, name);
+  if (!clash && !refused) return undefined;
+  const values = { name: clash?.name ?? name };
+  if (parent)
+    return t("categories.errors.subcategoryNameTaken", { ...values, parent: parent.name });
+  switch (kind) {
+    case "expense":
+      return t("categories.errors.nameTakenExpense", values);
+    case "income":
+      return t("categories.errors.nameTakenIncome", values);
+  }
+}
+
 function saveErrorMessage(error: Error, t: TFunction): string {
-  if (isCheckViolation(error)) return t("categories.errors.nameBlank");
+  switch (violatedConstraint(error)) {
+    case "name_not_blank":
+      return t("categories.errors.nameBlank");
+    case "category_name_without_slash":
+      return t("categories.errors.nameSlash");
+  }
   if (isRaisedException(error)) return t("categories.errors.saveRefused");
   return t("categories.errors.saveFailed");
 }

@@ -25,6 +25,7 @@ export function NewCounterpartyScreen() {
       </header>
       <Card title={t("counterparties.details")}>
         <CounterpartyForm
+          spaceId={spaceId}
           initial={{ name: "", color: "slate" }}
           extraFields={
             <SpaceSelect

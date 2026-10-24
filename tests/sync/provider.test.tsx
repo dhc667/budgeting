@@ -15,6 +15,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance";
 
 afterAll(() => sql.end());
@@ -22,23 +23,25 @@ afterEach(cleanup);
 
 let ana: User;
 let ben: User;
+let family: string;
 let familyId: string;
 
 beforeEach(async () => {
   [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-  familyId = await createSpace(ana, "Family", [ben]);
+  family = uniqueName("Family");
+  familyId = await createSpace(ana, family, [ben]);
 });
 
 describe("the local copy provider", () => {
   it("pulls when the app starts", async () => {
     await mount(ben);
 
-    await screen.findByText("Family");
+    await screen.findByText(family);
   });
 
   it("pulls when asked, resolving once the pull is done", async () => {
     await mount(ben);
-    await screen.findByText("Family");
+    await screen.findByText(family);
     await addAccount("Savings");
 
     await act(() => pullNow());
@@ -48,7 +51,7 @@ describe("the local copy provider", () => {
 
   it("pulls when the connection returns", async () => {
     await mount(ben);
-    await screen.findByText("Family");
+    await screen.findByText(family);
     await addAccount("Savings");
 
     act(() => void window.dispatchEvent(new Event("online")));
@@ -58,7 +61,7 @@ describe("the local copy provider", () => {
 
   it("pulls when the app comes back to the foreground", async () => {
     await mount(ben);
-    await screen.findByText("Family");
+    await screen.findByText(family);
     await addAccount("Savings");
 
     act(() => void document.dispatchEvent(new Event("visibilitychange")));
@@ -74,7 +77,7 @@ describe("the local copy provider", () => {
         queryFn: () => ++fetches,
       });
     });
-    await screen.findByText("Family");
+    await screen.findByText(family);
     await waitFor(() => expect(fetches).toBeGreaterThan(0));
     const before = fetches;
 
@@ -91,7 +94,7 @@ describe("what a change of the copy refetches", () => {
     await mount(ben, () => {
       useQuery({ queryKey: ["elsewhere"], queryFn: () => ++fetches });
     });
-    await screen.findByText("Family");
+    await screen.findByText(family);
     await waitFor(() => expect(fetches).toBe(1));
 
     await addAccount("Savings");

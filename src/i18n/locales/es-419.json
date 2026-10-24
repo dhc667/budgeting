@@ -233,7 +233,9 @@
     "errors": {
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
       "deleteFailed": "No se pudo eliminar este espacio. Revisa tu conexión e inténtalo de nuevo.",
-      "nameBlank": "El nombre del espacio no puede quedar vacío."
+      "nameBlank": "El nombre del espacio no puede quedar vacío.",
+      "nameTaken": "Ya hay un espacio llamado {{name}}.",
+      "nameReserved": "{{name}} es como se llama el espacio privado de cada uno. Elige otro nombre."
     }
   },
   "activity": {
@@ -381,7 +383,9 @@
       "nameBlank": "El nombre de una cuenta no puede quedar vacío.",
       "amount": "Ingresa un monto como {{example}}.",
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
-      "deleteFailed": "No se pudo eliminar esta cuenta. Revisa tu conexión e inténtalo de nuevo."
+      "deleteFailed": "No se pudo eliminar esta cuenta. Revisa tu conexión e inténtalo de nuevo.",
+      "nameTaken": "Este espacio ya tiene una cuenta llamada {{name}}.",
+      "nameTakenArchived": "Este espacio ya tiene una cuenta archivada llamada {{name}}."
     }
   },
   "categories": {
@@ -435,7 +439,11 @@
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
       "deleteFailed": "No se pudo eliminar esta categoría. Revisa tu conexión e inténtalo de nuevo.",
       "saveRefused": "No se pudo guardar este cambio. Puede que las categorías hayan cambiado mientras tanto; recarga e inténtalo de nuevo.",
-      "deleteRefused": "No se pudo eliminar esta categoría. Puede que las categorías hayan cambiado mientras tanto; recarga e inténtalo de nuevo."
+      "deleteRefused": "No se pudo eliminar esta categoría. Puede que las categorías hayan cambiado mientras tanto; recarga e inténtalo de nuevo.",
+      "nameTakenExpense": "Ya hay una categoría de gasto de nivel superior llamada {{name}}.",
+      "nameTakenIncome": "Ya hay una categoría de ingreso de nivel superior llamada {{name}}.",
+      "subcategoryNameTaken": "{{parent}} ya tiene una subcategoría llamada {{name}}.",
+      "nameSlash": "El nombre de una categoría no puede llevar una barra (/)."
     },
     "builtIn": {
       "debtsForgiven": "Deudas perdonadas",
@@ -828,7 +836,8 @@
     "errors": {
       "nameBlank": "El nombre de una contraparte no puede quedar vacío.",
       "saveFailed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
-      "deleteFailed": "No se pudo eliminar esta contraparte. Revisa tu conexión e inténtalo de nuevo."
+      "deleteFailed": "No se pudo eliminar esta contraparte. Revisa tu conexión e inténtalo de nuevo.",
+      "nameTaken": "Este espacio ya tiene una contraparte llamada {{name}}."
     },
     "owesYou": "Te debe {{amount}}",
     "youOwe": "Le debes {{amount}}",

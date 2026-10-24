@@ -142,6 +142,4 @@ export function picked(picker: string): string {
 }
 
 // Users pile up across test runs, and the member checklist finds them by name.
-export function uniqueName(name: string): string {
-  return `${name} ${crypto.randomUUID().slice(0, 8)}`;
-}
+export { uniqueName } from "./local-instance";

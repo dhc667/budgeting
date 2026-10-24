@@ -233,7 +233,9 @@
     "errors": {
       "saveFailed": "Couldn't save. Check your connection and try again.",
       "deleteFailed": "Couldn't delete this space. Check your connection and try again.",
-      "nameBlank": "A space's name can't be blank."
+      "nameBlank": "A space's name can't be blank.",
+      "nameTaken": "There's already a space named {{name}}.",
+      "nameReserved": "{{name}} is what everyone's private space is called. Pick another name."
     }
   },
   "activity": {
@@ -381,7 +383,9 @@
       "nameBlank": "An account's name can't be blank.",
       "amount": "Enter an amount like {{example}}.",
       "saveFailed": "Couldn't save. Check your connection and try again.",
-      "deleteFailed": "Couldn't delete this account. Check your connection and try again."
+      "deleteFailed": "Couldn't delete this account. Check your connection and try again.",
+      "nameTaken": "This space already has an account named {{name}}.",
+      "nameTakenArchived": "This space already has an archived account named {{name}}."
     }
   },
   "categories": {
@@ -435,7 +439,11 @@
       "saveFailed": "Couldn't save. Check your connection and try again.",
       "deleteFailed": "Couldn't delete this category. Check your connection and try again.",
       "saveRefused": "Couldn't save this change. The categories may have changed meanwhile; reload and try again.",
-      "deleteRefused": "Couldn't delete this category. The categories may have changed meanwhile; reload and try again."
+      "deleteRefused": "Couldn't delete this category. The categories may have changed meanwhile; reload and try again.",
+      "nameTakenExpense": "There's already a top-level expense category named {{name}}.",
+      "nameTakenIncome": "There's already a top-level income category named {{name}}.",
+      "subcategoryNameTaken": "{{parent}} already has a subcategory named {{name}}.",
+      "nameSlash": "A category's name can't contain a slash."
     },
     "builtIn": {
       "debtsForgiven": "Debts forgiven",
@@ -828,7 +836,8 @@
     "errors": {
       "nameBlank": "A counterparty's name can't be blank.",
       "saveFailed": "Couldn't save. Check your connection and try again.",
-      "deleteFailed": "Couldn't delete this counterparty. Check your connection and try again."
+      "deleteFailed": "Couldn't delete this counterparty. Check your connection and try again.",
+      "nameTaken": "This space already has a counterparty named {{name}}."
     },
     "owesYou": "Owes you {{amount}}",
     "youOwe": "You owe {{amount}}",

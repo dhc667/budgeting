@@ -99,6 +99,11 @@ export function anonClient() {
   });
 }
 
+// Shared spaces' names are unique in the whole instance, which every test file shares.
+export function uniqueName(name: string): string {
+  return `${name} ${crypto.randomUUID().slice(0, 8)}`;
+}
+
 export function uniqueEmail() {
   return `${crypto.randomUUID()}@test.local`;
 }

@@ -28,6 +28,7 @@ export function NewAccountScreen() {
       </header>
       <Card title={t("accounts.details")}>
         <AccountForm
+          spaceId={spaceId}
           initial={{
             name: "",
             currency: profile.display_currency,

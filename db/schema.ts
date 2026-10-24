@@ -27,6 +27,12 @@ function version() {
   return bigint({ mode: "number" }).notNull().default(0);
 }
 
+// How names compare for uniqueness: case and runs of spaces don't count, accents do. The app and
+// the CLI compare them the same way (src/names.ts).
+function nameKey(name: AnyPgColumn) {
+  return sql`lower(btrim(regexp_replace(${name}, '[[:space:]]+', ' ', 'g')))`;
+}
+
 // ISO 4217 currencies in circulation. `decimals` is the number of minor units: 2 for USD, 0 for JPY.
 export const currencies = pgTable(
   "currencies",
@@ -184,6 +190,10 @@ export const spaces = pgTable(
     index("spaces_version_idx").on(t.version),
     check("private_or_named", sql`(${t.privateOwner} is null) = (${t.name} is not null)`),
     check("name_not_blank", sql`trim(${t.name}) <> ''`),
+    // The private space's name in each of the app's languages. A test fails when a language's
+    // label for it is missing here.
+    check("name_not_reserved", sql`${nameKey(t.name)} not in ('private', 'privado')`),
+    uniqueIndex("shared_space_names").on(nameKey(t.name)),
     pgPolicy("members see their spaces", {
       for: "select",
       to: authenticatedRole,
@@ -338,6 +348,11 @@ export const ledgerAccounts = pgTable(
     ),
     check("built_in_category_unnested", sql`${t.builtIn} is null or ${t.parentId} is null`),
     check("name_not_blank", sql`trim(${t.name}) <> ''`),
+    // A slash would make a category's path, Food/Luxury, ambiguous.
+    check(
+      "category_name_without_slash",
+      sql`${t.kind} not in ('expense', 'income') or position('/' in ${t.name}) = 0`,
+    ),
     check("currency_only_on_accounts", sql`(${t.kind} = 'account') = (${t.currency} is not null)`),
     check(
       "colored_unless_opening_balance",
@@ -355,6 +370,19 @@ export const ledgerAccounts = pgTable(
     uniqueIndex("one_of_each_built_in_category_per_space")
       .on(t.spaceId, t.builtIn)
       .where(sql`${t.builtIn} is not null`),
+    uniqueIndex("account_names_per_space")
+      .on(t.spaceId, nameKey(t.name))
+      .where(sql`${t.kind} = 'account'`),
+    uniqueIndex("counterparty_names_per_space")
+      .on(t.spaceId, nameKey(t.name))
+      .where(sql`${t.kind} = 'counterparty'`),
+    // A subcategory has its parent's space and kind, so its parent alone picks out its siblings.
+    uniqueIndex("top_level_category_names_per_space_and_kind")
+      .on(t.spaceId, t.kind, nameKey(t.name))
+      .where(sql`${t.kind} in ('expense', 'income') and ${t.parentId} is null`),
+    uniqueIndex("subcategory_names_per_parent")
+      .on(t.parentId, nameKey(t.name))
+      .where(sql`${t.parentId} is not null`),
     pgPolicy("members see their spaces' accounts and categories", {
       for: "select",
       to: authenticatedRole,

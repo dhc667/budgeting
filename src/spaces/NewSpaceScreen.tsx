@@ -8,8 +8,9 @@ import { Card } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
 import { submitWith, textField } from "../ui/forms";
-import { nameErrorMessage } from "./space";
-import { useCreateSpace } from "./space-queries";
+import { useNameField } from "../ui/name-field";
+import { nameClashMessage, nameErrorMessage } from "./space";
+import { useCreateSpace, useSpaces } from "./space-queries";
 
 export function NewSpaceScreen() {
   const { t } = useTranslation();
@@ -29,18 +30,32 @@ function NewSpaceForm() {
   const navigate = useNavigate();
   const me = useSignedInUser();
   const { data: users = [] } = useUsers();
+  const { data: spaces = [] } = useSpaces();
   const createSpace = useCreateSpace();
+  const nameField = useNameField("", createSpace.error);
   const others = users.filter(({ id }) => id !== me.id);
-  const create = (form: FormData) =>
+  const nameError = nameClashMessage(nameField.name, { spaces, refused: nameField.refused }, t);
+  const saveError = createSpace.error && nameErrorMessage(createSpace.error, t);
+  const create = (form: FormData) => {
+    if (nameError) return;
+    const name = textField(form, "name").trim();
+    nameField.saving(name);
     createSpace.mutate(
-      { name: textField(form, "name").trim(), memberIds: form.getAll("members").map(String) },
+      { name, memberIds: form.getAll("members").map(String) },
       { onSuccess: (spaceId) => void navigate(`/spaces/${spaceId}`) },
     );
+  };
 
   return (
     <Card title={t("spaces.new.details")}>
       <form onSubmit={submitWith(create)} className="flex flex-col gap-4">
-        <Field label={t("spaces.name")} name="name" required />
+        <Field
+          label={t("spaces.name")}
+          name="name"
+          onChange={(event) => nameField.setName(event.target.value)}
+          error={nameError}
+          required
+        />
         {others.length > 0 && (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1.5 text-sm font-medium">{t("spaces.new.members")}</legend>
@@ -55,7 +70,7 @@ function NewSpaceForm() {
             </div>
           </fieldset>
         )}
-        {createSpace.error && <ErrorText>{nameErrorMessage(createSpace.error, t)}</ErrorText>}
+        {saveError && <ErrorText>{saveError}</ErrorText>}
         <Button type="submit" disabled={createSpace.isPending} className="self-start">
           {t("spaces.new.submit")}
         </Button>

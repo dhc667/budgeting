@@ -12,6 +12,7 @@ import {
   signedInUser,
   sql,
   type SignedInUser as User,
+  uniqueName,
 } from "../support/local-instance";
 import { addAccount } from "../support/accounts";
 import { daysAgo, today } from "../support/dates";
@@ -21,11 +22,13 @@ afterAll(() => sql.end());
 
 let ana: User;
 let ben: User;
+let family: string;
 let familyId: string;
 
 beforeEach(async () => {
   [ana, ben] = await Promise.all([signedInUser("Ana"), signedInUser("Ben")]);
-  familyId = await createSpace(ana, "Family", [ben]);
+  family = uniqueName("Family");
+  familyId = await createSpace(ana, family, [ben]);
 });
 
 describe("pulling the local copy", () => {
@@ -35,7 +38,7 @@ describe("pulling the local copy", () => {
 
     await device.sync.pull();
 
-    expect(namesIn(device.copy(), "spaces")).toContain("Family");
+    expect(namesIn(device.copy(), "spaces")).toContain(family);
     expect(namesIn(device.copy(), "ledger_accounts")).toContain("Checking");
     expect(idsIn(device.copy(), "spaces")).toContain((await privateSpaceOf(ben)).id);
     expect(idsIn(device.copy(), "spaces")).not.toContain((await privateSpaceOf(ana)).id);
@@ -71,11 +74,11 @@ describe("pulling the local copy", () => {
     await addAccount(ana, familyId, "Joint");
     const device = deviceOf(carla);
     await device.sync.pull();
-    expect(namesIn(device.copy(), "spaces")).not.toContain("Family");
+    expect(namesIn(device.copy(), "spaces")).not.toContain(family);
 
     await ana.client.from("space_members").insert({ space_id: familyId, user_id: carla.userId });
     await device.sync.pull();
-    expect(namesIn(device.copy(), "spaces")).toContain("Family");
+    expect(namesIn(device.copy(), "spaces")).toContain(family);
     expect(namesIn(device.copy(), "ledger_accounts")).toContain("Joint");
 
     await carla.client
@@ -83,7 +86,7 @@ describe("pulling the local copy", () => {
       .delete()
       .match({ space_id: familyId, user_id: carla.userId });
     await device.sync.pull();
-    expect(namesIn(device.copy(), "spaces")).not.toContain("Family");
+    expect(namesIn(device.copy(), "spaces")).not.toContain(family);
     expect(namesIn(device.copy(), "ledger_accounts")).not.toContain("Joint");
   });
 
@@ -110,7 +113,7 @@ describe("pulling the local copy", () => {
     const reopened = deviceOf(ben);
     reopened.failing = true;
     await reopened.sync.pull();
-    expect(namesIn(reopened.copy(), "spaces")).toContain("Family");
+    expect(namesIn(reopened.copy(), "spaces")).toContain(family);
     expect(namesIn(reopened.copy(), "ledger_accounts")).not.toContain("Savings");
     reopened.failing = false;
     reopened.fetchedSince.length = 0;
@@ -164,7 +167,7 @@ describe("pulling the local copy", () => {
     expect(restored.fetchedSince).toEqual([ahead.version]);
     expect(restored.copy().version).toBeLessThan(ahead.version);
     expect(idsIn(restored.copy(), "currencies")).not.toContain("ZZZ");
-    expect(namesIn(restored.copy(), "spaces")).toContain("Family");
+    expect(namesIn(restored.copy(), "spaces")).toContain(family);
   });
 
   it("pulls everything again when the user's spaces changed while it was closed", async () => {
@@ -226,7 +229,7 @@ describe("pulling the local copy", () => {
     const device = deviceOf(ben);
     await device.sync.pull();
     const before = device.copy();
-    expect(namesIn(before, "spaces")).toContain("Family");
+    expect(namesIn(before, "spaces")).toContain(family);
     await ana.client
       .from("space_members")
       .delete()
@@ -240,7 +243,7 @@ describe("pulling the local copy", () => {
     expect(device.published).not.toContain(null);
     release.resolve();
     await pulling;
-    expect(namesIn(device.copy(), "spaces")).not.toContain("Family");
+    expect(namesIn(device.copy(), "spaces")).not.toContain(family);
     expect(device.published).not.toContain(null);
   });
 

@@ -68,6 +68,8 @@ function EditCard({ account }: { account: Account }) {
   return (
     <Card title={t("accounts.details")}>
       <AccountForm
+        spaceId={account.space_id}
+        accountId={account.id}
         initial={{
           name: account.name,
           currency: account.currency,

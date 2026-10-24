@@ -10,6 +10,7 @@ import {
   password,
   privateSpaceOf,
   signedInAs,
+  uniqueName,
 } from "../support/local-instance";
 
 let envFile: string;
@@ -139,7 +140,8 @@ describe("the app CLI, signed in", () => {
   it("creates a space the user can move money into with a transfer", async () => {
     const { email } = await existingUser("Ana");
     login(email);
-    const family = idOf(app(["spaces", "add", "--name", "Family"]));
+    const familyName = uniqueName("Family");
+    const family = idOf(app(["spaces", "add", "--name", familyName]));
     const cash = idOf(
       app(["accounts", "add", "--name", "Cash", "--currency", "USD", "--opening-amount", "5000"]),
     );
@@ -162,7 +164,7 @@ describe("the app CLI, signed in", () => {
 
     expect(json(app(["spaces", "list"]))).toContainEqual({
       id: family,
-      name: "Family",
+      name: familyName,
       private: false,
     });
     expect(json(app(["accounts", "list", "--space", family]))).toMatchObject([{ balance: 5000 }]);
@@ -322,7 +324,7 @@ describe("the app CLI, signed in", () => {
     const { email } = await existingUser("Ana");
     login(email);
     const { cash, food } = cashAndFood();
-    const groceries = idOf(app(["categories", "add", "--name", "Groceries", "--kind", "expense"]));
+    const groceries = idOf(app(["categories", "add", "--name", "Produce", "--kind", "expense"]));
     const lunch = idOf(
       app([
         "transactions",

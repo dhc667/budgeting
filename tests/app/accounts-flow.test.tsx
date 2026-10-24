@@ -194,16 +194,17 @@ describe("accounts", () => {
 
 describe("the space picker", () => {
   it("narrows the dashboard to the spaces chosen, on this device", async () => {
+    const family = uniqueName("Family");
     await openSignedIn(uniqueName("Ana"));
-    await createSharedSpace("Family", []);
-    await addAccount({ name: "Joint", space: "Family", openingBalance: "" });
+    await createSharedSpace(family, []);
+    await addAccount({ name: "Joint", space: family, openingBalance: "" });
     await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
     await goHome();
     const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
-    expect(await accounts.findByRole("heading", { name: "Family" })).toBeTruthy();
+    expect(await accounts.findByRole("heading", { name: family })).toBeTruthy();
 
     await user.click(defined(screen.getAllByRole("button", { name: "All spaces" })[0]));
-    await user.click(screen.getByRole("checkbox", { name: "Family" }));
+    await user.click(screen.getByRole("checkbox", { name: family }));
 
     expect(accounts.queryByRole("link", { name: /Joint/ })).toBeNull();
     expect(accounts.queryByRole("heading", { name: "Private" })).toBeNull();
@@ -226,10 +227,13 @@ describe("the space picker", () => {
 
 describe("forms", () => {
   describe("with the space picker narrowed to one space", () => {
+    let family: string;
+
     beforeEach(async () => {
+      family = uniqueName("Family");
       await openSignedIn(uniqueName("Ana"));
-      await createSharedSpace("Family", []);
-      await addAccount({ name: "Joint", space: "Family", openingBalance: "" });
+      await createSharedSpace(family, []);
+      await addAccount({ name: "Joint", space: family, openingBalance: "" });
       await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
       await recordTransaction({ amount: "5", account: "Wallet", category: "Groceries" });
       await goHome();
@@ -239,8 +243,8 @@ describe("forms", () => {
     it("put a new account in that space, grayed out", async () => {
       await openNewAccount();
 
-      expect(spaceOptions()).toEqual(["Family"]);
-      expect(chosenOption("Space")).toBe("Family");
+      expect(spaceOptions()).toEqual([family]);
+      expect(chosenOption("Space")).toBe(family);
       expect(screen.getByLabelText("Space")).toHaveProperty("disabled", true);
     });
 
@@ -248,8 +252,8 @@ describe("forms", () => {
       const debts = within(await screen.findByRole("region", { name: "Debts" }));
       await user.click(debts.getByRole("link", { name: "Add a counterparty" }));
 
-      expect(chosenOption(await screen.findByLabelText("Space"))).toBe("Family");
-      expect(spaceOptions()).toEqual(["Family"]);
+      expect(chosenOption(await screen.findByLabelText("Space"))).toBe(family);
+      expect(spaceOptions()).toEqual([family]);
     });
 
     it("offer a new transaction only that space's accounts", async () => {
@@ -264,15 +268,16 @@ describe("forms", () => {
   });
 
   it("offer every space shown, and only those", async () => {
+    const [family, trip] = [uniqueName("Family"), uniqueName("Trip")];
     await openSignedIn(uniqueName("Ana"));
-    await createSharedSpace("Family", []);
-    await createSharedSpace("Trip", []);
+    await createSharedSpace(family, []);
+    await createSharedSpace(trip, []);
     await goHome();
-    await hideSpace("Trip");
+    await hideSpace(trip);
 
     await openNewAccount();
 
-    expect(spaceOptions()).toEqual(["Private", "Family"]);
+    expect(spaceOptions()).toEqual(["Private", family]);
     expect(screen.getByLabelText("Space")).toHaveProperty("disabled", false);
   });
 
@@ -286,8 +291,9 @@ describe("forms", () => {
   });
 
   it("keep offering a transaction's own account in a space the picker hides", async () => {
+    const family = uniqueName("Family");
     await openSignedIn(uniqueName("Ana"));
-    await createSharedSpace("Family", []);
+    await createSharedSpace(family, []);
     await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
     await recordTransaction({
       amount: "5",
@@ -303,8 +309,9 @@ describe("forms", () => {
   });
 
   it("give or take money from a counterparty's own space, even if the picker hides it", async () => {
+    const family = uniqueName("Family");
     await openSignedIn(uniqueName("Ana"));
-    await createSharedSpace("Family", []);
+    await createSharedSpace(family, []);
     await addAccount({ name: "Wallet", space: "Private", openingBalance: "100" });
     await goHome();
     const debts = within(await screen.findByRole("region", { name: "Debts" }));
@@ -323,15 +330,16 @@ describe("forms", () => {
 
 describe("the spaces shown", () => {
   it("are all of them again once none of those chosen is left", async () => {
+    const family = uniqueName("Family");
     await openSignedIn(uniqueName("Ana"));
-    await createSharedSpace("Family", []);
+    await createSharedSpace(family, []);
     await addAccount({ name: "Wallet", space: "Private", openingBalance: "" });
     await goHome();
     await hideSpace("Private");
     await openSpaces();
-    await user.click(await screen.findByRole("link", { name: /^Family/ }));
+    await user.click(await screen.findByRole("link", { name: new RegExp(`^${family}`) }));
     await user.click(await screen.findByRole("button", { name: "Delete space" }));
-    const dialog = within(screen.getByRole("dialog", { name: "Delete Family?" }));
+    const dialog = within(screen.getByRole("dialog", { name: `Delete ${family}?` }));
     await user.click(dialog.getByRole("button", { name: "Delete" }));
     await screen.findByRole("heading", { name: "Spaces" });
 

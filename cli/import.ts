@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
 import * as z from "zod";
+import { nameKey, sameName } from "../src/names.ts";
 import { Constants } from "../src/supabase/database.types.ts";
 import { defined } from "./defined.ts";
 
@@ -42,9 +43,9 @@ async function privateSpaceOf(tx: TransactionSql, userId: string): Promise<strin
 
 // Accounts are the one thing a second run of the same file would duplicate.
 async function refuseExistingAccounts(tx: TransactionSql, spaceId: string, accounts: Account[]) {
-  const existing = await tx<{ name: string }[]>`
-    select name from public.ledger_accounts
-    where space_id = ${spaceId} and kind = 'account' and name in ${tx(accounts.map((a) => a.name))}`;
+  const inSpace = await tx<{ name: string }[]>`
+    select name from public.ledger_accounts where space_id = ${spaceId} and kind = 'account'`;
+  const existing = accounts.flatMap((a) => inSpace.filter((b) => sameName(a.name, b.name)));
   if (existing.length > 0) {
     throw new ImportError(
       `The private space already has ${existing.map((a) => a.name).join(", ")}. Was this file imported before?`,
@@ -84,12 +85,12 @@ async function addCategories(
 ): Promise<Map<string, string>> {
   const existing = await tx<{ id: string; name: string; kind: Kind; parent_id: string | null }[]>`
     select id, name, kind, parent_id from public.ledger_accounts
-    where space_id = ${spaceId} and kind in ('expense', 'income')`;
+    where space_id = ${spaceId} and kind in ('expense', 'income') and built_in is null`;
   const ids = new Map<string, string>();
 
   const findOrCreate = async (kind: Kind, spec: CategorySpec, parent: string | null) => {
     const found = existing.find(
-      (c) => c.kind === kind && c.name === spec.name && c.parent_id === parent,
+      (c) => c.kind === kind && sameName(c.name, spec.name) && c.parent_id === parent,
     );
     if (found) return found.id;
     const [created] = await tx<{ id: string }[]>`
@@ -124,7 +125,7 @@ async function addAccounts(
         ${spaceId}, ${account.name}, ${account.currency}, ${account.color},
         ${account.opening?.amount ?? 0}, ${account.opening?.date ?? null}
       ) as id`;
-    ids.set(account.name, defined(created).id);
+    ids.set(nameKey(account.name), defined(created).id);
   }
   return ids;
 }
@@ -172,7 +173,7 @@ function transactionArgs(
     date: t.date,
     title: t.title ?? null,
     note: t.note ?? null,
-    account: defined(accountIds.get(t.account)),
+    account: defined(accountIds.get(nameKey(t.account))),
     amount: t.amount,
   };
   switch (t.type) {
@@ -189,7 +190,7 @@ function transactionArgs(
       return {
         ...common,
         category: null,
-        to_account: defined(accountIds.get(t.toAccount)),
+        to_account: defined(accountIds.get(nameKey(t.toAccount))),
         to_amount: t.toAmount ?? null,
       };
   }
@@ -218,8 +219,13 @@ function kindFor(type: "expense" | "refund" | "income"): Kind {
   }
 }
 
+// Names in the file match as the instance compares them.
 function categoryKey(kind: Kind, name: string, subcategory?: string): string {
-  return JSON.stringify([kind, name, subcategory ?? null]);
+  return JSON.stringify([
+    kind,
+    nameKey(name),
+    subcategory === undefined ? null : nameKey(subcategory),
+  ]);
 }
 
 export class ImportError extends Error {}
@@ -289,7 +295,7 @@ export const importFile = z
     transactions: z.array(transaction),
   })
   .superRefine((file, context) => {
-    const accounts = new Map(file.accounts.map((a) => [a.name, a]));
+    const accounts = new Map(file.accounts.map((a) => [nameKey(a.name), a]));
     if (accounts.size !== file.accounts.length) {
       context.addIssue({ code: "custom", path: ["accounts"], message: "Account names repeat" });
     }
@@ -317,7 +323,7 @@ export const importFile = z
     file.transactions.forEach((t, i) => {
       const issue = (message: string) =>
         context.addIssue({ code: "custom", path: ["transactions", i], message });
-      const from = accounts.get(t.account);
+      const from = accounts.get(nameKey(t.account));
       if (!from) issue(`No account named "${t.account}" in the file`);
 
       switch (t.type) {
@@ -330,9 +336,9 @@ export const importFile = z
           }
           break;
         case "transfer": {
-          const to = accounts.get(t.toAccount);
+          const to = accounts.get(nameKey(t.toAccount));
           if (!to) issue(`No account named "${t.toAccount}" in the file`);
-          if (t.toAccount === t.account) issue("A transfer needs two different accounts");
+          if (sameName(t.toAccount, t.account)) issue("A transfer needs two different accounts");
           if (from && to && from.currency !== to.currency && t.toAmount === undefined) {
             issue("A transfer between currencies needs toAmount");
           }
