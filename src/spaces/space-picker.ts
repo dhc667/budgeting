@@ -1,11 +1,16 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useDeviceKey } from "../instance/device-key";
+import { isNonEmpty, type NonEmpty } from "../non-empty";
 import { type Space, useSpaces } from "./space-queries";
 
-export function useShownSpaces(): Space[] | undefined {
+// Hiding a space the user later leaves can hide every space still there: then all of them show.
+export function useShownSpaces(): NonEmpty<Space> | undefined {
   const { data: spaces } = useSpaces();
   const [hidden] = useHiddenSpaces();
-  return useMemo(() => spaces?.filter(({ id }) => !hidden.includes(id)), [spaces, hidden]);
+  return useMemo(() => {
+    const shown = spaces?.filter(({ id }) => !hidden.includes(id));
+    return shown && isNonEmpty(shown) ? shown : spaces;
+  }, [spaces, hidden]);
 }
 
 // The device remembers the spaces it hides rather than those it shows, so a space the user is

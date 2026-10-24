@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import {
-  type Account,
-  accountsInSpaces,
-  openAccountsIn,
-  useAccounts,
-} from "../accounts/account-queries";
+import { type Account, openAccountsIn, useAccounts } from "../accounts/account-queries";
 import {
   useCounterparties,
   useCounterpartyTransactions,
@@ -16,8 +11,6 @@ import { wholeDebtSettledBy } from "../counterparties/owed";
 import type { Counterparty } from "../counterparties/read-counterparties";
 import { localToday } from "../format/days";
 import { useCreateRecurringTransaction } from "../recurring/recurring-queries";
-import { useShownSpaces } from "../spaces/space-picker";
-import { type Space } from "../spaces/space-queries";
 import { BackLink } from "../ui/BackLink";
 import { Card, EmptyState } from "../ui/Card";
 import { useKeptDraft } from "./kept-draft";
@@ -35,12 +28,11 @@ export function NewTransactionScreen() {
   const [resumed, setResumed] = useState(kept !== null);
   const { data: transactions } = useCounterpartyTransactions(params.get("counterparty") ?? "");
   const { lastAccountId, remember } = useLastAccount();
-  const shownSpaces = useShownSpaces();
   const addTransaction = useAddTransaction();
   const createRecurring = useCreateRecurringTransaction();
   // One id for every attempt, so a retry after a lost reply can't save it twice.
   const [id] = useState(() => crypto.randomUUID());
-  if (!accounts || !counterparties || !transactions || !shownSpaces) return null;
+  if (!accounts || !counterparties || !transactions) return null;
   const counterparty = counterparties.find(({ id }) => id === params.get("counterparty"));
   const debts = counterparty ? debtShares(counterparty, transactions, accounts) : [];
   const type = counterparty ? debtType(params.get("type")) : "expense";
@@ -77,8 +69,7 @@ export function NewTransactionScreen() {
                 date: localToday(),
                 title: "",
                 note: "",
-                accountId:
-                  accountFor(counterparty, type, accounts, debts, lastAccountId, shownSpaces) ?? "",
+                accountId: accountFor(counterparty, type, accounts, debts, lastAccountId) ?? "",
                 amount: 0,
                 categoryId: null,
                 toAccountId: null,
@@ -87,6 +78,7 @@ export function NewTransactionScreen() {
               }
             }
             keptAccountIds={[]}
+            keptSpaceIds={counterparty ? [counterparty.space_id] : []}
             offersWholeDebt
             onChange={keep}
             submitLabel={t("transactions.new.submit")}
@@ -140,21 +132,15 @@ function debtType(type: string | null): "given" | "received" {
 }
 
 // Money given or received stays in the counterparty's space, so the account must be there too.
-// Paying back what's owed starts from an account the debt sits in, the newest first. Anything
-// else starts in the spaces the space picker shows.
+// Paying back what's owed starts from an account the debt sits in, the newest first.
 function accountFor(
   counterparty: Counterparty | undefined,
   type: "given" | "received" | "expense",
   accounts: Account[],
   debts: CurrencyDebt[],
   lastAccountId: string | null,
-  shownSpaces: Space[],
 ): string | null {
-  if (!counterparty || type === "expense") {
-    const shown = accountsInSpaces(accounts, shownSpaces).filter(({ archived }) => !archived);
-    if (shown.length === 0) return lastAccountId;
-    return shown.find(({ id }) => id === lastAccountId)?.id ?? shown[0]?.id ?? null;
-  }
+  if (!counterparty || type === "expense") return lastAccountId;
   const holding = debts
     .filter(({ owed }) => wholeDebtSettledBy(type, owed) !== null)
     .flatMap(({ shares }) => shares.map(({ accountId }) => accountId));

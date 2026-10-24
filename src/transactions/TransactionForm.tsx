@@ -16,6 +16,7 @@ import { useProfile } from "../profile/profile-queries";
 import type { Schedule } from "../recurring/schedule";
 import { scheduleFrom } from "../recurring/schedule-form";
 import { ScheduleFields } from "../recurring/ScheduleFields";
+import { useShownSpaces } from "../spaces/space-picker";
 import { type Space, useSpaces } from "../spaces/space-queries";
 import { isRaisedException, refusalReason } from "../supabase/errors";
 import { AmountField } from "../ui/AmountField";
@@ -48,8 +49,11 @@ import {
 
 type TransactionFormProps = {
   initial: TransactionDraft;
-  // Archived accounts are offered only if the transaction already uses them.
+  // Archived accounts, and those in spaces the space picker hides, are offered only if the
+  // transaction already uses them.
   keptAccountIds: string[];
+  // Spaces whose accounts are offered even while the space picker hides them.
+  keptSpaceIds?: string[];
   submitLabel: string;
   mutation: { isPending: boolean; isSuccess: boolean; error: Error | null };
   saving: Saving;
@@ -82,13 +86,16 @@ export function TransactionForm(props: TransactionFormProps) {
   const { data: currencies } = useCurrencies();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
-  const { data: spaces } = useSpaces();
+  const shownSpaces = useShownSpaces();
   const { data: budgets } = useBudgets();
   const { data: counterparties } = useCounterparties();
+  const { data: spaces } = useSpaces();
   if (!profile || !currencies || !accounts || !categories || !spaces || !budgets) return null;
-  if (!counterparties) return null;
+  if (!counterparties || !shownSpaces) return null;
+  const offeredSpaceIds = [...shownSpaces.map(({ id }) => id), ...(props.keptSpaceIds ?? [])];
   const offered = accounts.filter(
-    ({ id, archived }) => !archived || props.keptAccountIds.includes(id),
+    ({ id, archived, space_id }) =>
+      props.keptAccountIds.includes(id) || (!archived && offeredSpaceIds.includes(space_id)),
   );
   return (
     <LoadedTransactionForm
@@ -96,7 +103,7 @@ export function TransactionForm(props: TransactionFormProps) {
       accounts={offered}
       categories={categories}
       counterparties={counterparties}
-      spaces={spaces}
+      spaces={spaces.filter(({ id }) => offered.some(({ space_id }) => space_id === id))}
       budgets={budgets}
     />
   );

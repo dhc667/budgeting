@@ -3,6 +3,7 @@ import { ChevronDown, Layers } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import type { NonEmpty } from "../non-empty";
 import { useDismiss } from "../ui/use-dismiss";
 import { spaceName } from "./space";
 import { useHiddenSpaces, useShownSpaces } from "./space-picker";
@@ -15,7 +16,7 @@ export function SpacePicker() {
   const picker = useRef<HTMLDivElement>(null);
   const { data: spaces = [] } = useSpaces();
   const [hidden, setHidden] = useHiddenSpaces();
-  const shown = useShownSpaces() ?? [];
+  const shown = useShownSpaces();
   useDismiss(open, picker, () => setOpen(false));
 
   const toggle = (spaceId: string, show: boolean) =>
@@ -31,7 +32,7 @@ export function SpacePicker() {
         className="flex h-11 max-w-56 items-center gap-2 rounded-lg px-3 font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
       >
         <Layers className="size-5 shrink-0" />
-        <span className="truncate">{pickerLabel(spaces, shown, t)}</span>
+        <span className="truncate">{shown && pickerLabel(spaces, shown, t)}</span>
         <ChevronDown className="size-4 shrink-0" />
       </button>
       {open && (
@@ -51,7 +52,7 @@ export function SpacePicker() {
                     type="checkbox"
                     checked={isShown}
                     // Showing nothing at all would only look like an empty budget.
-                    disabled={isShown && shown.length === 1}
+                    disabled={isShown && shown?.length === 1}
                     onChange={(event) => toggle(space.id, event.target.checked)}
                     className="size-5"
                   />
@@ -73,9 +74,8 @@ export function SpacePicker() {
   );
 }
 
-function pickerLabel(spaces: Space[], shown: Space[], t: TFunction): string {
-  const [only] = shown;
+function pickerLabel(spaces: Space[], shown: NonEmpty<Space>, t: TFunction): string {
   if (shown.length === spaces.length) return t("spacePicker.all");
-  if (shown.length === 1 && only) return spaceName(only, t);
+  if (shown.length === 1) return spaceName(shown[0], t);
   return t("spacePicker.some", { count: shown.length });
 }
