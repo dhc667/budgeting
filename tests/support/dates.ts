@@ -1,15 +1,13 @@
+import { daysAfter, localToday } from "../../src/format/days.ts";
+
 export function today(): string {
-  return daysAgo(0);
+  return localToday();
 }
 
 export function daysAgo(days: number): string {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() - days);
-  return date.toISOString().slice(0, 10);
+  return daysBefore(today(), days);
 }
 
 export function daysBefore(day: string, days: number): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - days);
-  return date.toISOString().slice(0, 10);
+  return daysAfter(day, -days);
 }
