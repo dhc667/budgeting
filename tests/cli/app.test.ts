@@ -139,7 +139,11 @@ describe("the app CLI, signed in", () => {
       expense("Cash", "12.505"),
       expense("Yen", "12.5"),
       expense("Cash", "-5"),
-    ].concat([expense("Cash", "0"), expense("Cash", "12,50")]);
+    ].concat([
+      expense("Cash", "0"),
+      expense("Cash", "12,50"),
+      expense("Cash", "99999999999999999"),
+    ]);
 
     expect(refusals.map(({ stderr }) => stderr.trim())).toEqual([
       "--amount: USD has 2 decimals, and 12.505 has more.",
@@ -147,6 +151,7 @@ describe("the app CLI, signed in", () => {
       "--amount must be an amount in USD, like 12.50.",
       "--amount must be above zero.",
       "--amount must be an amount in USD, like 12.50.",
+      "--amount: 99999999999999999 is more than an amount can be.",
     ]);
     expect(balances()).toEqual({ Cash: 0, Yen: 1250 });
     expect(app(["transactions", "list", "--limit", "0"]).stderr).toContain(
@@ -555,12 +560,7 @@ describe("the app CLI, signed in", () => {
     added(["categories", "add", "--name", "Tips", "--kind", "income"]);
 
     const moved = json(
-      app(
-        ["categories", "update", "Tips", "--parent", "Food", "--kind", "expense"].concat([
-          "--json",
-          "path,kind",
-        ]),
-      ),
+      app(["categories", "update", "Tips", "--parent", "Food", "--json", "path,kind"]),
     );
     const listed = json(app(["categories", "list", "--kind", "expense", "--json", "path"]));
     const back = json(
@@ -575,6 +575,31 @@ describe("the app CLI, signed in", () => {
     expect(moved).toEqual({ path: "Food/Tips", kind: "expense" });
     expect(listed).toEqual(expect.arrayContaining([{ path: "Food" }, { path: "Food/Tips" }]));
     expect(back).toEqual({ path: "Tips", kind: "income" });
+  });
+
+  it("gives a subcategory its parent's kind, and refuses another", () => {
+    added(["categories", "add", "--name", "Pay", "--kind", "income"]);
+
+    const bonus = json(
+      app(["categories", "add", "--name", "Bonus", "--parent", "Pay", "--json", "path,kind"]),
+    );
+    const refused = app([
+      "categories",
+      "add",
+      "--name",
+      "Gift",
+      "--parent",
+      "Pay",
+      "--kind",
+      "expense",
+    ]);
+
+    expect(bonus).toEqual({ path: "Pay/Bonus", kind: "income" });
+    expect([refused.status, refused.stderr.trim()]).toEqual([
+      1,
+      "--kind: a subcategory is of its parent's kind, and Pay is income.",
+    ]);
+    expect(app(["categories", "add", "--name", "Gift"]).stderr.trim()).toBe("--kind is required.");
   });
 
   it("renames and deletes a counterparty, and unarchives an account", () => {

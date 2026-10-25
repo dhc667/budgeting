@@ -14,5 +14,12 @@ export function findNamed<Named extends { name: string }>(
 }
 
 export function nameKey(name: string): string {
-  return name.replace(/\s+/g, " ").trim().toLowerCase();
+  return name
+    .replace(new RegExp(`${nameSpaces}+`, "g"), " ")
+    .trim()
+    .toLowerCase();
 }
+
+// What JavaScript's \s matches, spelled out: Postgres's [[:space:]] depends on the instance's
+// locale, so the unique indexes use this too.
+export const nameSpaces = String.raw`[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]`;

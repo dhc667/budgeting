@@ -308,6 +308,32 @@ describe("debts", () => {
     expect(accounts.getByRole("link", { name: /Bank/ }).textContent).toMatch(/\$80\.00/);
   });
 
+  it("offers a counterparty typed with other spacing or case, not a new one by that name", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addCounterparty("Ana Maria");
+
+    await openNewTransaction();
+    await user.click(screen.getByRole("tab", { name: "Debt" }));
+    await user.type(screen.getByRole("combobox", { name: "Counterparty" }), "ana  MARIA");
+
+    expect(screen.getAllByRole("option").map(({ textContent }) => textContent)).toEqual([
+      "Ana Maria",
+    ]);
+  });
+
+  it("refuses a blank counterparty's name", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await openNewCounterparty();
+
+    await user.type(screen.getByLabelText("Name"), "   ");
+    await user.click(screen.getByRole("button", { name: "Add counterparty" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "A counterparty's name can't be blank.",
+    );
+  });
+
   it("says which counterparty a name is taken by, as the user types", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addCounterparty("Charlie");

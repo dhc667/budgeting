@@ -10,6 +10,7 @@ import {
 } from "@headlessui/react";
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { nameKey } from "../names";
 import { inputClass } from "./Field";
 
 type PickerProps = {
@@ -128,8 +129,9 @@ export function Picker({
 }
 
 // Accents and case don't keep "cafe" from finding "Café".
+// Spaced as names compare, so a name written another way isn't offered as a new one.
 function searchable(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  return nameKey(text).normalize("NFD").replace(/\p{M}/gu, "");
 }
 
 // Not an id: ids are UUIDs and currency codes.

@@ -7,7 +7,7 @@ import { useCurrencies } from "../money/currency-queries";
 import { CurrencyPicker } from "../money/CurrencyPicker";
 import { findNamed } from "../names";
 import { useProfile } from "../profile/profile-queries";
-import { isCheckViolation, isUniqueViolation } from "../supabase/errors";
+import { isUniqueViolation, violatedConstraint } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
@@ -155,6 +155,6 @@ function nameError(
 }
 
 function saveErrorMessage(error: Error, t: TFunction): string {
-  if (isCheckViolation(error)) return t("accounts.errors.nameBlank");
+  if (violatedConstraint(error) === "name_not_blank") return t("accounts.errors.nameBlank");
   return t("accounts.errors.saveFailed");
 }

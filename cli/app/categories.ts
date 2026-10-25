@@ -70,22 +70,22 @@ async function addCategory(argv: string[], output: Output) {
     space: { type: "string" },
     ...detailOptions,
   });
-  noPositionals(positionals, "categories add --name <name> --kind expense|income [options]");
+  noPositionals(positionals, "categories add --name <name> [--kind expense|income] [options]");
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const space = directory.spaceOrPrivate(values.space);
-  const kind = choice(required(values.kind, "--kind"), kinds, "--kind");
+  const parent =
+    values.parent === undefined
+      ? undefined
+      : directory.category(values.parent, "--parent", { spaceId: space.id });
   const id = await createCategory(supabase, space.id, {
     name: required(values.name, "--name"),
-    kind,
+    kind: required(kindUnder(parent, values.kind), "--kind"),
     icon: values.icon ?? "tag",
     color:
       values.color === undefined
         ? "blue"
         : choice(values.color, Constants.public.Enums.color, "--color"),
-    parentId:
-      values.parent === undefined
-        ? null
-        : directory.category(values.parent, "--parent", { spaceId: space.id, kind }).id,
+    parentId: parent?.id ?? null,
   });
   await printCategory(output, supabase, userId, id);
 }
@@ -102,21 +102,21 @@ async function changeCategory(argv: string[], output: Output) {
   }
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const current = directory.category(named, "category");
-  const kind = values.kind === undefined ? current.kind : choice(values.kind, kinds, "--kind");
+  const parent = values["no-parent"]
+    ? undefined
+    : values.parent === undefined
+      ? directory.categories.find(({ id }) => id === current.parent_id)
+      : directory.category(values.parent, "--parent", { spaceId: current.space_id });
   const details: CategoryDetails = {
     // A built-in category has none, and keeps none whatever is sent.
     name: values.name ?? current.name ?? "",
-    kind,
+    kind: kindUnder(parent, values.kind) ?? current.kind,
     icon: values.icon ?? current.icon,
     color:
       values.color === undefined
         ? current.color
         : choice(values.color, Constants.public.Enums.color, "--color"),
-    parentId: values["no-parent"]
-      ? null
-      : values.parent === undefined
-        ? current.parent_id
-        : directory.category(values.parent, "--parent", { spaceId: current.space_id, kind }).id,
+    parentId: parent?.id ?? null,
   };
   await updateCategory(supabase, current.id, details);
   await printCategory(output, supabase, userId, current.id);
@@ -141,6 +141,20 @@ async function removeCategory(argv: string[], output: Output) {
 async function printCategory(output: Output, supabase: AppSupabase, userId: string, id: string) {
   const directory = await loadDirectory(supabase, userId);
   printWritten(output, categoryView, directory.category(id, "id"), contextOf(directory));
+}
+
+// A subcategory is of its parent's kind, as in the app.
+function kindUnder(
+  parent: Category | undefined,
+  given: string | undefined,
+): CategoryKind | undefined {
+  const kind = given === undefined ? undefined : choice(given, kinds, "--kind");
+  if (parent && kind !== undefined && kind !== parent.kind) {
+    fail(
+      `--kind: a subcategory is of its parent's kind, and ${parent.name ?? ""} is ${parent.kind}.`,
+    );
+  }
+  return parent?.kind ?? kind;
 }
 
 const kinds: CategoryKind[] = ["expense", "income"];

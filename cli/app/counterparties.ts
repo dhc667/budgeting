@@ -5,6 +5,7 @@ import {
   updateCounterparty,
 } from "../../src/counterparties/counterparty-writes.ts";
 import type { AppSupabase } from "../../src/supabase/client.ts";
+import { defined } from "../defined.ts";
 import {
   choice,
   type Commands,
@@ -141,7 +142,7 @@ async function printCounterparty(
 ) {
   const directory = await loadDirectory(supabase, userId);
   const [counterparty] = await withOwed(supabase, [directory.counterparty(id, "id")]);
-  if (counterparty) printWritten(output, counterpartyView, counterparty, contextOf(directory));
+  printWritten(output, counterpartyView, defined(counterparty), contextOf(directory));
 }
 
 async function withOwed(

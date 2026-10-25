@@ -92,6 +92,12 @@ export class Directory {
     });
   }
 
+  accountWithId(id: string): Account {
+    const account = this.accounts.find((candidate) => candidate.id === id);
+    if (!account) fail(`No account ${id} that you can see.`);
+    return account;
+  }
+
   // By its path, Food/Luxury; a bare name is a top-level one.
   category(
     text: string,

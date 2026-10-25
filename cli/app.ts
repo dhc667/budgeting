@@ -53,13 +53,14 @@ Accounts (--space defaults to your private space):
 
 Categories (--space defaults to your private space):
   categories list [--space <space>] [--kind expense|income]
-  categories add --name <name> --kind expense|income [--space <space>] [--icon <lucide name>]
+  categories add --name <name> [--kind expense|income] [--space <space>] [--icon <lucide name>]
       [--color <color>] [--parent <category>]
   categories update <category> [--name ...] [--kind ...] [--icon ...] [--color ...]
       [--parent <category> | --no-parent]
   categories delete <category> [--move-to <category>]
-  --parent and --move-to are looked up in the category's space and kind. A category with
-  subcategories can't be deleted. One that transactions or recurring transactions use needs
+  --parent is looked up in the category's space, and a subcategory is of its parent's kind, so
+  --kind is needed only for a top-level one. --move-to is looked up in the category's space and
+  kind. A category with subcategories can't be deleted. One that transactions or recurring transactions use needs
   --move-to, where they go; deleted transactions don't count. Built-in categories take only
   forgiven debts: they keep their kind and place, and can't be deleted.
 

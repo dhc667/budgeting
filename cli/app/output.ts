@@ -174,7 +174,6 @@ function fieldNamed<Row, Ctx>(view: View<Row, Ctx>, name: string): Field<Row, Ct
   return field;
 }
 
-// Indented for a person at a terminal, on one line for whatever reads a pipe.
 function printJson(value: Json) {
   console.log(process.stdout.isTTY ? JSON.stringify(value, null, 2) : JSON.stringify(value));
 }
@@ -202,7 +201,6 @@ export type Output = { json: string[] | null; quiet: boolean };
 
 export type View<Row, Ctx = Context> = {
   fields: Field<Row, Ctx>[];
-  // The fields a list shows as columns.
   columns: string[];
 };
 

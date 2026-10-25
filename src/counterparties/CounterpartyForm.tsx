@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ColorChoice } from "../colors/ColorChoice";
 import { colors } from "../colors/colors";
 import { findNamed } from "../names";
-import { isCheckViolation, isUniqueViolation } from "../supabase/errors";
+import { isUniqueViolation, violatedConstraint } from "../supabase/errors";
 import { Button } from "../ui/Button";
 import { ErrorText } from "../ui/ErrorText";
 import { Field } from "../ui/Field";
@@ -78,6 +78,6 @@ export function CounterpartyForm({
 }
 
 function saveErrorMessage(error: Error, t: TFunction): string {
-  if (isCheckViolation(error)) return t("counterparties.errors.nameBlank");
+  if (violatedConstraint(error) === "name_not_blank") return t("counterparties.errors.nameBlank");
   return t("counterparties.errors.saveFailed");
 }
