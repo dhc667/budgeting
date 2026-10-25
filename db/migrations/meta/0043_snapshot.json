@@ -1,5 +1,5 @@
 {
-  "id": "e014d45b-e981-4572-b8c8-0bd9fde328c0",
+  "id": "9c5983f4-73c1-4a62-9f5c-a6f5ffe7770a",
   "prevId": "53f79ba9-ea7a-40a6-ad67-de25493c07a8",
   "version": "7",
   "dialect": "postgresql",
@@ -1125,7 +1125,7 @@
               "nulls": "last"
             },
             {
-              "expression": "lower(btrim(regexp_replace(\"name\", '[[:space:]]+', ' ', 'g')))",
+              "expression": "lower(btrim(regexp_replace(\"name\", '[\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+', ' ', 'g')))",
               "asc": true,
               "isExpression": true,
               "nulls": "last"
@@ -1147,7 +1147,7 @@
               "nulls": "last"
             },
             {
-              "expression": "lower(btrim(regexp_replace(\"name\", '[[:space:]]+', ' ', 'g')))",
+              "expression": "lower(btrim(regexp_replace(\"name\", '[\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+', ' ', 'g')))",
               "asc": true,
               "isExpression": true,
               "nulls": "last"
@@ -1175,7 +1175,7 @@
               "nulls": "last"
             },
             {
-              "expression": "lower(btrim(regexp_replace(\"name\", '[[:space:]]+', ' ', 'g')))",
+              "expression": "lower(btrim(regexp_replace(\"name\", '[\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+', ' ', 'g')))",
               "asc": true,
               "isExpression": true,
               "nulls": "last"
@@ -1197,7 +1197,7 @@
               "nulls": "last"
             },
             {
-              "expression": "lower(btrim(regexp_replace(\"name\", '[[:space:]]+', ' ', 'g')))",
+              "expression": "lower(btrim(regexp_replace(\"name\", '[\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+', ' ', 'g')))",
               "asc": true,
               "isExpression": true,
               "nulls": "last"
@@ -2160,7 +2160,7 @@
           "name": "shared_space_names",
           "columns": [
             {
-              "expression": "lower(btrim(regexp_replace(\"name\", '[[:space:]]+', ' ', 'g')))",
+              "expression": "lower(btrim(regexp_replace(\"name\", '[\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+', ' ', 'g')))",
               "asc": true,
               "isExpression": true,
               "nulls": "last"
@@ -2238,7 +2238,7 @@
         },
         "name_not_reserved": {
           "name": "name_not_reserved",
-          "value": "lower(btrim(regexp_replace(\"spaces\".\"name\", '[[:space:]]+', ' ', 'g'))) not in ('private', 'privado')"
+          "value": "lower(btrim(regexp_replace(\"spaces\".\"name\", '[\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]+', ' ', 'g'))) not in ('private', 'privado')"
         }
       },
       "isRLSEnabled": false

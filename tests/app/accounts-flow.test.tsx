@@ -130,6 +130,18 @@ describe("accounts", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(/Enter an amount like/);
   });
 
+  it("refuses a blank account's name", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await openNewAccount();
+
+    await user.type(screen.getByLabelText("Name"), "   ");
+    await user.click(screen.getByRole("button", { name: "Add account" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "An account's name can't be blank.",
+    );
+  });
+
   it("says which account a name is taken by, archived or not, as the user types", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Spare", openingBalance: "" });

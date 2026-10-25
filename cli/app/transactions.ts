@@ -53,7 +53,7 @@ import {
 const transactionView: View<Transaction> = {
   fields: [
     idField("id", (t) => t.id),
-    { name: "type", json: (t, { directory }) => draftIn(t, directory).type },
+    { name: "type", json: (t, { directory }) => draftOf(t, directory.categories).type },
     { name: "date", json: (t) => t.date },
     { name: "title", json: (t) => t.title },
     { name: "note", json: (t) => t.note },
@@ -203,7 +203,7 @@ async function changeOne(argv: string[], output: Output) {
   const named = onlyId(positionals, "transactions update <transaction> [options]");
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const row = await transactionNamed(supabase, directory, named);
-  const current = draftIn(row, directory);
+  const current = draftOf(row, directory.categories);
   const draft = draftFrom(values, directory, {
     ...current,
     type:
@@ -212,7 +212,7 @@ async function changeOne(argv: string[], output: Output) {
         : choice(values.type, Constants.public.Enums.transaction_type, "--type"),
     account:
       values.account === undefined
-        ? accountWithId(directory, current.accountId)
+        ? directory.accountWithId(current.accountId)
         : directory.account(values.account, "--account"),
     amount: current.amount,
   });
@@ -239,7 +239,7 @@ function draftFrom(
       : directory.account(values["to-account"], "--to-account");
   const toAccountId = toAccount?.id ?? base.toAccountId;
   const toAccountCurrency =
-    toAccountId === null ? undefined : accountWithId(directory, toAccountId).currency;
+    toAccountId === null ? undefined : directory.accountWithId(toAccountId).currency;
   const debtCurrency =
     values["debt-currency"] === undefined ? base.debtCurrency : values["debt-currency"];
   const draft: TransactionDraft = {
@@ -407,8 +407,8 @@ function uuidOf(hex: string): string {
 // shown one's first characters can make it longer.
 async function contextFor(supabase: AppSupabase, directory: Directory, rows: { id: string }[]) {
   const neighbours: string[] = [];
-  for (let start = 0; start < rows.length; start += 25) {
-    const ranges = rows.slice(start, start + 25).map(({ id }) => {
+  for (let start = 0; start < rows.length; start += rangesPerRequest) {
+    const ranges = rows.slice(start, start + rangesPerRequest).map(({ id }) => {
       const { from, to } = idRange(id.slice(0, shortIdLength), "id");
       return `and(id.gte.${from},id.lte.${to})`;
     });
@@ -419,28 +419,21 @@ async function contextFor(supabase: AppSupabase, directory: Directory, rows: { i
 }
 
 function withAccountSide(row: TransactionRow, directory: Directory): Transaction {
-  const draft = draftIn(row, directory);
+  const draft = draftOf(row, directory.categories);
   return {
     ...row,
     account_id: draft.accountId,
     amount: draft.amount,
-    currency: accountWithId(directory, draft.accountId).currency,
+    currency: directory.accountWithId(draft.accountId).currency,
   };
-}
-
-function draftIn(row: TransactionRow, directory: Directory): TransactionDraft {
-  return draftOf(row, directory.categories);
-}
-
-function accountWithId(directory: Directory, id: string): Account {
-  const account = directory.accounts.find((candidate) => candidate.id === id);
-  if (!account) fail(`No account ${id} that you can see.`);
-  return account;
 }
 
 function likeEscaped(text: string): string {
   return text.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
+
+// Each range goes in the request's URL, which has to stay within what the server takes.
+const rangesPerRequest = 25;
 
 const columns =
   "id, type, date, title, note, from_account_id, from_amount, from_currency, to_account_id, to_amount, to_currency, category_id, counterparty_id, debt_amount, debt_currency, space_ids, one_sided, created_at, created_by";

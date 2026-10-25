@@ -242,8 +242,10 @@ describe("counterparties", () => {
     ["Straße", "STRASSE"],
     ["Ana\tMaria", "ana maria"],
     ["Bea\nMaria", "Bea Maria"],
-    ["Eva Maria", "Eva Maria"],
-    ["Ivo Maria", "Ivo Maria"],
+    ["Eva\u00a0Maria", "Eva Maria"],
+    ["Ivo\u2003Maria", "Ivo Maria"],
+    ["Ida\u0085Maria", "Ida Maria"],
+    ["Una\u200bMaria", "Una Maria"],
   ])("clash as the app says: %j and %j", async (first, second) => {
     await addCounterparty(ana, familyId, first);
 

@@ -21,6 +21,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { authenticatedRole, authUsers } from "drizzle-orm/supabase";
+import { nameSpaces } from "../src/names.ts";
 
 // Set by a trigger to the id of the Postgres transaction that wrote the row (ADR 0012).
 function version() {
@@ -30,7 +31,7 @@ function version() {
 // How names compare for uniqueness: case and runs of spaces don't count, accents do. The app and
 // the CLI compare them the same way (src/names.ts).
 function nameKey(name: AnyPgColumn) {
-  return sql`lower(btrim(regexp_replace(${name}, '[[:space:]]+', ' ', 'g')))`;
+  return sql`lower(btrim(regexp_replace(${name}, ${sql.raw(`'${nameSpaces}+'`)}, ' ', 'g')))`;
 }
 
 // ISO 4217 currencies in circulation. `decimals` is the number of minor units: 2 for USD, 0 for JPY.

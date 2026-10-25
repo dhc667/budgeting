@@ -16,9 +16,10 @@ export function parseAmount(
   if (fraction.length > currency.decimals) {
     fail(`${flag}: ${currency.code} has ${currency.decimals} decimals, and ${text} has more.`);
   }
-  const minorUnits = Number(`${sign}${whole}${fraction.padEnd(currency.decimals, "0")}`);
+  const minorUnits = Number(`${whole}${fraction.padEnd(currency.decimals, "0")}`);
+  if (!Number.isSafeInteger(minorUnits)) fail(`${flag}: ${text} is more than an amount can be.`);
   if (!signed && minorUnits === 0) fail(`${flag} must be above zero.`);
-  return minorUnits;
+  return sign === "-" && minorUnits !== 0 ? -minorUnits : minorUnits;
 }
 
 export function wholeUnits(minorUnits: number, decimals: number): number {
