@@ -2,7 +2,7 @@
 import { cleanup, screen } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { addAccount, goHome, openApp, openSignedIn, signIn, uniqueName } from "../support/app";
-import { daysAgo } from "../support/dates";
+import { daysAgo, today } from "../support/dates";
 import { existingUser, password, signedInAs, signInLink, sql } from "../support/local-instance";
 import { stubbedProvider } from "../support/rates-provider";
 
@@ -52,7 +52,7 @@ describe("filling in missing exchange rates", () => {
     await storeRates(provided, 0, 0, 4);
     const ana = await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
-    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+    await sql`update transactions set date = ${daysAgo(20)} where created_by = ${ana.userId}`;
 
     await reopenApp();
 
@@ -75,7 +75,7 @@ describe("filling in missing exchange rates", () => {
     await storeRates(provided, 0, 20, 4);
     const ana = await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
-    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+    await sql`update transactions set date = ${daysAgo(20)} where created_by = ${ana.userId}`;
     stubbedProvider.rates.set(alsoProvided, 5);
 
     await reopenApp();
@@ -96,7 +96,7 @@ describe("filling in missing exchange rates", () => {
     await storeRates(alsoProvided, 0, 0, 5);
     const ana = await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
-    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+    await sql`update transactions set date = ${daysAgo(20)} where created_by = ${ana.userId}`;
     stubbedProvider.requests = [];
 
     await reopenApp();
@@ -132,7 +132,7 @@ describe("filling in missing exchange rates", () => {
 
     it("asks again a month later, in case the provider has added older rates", async () => {
       const ana = await backfilledToWhereHistoryStarts();
-      await sql`update exchange_rate_history_starts set checked_on = current_date - 31
+      await sql`update exchange_rate_history_starts set checked_on = ${daysAgo(31)}
         where currency = ${alsoProvided}`;
 
       await openOnAnotherDevice(ana.email);
@@ -146,7 +146,7 @@ describe("filling in missing exchange rates", () => {
     await storeRates(provided, 0, 0, 4);
     const ana = await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
-    await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+    await sql`update transactions set date = ${daysAgo(20)} where created_by = ${ana.userId}`;
 
     await reopenApp();
 
@@ -192,14 +192,14 @@ async function backfilledToWhereHistoryStarts() {
   await storeRates(provided, 0, 20, 4);
   const ana = await openSignedIn(uniqueName("Ana"));
   await addAccount({ name: "Checking", openingBalance: "100" });
-  await sql`update transactions set date = current_date - 20 where created_by = ${ana.userId}`;
+  await sql`update transactions set date = ${daysAgo(20)} where created_by = ${ana.userId}`;
   await reopenApp();
   const client = await signedInAs(ana.email);
   await vi.waitFor(
     async () => expect((await datesStored(client, alsoProvided)).at(-1)).toBe(daysAgo(10)),
     { timeout: 10_000 },
   );
-  await sql`update transactions set date = current_date - 25 where created_by = ${ana.userId}`;
+  await sql`update transactions set date = ${daysAgo(25)} where created_by = ${ana.userId}`;
   return ana;
 }
 
@@ -258,7 +258,7 @@ async function storeRates(
   rate: number,
 ) {
   await sql`insert into exchange_rates (date, currency, rate)
-    select current_date - n, ${currency}, ${rate} from generate_series(${newestDaysAgo}::int, ${oldestDaysAgo}::int) as n`;
+    select ${today()}::date - n, ${currency}, ${rate} from generate_series(${newestDaysAgo}::int, ${oldestDaysAgo}::int) as n`;
 }
 
 async function clearRates() {
