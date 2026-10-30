@@ -134,6 +134,7 @@
       "evening": "Boa noite, {{name}}"
     },
     "netWorth": "Patrimônio líquido",
+    "netWorthAfterDebts": "Após dívidas: {{amount}}",
     "netWorthNoRate": "Não contadas, ainda sem taxa de câmbio:",
     "netWorthStale": "A taxa de câmbio de {{currency}} é de {{date}}.",
     "accounts": "Contas",

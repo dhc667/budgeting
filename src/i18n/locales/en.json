@@ -134,6 +134,7 @@
       "evening": "Good evening, {{name}}"
     },
     "netWorth": "Net worth",
+    "netWorthAfterDebts": "After debts: {{amount}}",
     "netWorthNoRate": "Not counted, no exchange rate yet:",
     "netWorthStale": "{{currency}} exchange rate is from {{date}}.",
     "accounts": "Accounts",
