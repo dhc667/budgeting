@@ -2,7 +2,12 @@ import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus } from "lucide-reac
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { useFormat } from "../format/use-format";
+import { useCurrencies } from "../money/currency-queries";
 import { useMoney } from "../money/use-money";
+import { useProfile } from "../profile/profile-queries";
+import { useLatestRates } from "../rates/rate-queries";
+import { oneOf, quote } from "../rates/quote";
 import { spaceName } from "../spaces/space";
 import { useShownSpaces } from "../spaces/space-picker";
 import type { Space } from "../spaces/space-queries";
@@ -174,7 +179,31 @@ function AccountSummary({ account }: { account: Account }) {
     <>
       <ColorDot color={account.color} />
       <span className="flex-1 truncate">{account.name}</span>
-      <span className="font-medium tabular-nums">{money(account.balance, account.currency)}</span>
+      <span className="flex flex-col items-end">
+        <span className="font-medium tabular-nums">{money(account.balance, account.currency)}</span>
+        <RateToDisplayCurrency currency={account.currency} />
+      </span>
     </>
+  );
+}
+
+function RateToDisplayCurrency({ currency }: { currency: string }) {
+  const { t } = useTranslation();
+  const format = useFormat();
+  const { data: profile } = useProfile();
+  const { data: currencies } = useCurrencies();
+  const { data: rates } = useLatestRates();
+  const own = currencies?.find(({ code }) => code === currency);
+  const display = currencies?.find(({ code }) => code === profile?.display_currency);
+  if (!own || !display || !rates || own.code === display.code) return null;
+  const rate = quote(own, display, rates);
+  if (!rate) return null;
+  return (
+    <span className="text-xs text-zinc-500 tabular-nums">
+      {t("accounts.rate", {
+        one: format.money(oneOf(rate.one), rate.one),
+        is: format.money(rate.is, rate.in),
+      })}
+    </span>
   );
 }

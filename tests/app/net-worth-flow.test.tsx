@@ -77,6 +77,20 @@ describe("net worth", () => {
     expect(card.getByText(new RegExp(`${stale} exchange rate is from`))).toBeTruthy();
   });
 
+  it("shows today's rate under an account in another currency", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "100" });
+    await addAccount({ name: "Abroad", openingBalance: "40", currency: converted });
+
+    await goHome();
+
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await accounts.findByRole("link", { name: /Abroad/ })).textContent).toMatch(
+      /\$1\.00 = .*4\.00/,
+    );
+    expect(accounts.getByRole("link", { name: /Checking/ }).textContent).not.toMatch(/=/);
+  });
+
   it("takes off what is owed, and adds what others owe", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "100" });
