@@ -8,6 +8,7 @@ import {
   addAccount,
   goHome,
   openSignedIn,
+  recordDebt,
   recordTransaction,
   uniqueName,
   user,
@@ -204,6 +205,32 @@ describe("net worth over time", () => {
     const card = within(await screen.findByRole("region", { name: "Net worth over time" }));
     expect((await card.findByText("Today")).nextSibling?.textContent).toBe("$1,015.00");
     expect(card.getByText(`Not counted, no exchange rate for its day: ${unrated}`)).toBeTruthy();
+  });
+
+  it("ends at the net worth after debts the dashboard shows", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Checking", openingBalance: "1000" });
+    await recordDebt({
+      direction: "I gave",
+      amount: "300",
+      account: "Checking",
+      counterparty: "Charlie",
+    });
+    await recordDebt({
+      direction: "I received",
+      amount: "50",
+      account: "Checking",
+      counterparty: "Acme",
+    });
+
+    await goHome();
+    const dashboard = within(await screen.findByRole("region", { name: "Net worth" }));
+    expect(await dashboard.findByText("After debts: $1,000.00")).toBeTruthy();
+
+    await openReports();
+    const card = within(await screen.findByRole("region", { name: "Net worth over time" }));
+    expect((await card.findByText("Today")).nextSibling?.textContent).toBe("$750.00");
+    expect(card.getByText("After debts: $1,000.00")).toBeTruthy();
   });
 
   it("says there is nothing to show before anything is recorded", async () => {

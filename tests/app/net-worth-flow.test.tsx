@@ -1,15 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  addAccount,
-  choose,
-  goHome,
-  openNewTransaction,
-  openSignedIn,
-  uniqueName,
-  user,
-} from "../support/app";
+import { addAccount, goHome, openSignedIn, recordDebt, uniqueName } from "../support/app";
 import { sql } from "../support/local-instance";
 
 // The provider is unreachable: the dashboard works from the rates the instance already holds.
@@ -77,7 +69,7 @@ describe("net worth", () => {
     expect(card.getByText(new RegExp(`${stale} exchange rate is from`))).toBeTruthy();
   });
 
-  it("shows today's rate under an account in another currency", async () => {
+  it("shows the latest rate under an account in another currency", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Checking", openingBalance: "100" });
     await addAccount({ name: "Abroad", openingBalance: "40", currency: converted });
@@ -91,11 +83,52 @@ describe("net worth", () => {
     expect(accounts.getByRole("link", { name: /Checking/ }).textContent).not.toMatch(/=/);
   });
 
+  it("dates a stale rate under an account's balance", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Old rate", openingBalance: "0", currency: stale });
+
+    await goHome();
+
+    const accounts = within(await screen.findByRole("region", { name: "Accounts" }));
+    expect((await accounts.findByRole("link", { name: /Old rate/ })).textContent).toMatch(
+      /\$1\.00 = .*2\.00, from /,
+    );
+  });
+
+  it("names a debt it can't convert by who owes whom", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await addAccount({ name: "Havana", openingBalance: "7", currency: unrated });
+    await recordDebt({
+      direction: "I gave",
+      amount: "2",
+      account: "Havana",
+      counterparty: "Charlie",
+    });
+
+    await goHome();
+
+    const card = within(await screen.findByRole("region", { name: "Net worth" }));
+    expect(await card.findByText("After debts: $100.00")).toBeTruthy();
+    expect(card.getByText(/Havana: .*5\.00/)).toBeTruthy();
+    expect(card.getByText(/Charlie: Owes you .*2\.00/)).toBeTruthy();
+  });
+
   it("takes off what is owed, and adds what others owe", async () => {
     await openSignedIn(uniqueName("Ana"));
     await addAccount({ name: "Cash", openingBalance: "100" });
-    await recordDebt({ direction: /I received/, amount: "250", counterparty: "Acme Corp" });
-    await recordDebt({ direction: /I gave/, amount: "30", counterparty: "Charlie" });
+    await recordDebt({
+      direction: "I received",
+      amount: "250",
+      account: "Cash",
+      counterparty: "Acme Corp",
+    });
+    await recordDebt({
+      direction: "I gave",
+      amount: "30",
+      account: "Cash",
+      counterparty: "Charlie",
+    });
 
     await goHome();
 
@@ -115,17 +148,3 @@ describe("net worth", () => {
     expect(card.queryByText(/After debts/)).toBeNull();
   });
 });
-
-type NewDebt = { direction: RegExp; amount: string; counterparty: string };
-
-async function recordDebt({ direction, amount, counterparty }: NewDebt) {
-  await openNewTransaction();
-  await user.click(screen.getByRole("tab", { name: "Debt" }));
-  await user.click(screen.getByRole("radio", { name: direction }));
-  await user.type(screen.getByLabelText("Amount"), amount);
-  await choose("Account", "Cash");
-  await user.type(screen.getByRole("combobox", { name: "Counterparty" }), counterparty);
-  await user.click(screen.getByRole("option", { name: `Add “${counterparty}”` }));
-  await user.click(screen.getByRole("button", { name: "Add transaction" }));
-  await screen.findByRole("heading", { name: "Transactions", level: 1 });
-}

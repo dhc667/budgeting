@@ -3,18 +3,17 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { useFormat } from "../format/use-format";
-import { useCurrencies } from "../money/currency-queries";
+import { useCurrencies, useDisplayCurrency } from "../money/currency-queries";
 import { useMoney } from "../money/use-money";
-import { useProfile } from "../profile/profile-queries";
 import { useLatestRates } from "../rates/rate-queries";
-import { oneOf, quote } from "../rates/quote";
-import { spaceName } from "../spaces/space";
+import { quote } from "../rates/quote";
+import { inSpaces, spaceName } from "../spaces/space";
 import { useShownSpaces } from "../spaces/space-picker";
 import type { Space } from "../spaces/space-queries";
 import { Button } from "../ui/Button";
 import { Card, EmptyState } from "../ui/Card";
 import { ErrorText } from "../ui/ErrorText";
-import { type Account, accountsInSpaces, useAccounts, useReorderAccounts } from "./account-queries";
+import { type Account, useAccounts, useReorderAccounts } from "./account-queries";
 import { ColorDot } from "../colors/ColorDot";
 
 export function AccountsCard({ className }: { className?: string }) {
@@ -30,7 +29,7 @@ export function AccountsCard({ className }: { className?: string }) {
       accounts: accounts.filter(({ space_id, archived }) => space_id === space.id && !archived),
     }))
     .filter((group) => group.accounts.length > 0);
-  const archived = accountsInSpaces(accounts, shownSpaces).filter(({ archived }) => archived);
+  const archived = inSpaces(accounts, shownSpaces).filter(({ archived }) => archived);
 
   return (
     <Card
@@ -190,20 +189,20 @@ function AccountSummary({ account }: { account: Account }) {
 function RateToDisplayCurrency({ currency }: { currency: string }) {
   const { t } = useTranslation();
   const format = useFormat();
-  const { data: profile } = useProfile();
   const { data: currencies } = useCurrencies();
   const { data: rates } = useLatestRates();
+  const display = useDisplayCurrency();
   const own = currencies?.find(({ code }) => code === currency);
-  const display = currencies?.find(({ code }) => code === profile?.display_currency);
   if (!own || !display || !rates || own.code === display.code) return null;
   const rate = quote(own, display, rates);
   if (!rate) return null;
+
+  const shown = { one: format.rate(1, rate.from), rate: format.rate(rate.rate, rate.to) };
   return (
     <span className="text-xs text-zinc-500 tabular-nums">
-      {t("accounts.rate", {
-        one: format.money(oneOf(rate.one), rate.one),
-        is: format.money(rate.is, rate.in),
-      })}
+      {rate.staleSince === null
+        ? t("accounts.rate", shown)
+        : t("accounts.staleRate", { ...shown, date: format.day(rate.staleSince) })}
     </span>
   );
 }

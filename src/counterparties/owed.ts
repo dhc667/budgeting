@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 import type { DebtType } from "../transactions/transaction-tabs";
-import type { CounterpartyBalance } from "./read-counterparties";
+import type { NamedBalance } from "../rates/net-worth";
+import type { Counterparty, CounterpartyBalance } from "./read-counterparties";
 
 type Money = (minorUnits: number, currency: string) => string;
 
@@ -17,6 +18,14 @@ export function owedPhrase(
 
 export function openBalances(balances: CounterpartyBalance[]): CounterpartyBalance[] {
   return balances.filter(({ owed }) => owed !== 0);
+}
+
+// Each currency a counterparty and its space still owe each other in, as a balance of the space's:
+// above zero while the counterparty owes it.
+export function openDebts(counterparties: readonly Counterparty[]): NamedBalance[] {
+  return counterparties.flatMap(({ name, balances }) =>
+    openBalances(balances).map(({ currency, owed }) => ({ name, currency, balance: owed })),
+  );
 }
 
 export function owedClass(owed: number): string {

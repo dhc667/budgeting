@@ -17,6 +17,26 @@ export function formatMoney(
   return withSymbol(sign, amount, currency, format, language);
 }
 
+// As many decimals as the rate has up to four, and never fewer than the currency's own.
+export function formatRate(
+  rate: number,
+  currency: Currency,
+  format: NumberFormat | null,
+  language: string,
+): string {
+  const decimals = rateDecimals(rate, currency.decimals);
+  const minorUnits = Math.round(rate * 10 ** decimals);
+  return formatMoney(minorUnits, { ...currency, decimals }, format, language);
+}
+
+function rateDecimals(rate: number, fewest: number): number {
+  const most = Math.max(fewest, 4);
+  const digits = Math.round(rate * 10 ** most);
+  let decimals = most;
+  while (decimals > fewest && digits % 10 ** (most - decimals + 1) === 0) decimals--;
+  return decimals;
+}
+
 // For axis ticks, where the full amount is too wide. Rounded, so only for reading at a glance.
 export function formatCompactMoney(
   minorUnits: number,

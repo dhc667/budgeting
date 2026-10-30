@@ -4,6 +4,7 @@ import { useSupabase } from "../instance/instance-context";
 import { useCurrencies } from "../money/currency-queries";
 import { convertAtDay, type DisplayConversion, type MissingRate } from "../rates/convert-dated";
 import { useBackfillMissingRates, useRateHistory } from "../rates/rate-queries";
+import { inSpaces } from "../spaces/space";
 import type { Space } from "../spaces/space-queries";
 import type { AppSupabase } from "../supabase/client";
 import type { Repeat } from "../recurring/schedule";
@@ -33,7 +34,7 @@ export function shownBudgets(
   shownSpaces: Space[] | undefined,
 ): Budget[] | undefined {
   if (!budgets || !shownSpaces) return undefined;
-  return budgets.filter(({ space_id }) => shownSpaces.some(({ id }) => id === space_id));
+  return inSpaces(budgets, shownSpaces);
 }
 
 // Undefined until everything it needs has loaded.

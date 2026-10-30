@@ -9,6 +9,7 @@ import {
   formatCompactMoney,
   formatDate,
   formatMoney,
+  formatRate,
   parseAmount,
 } from "./format";
 
@@ -23,6 +24,8 @@ export function useFormat() {
     () => ({
       money: (minorUnits: number, currency: Currency) =>
         formatMoney(minorUnits, currency, numberFormat, language),
+      rate: (rate: number, currency: Currency) =>
+        formatRate(rate, currency, numberFormat, language),
       compactMoney: (minorUnits: number, currency: Currency) =>
         formatCompactMoney(minorUnits, currency, numberFormat, language),
       amount: (minorUnits: number, decimals: number) =>

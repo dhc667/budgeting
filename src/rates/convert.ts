@@ -9,17 +9,29 @@ export function convert(
 ): Conversion {
   if (from.code === to.code) return { kind: "converted", minorUnits, staleRates: [] };
 
-  const fromRate = rateOf(from.code, rates);
-  const toRate = rateOf(to.code, rates);
-  if (!fromRate) return { kind: "no-rate", currency: from.code };
-  if (!toRate) return { kind: "no-rate", currency: to.code };
+  const pair = ratesOf(from.code, to.code, rates);
+  switch (pair.kind) {
+    case "no-rate":
+      return pair;
+    case "rates": {
+      const { fromRate, toRate, staleRates } = pair;
+      const exact = rescale(minorUnits * toRate.rate, to.decimals - from.decimals) / fromRate.rate;
+      return { kind: "converted", minorUnits: roundHalfAwayFromZero(exact), staleRates };
+    }
+  }
+}
 
-  const exact = rescale(minorUnits * toRate.rate, to.decimals - from.decimals) / fromRate.rate;
-  return {
-    kind: "converted",
-    minorUnits: roundHalfAwayFromZero(exact),
-    staleRates: [fromRate, toRate].filter((rate) => rate.stale && rate.currency !== "USD"),
-  };
+// How many of `to` one whole `from` buys, unrounded.
+export function exchangeRate(from: string, to: string, rates: LatestRates): ExchangeRate {
+  const pair = ratesOf(from, to, rates);
+  switch (pair.kind) {
+    case "no-rate":
+      return pair;
+    case "rates": {
+      const { fromRate, toRate, staleRates } = pair;
+      return { kind: "rate", rate: toRate.rate / fromRate.rate, staleRates };
+    }
+  }
 }
 
 // At the rates in effect on `day`, the latest on or before it, as budgets and reports convert.
@@ -50,6 +62,15 @@ function latestOnOrBefore(rates: readonly DatedRate[], day: string): DatedRate |
   return rates[low - 1];
 }
 
+function ratesOf(from: string, to: string, rates: LatestRates): RatePair {
+  const fromRate = rateOf(from, rates);
+  const toRate = rateOf(to, rates);
+  if (!fromRate) return { kind: "no-rate", currency: from };
+  if (!toRate) return { kind: "no-rate", currency: to };
+  const staleRates = [fromRate, toRate].filter((rate) => rate.stale && rate.currency !== "USD");
+  return { kind: "rates", fromRate, toRate, staleRates };
+}
+
 function rateOf(code: string, rates: LatestRates): LatestRate | undefined {
   return code === "USD" ? usd : rates.get(code);
 }
@@ -75,4 +96,11 @@ type DatedRate = { date: string; rate: number };
 
 export type Conversion =
   | { kind: "converted"; minorUnits: number; staleRates: LatestRate[] }
+  | { kind: "no-rate"; currency: string };
+
+export type ExchangeRate =
+  { kind: "rate"; rate: number; staleRates: LatestRate[] } | { kind: "no-rate"; currency: string };
+
+type RatePair =
+  | { kind: "rates"; fromRate: LatestRate; toRate: LatestRate; staleRates: LatestRate[] }
   | { kind: "no-rate"; currency: string };
