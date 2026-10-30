@@ -5,7 +5,7 @@ import type { DateRange } from "../format/days";
 import type { DisplayConversion } from "../rates/convert-dated";
 import { allTime } from "./periods";
 import { categoryTotals, incomeVsExpense, netWorthSeries } from "./report-math";
-import type { AccountMovement, CategoryFlow, FlowCategory } from "./read-reports";
+import type { CategoryFlow, FlowCategory, Movement } from "./read-reports";
 
 const usd = { code: "USD", decimals: 2 };
 const currencies = [usd, { code: "EUR", decimals: 2 }, { code: "CUP", decimals: 2 }];
@@ -229,50 +229,78 @@ describe("net worth over time", () => {
   it("has a point per day from the first movement, each converted at that day's rate", () => {
     const result = netWorthSeries(
       [
-        move({ accountId: "bank", amount: 1_000, day: "2026-01-30" }),
-        move({ accountId: "euros", currency: "EUR", amount: 100, day: "2026-01-31" }),
-        move({ accountId: "bank", amount: -250, day: "2026-02-02" }),
+        move({ ledgerId: "bank", amount: 1_000, day: "2026-01-30" }),
+        move({ ledgerId: "euros", currency: "EUR", amount: 100, day: "2026-01-31" }),
+        move({ ledgerId: "bank", amount: -250, day: "2026-02-02" }),
       ],
       "2026-02-02",
       display,
     );
 
-    expect(result.points).toEqual([
-      { day: "2026-01-30", total: 1_000 },
-      { day: "2026-01-31", total: 1_200 },
-      { day: "2026-02-01", total: 1_400 },
-      { day: "2026-02-02", total: 1_150 },
+    expect(result.points.map(({ day, total }) => [day, total])).toEqual([
+      ["2026-01-30", 1_000],
+      ["2026-01-31", 1_200],
+      ["2026-02-01", 1_400],
+      ["2026-02-02", 1_150],
     ]);
   });
 
   it("leaves an account out of the days before its currency's first rate, and names the first", () => {
     const result = netWorthSeries(
       [
-        move({ accountId: "bank", amount: 100, day: "2025-12-30" }),
-        move({ accountId: "euros", currency: "EUR", amount: 100, day: "2025-12-30" }),
+        move({ ledgerId: "bank", amount: 100, day: "2025-12-30" }),
+        move({ ledgerId: "euros", currency: "EUR", amount: 100, day: "2025-12-30" }),
       ],
       "2026-01-02",
       display,
     );
 
-    expect(result.points).toEqual([
-      { day: "2025-12-30", total: 100 },
-      { day: "2025-12-31", total: 100 },
-      { day: "2026-01-01", total: 300 },
-      { day: "2026-01-02", total: 300 },
+    expect(result.points.map(({ day, total }) => [day, total])).toEqual([
+      ["2025-12-30", 100],
+      ["2025-12-31", 100],
+      ["2026-01-01", 300],
+      ["2026-01-02", 300],
     ]);
     expect(result.missing).toEqual([{ currency: "EUR", day: "2025-12-30" }]);
   });
 
+  it("adds what counterparties owe and takes off what is owed to them, after debts", () => {
+    const result = netWorthSeries(
+      [
+        move({ ledgerId: "bank", amount: 1_000, day: "2026-01-30" }),
+        move({ ledgerId: "dad", holding: "debt", amount: 300, day: "2026-01-30" }),
+        move({
+          ledgerId: "dad",
+          holding: "debt",
+          currency: "EUR",
+          amount: -100,
+          day: "2026-01-31",
+        }),
+      ],
+      "2026-01-31",
+      display,
+    );
+
+    expect(result.points).toEqual([
+      { day: "2026-01-30", total: 1_000, afterDebts: 1_300 },
+      { day: "2026-01-31", total: 1_000, afterDebts: 1_100 },
+    ]);
+    expect(result.hasDebts).toBe(true);
+  });
+
   it("has no points before anything is recorded", () => {
-    expect(netWorthSeries([], "2026-02-02", display)).toEqual({ points: [], missing: [] });
+    expect(netWorthSeries([], "2026-02-02", display)).toEqual({
+      points: [],
+      missing: [],
+      hasDebts: false,
+    });
   });
 
   it("leaves out an account's currency on days it has no rate, and names the first one", () => {
     const result = netWorthSeries(
       [
-        move({ accountId: "bank", amount: 100, day: "2026-01-01" }),
-        move({ accountId: "havana", currency: "CUP", amount: 9_000, day: "2026-01-02" }),
+        move({ ledgerId: "bank", amount: 100, day: "2026-01-01" }),
+        move({ ledgerId: "havana", currency: "CUP", amount: 9_000, day: "2026-01-02" }),
       ],
       "2026-01-03",
       display,
@@ -284,9 +312,9 @@ describe("net worth over time", () => {
 
   it("ends at the net worth the dashboard shows, future-dated movements included", () => {
     const movements = [
-      move({ accountId: "bank", amount: 1_001, day: "2026-01-10" }),
-      move({ accountId: "euros", currency: "EUR", amount: 333, day: "2026-01-20" }),
-      move({ accountId: "euros", currency: "EUR", amount: 1, day: "2026-03-01" }),
+      move({ ledgerId: "bank", amount: 1_001, day: "2026-01-10" }),
+      move({ ledgerId: "euros", currency: "EUR", amount: 333, day: "2026-01-20" }),
+      move({ ledgerId: "euros", currency: "EUR", amount: 1, day: "2026-03-01" }),
     ];
     const latest: LatestRates = new Map([
       ["EUR", { currency: "EUR", date: "2026-02-01", rate: 0.25, stale: false }],
@@ -333,6 +361,13 @@ function named(name: string): FlowCategory {
   return { id: name.toLowerCase(), name, icon: "tag", color: "blue", spaceId: "space-1" };
 }
 
-function move(overrides: Partial<AccountMovement>): AccountMovement {
-  return { accountId: "bank", currency: "USD", day: "2026-01-01", amount: 0, ...overrides };
+function move(overrides: Partial<Movement>): Movement {
+  return {
+    ledgerId: "bank",
+    holding: "account",
+    currency: "USD",
+    day: "2026-01-01",
+    amount: 0,
+    ...overrides,
+  };
 }

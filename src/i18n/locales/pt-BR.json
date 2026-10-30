@@ -46,6 +46,9 @@
       "title": "Patrimônio líquido ao longo do tempo",
       "on": "Em {{date}}",
       "today": "Hoje",
+      "total": "Patrimônio líquido",
+      "afterDebts": "Após dívidas",
+      "afterDebtsAmount": "Após dívidas: {{amount}}",
       "none": "Nada registrado ainda.",
       "chart": "Gráfico de linhas do patrimônio líquido"
     }
@@ -331,7 +334,8 @@
     }
   },
   "accounts": {
-    "rate": "{{one}} = {{is}}",
+    "rate": "{{one}} = {{rate}}",
+    "staleRate": "{{one}} = {{rate}}, de {{date}}",
     "add": "Adicionar conta",
     "editOrder": "Editar ordem",
     "doneOrdering": "Concluir",

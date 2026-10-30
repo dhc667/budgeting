@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { setBudgetExclusions } from "../budgets/budget-queries";
 import { createCounterparty } from "../counterparties/counterparty-writes";
 import { useSupabase } from "../instance/instance-context";
-import { useCurrencies } from "../money/currency-queries";
+import { useCurrencies, useDisplayCurrency } from "../money/currency-queries";
 import { useProfile } from "../profile/profile-queries";
 import { useBackfillMissingRates, useRateHistory } from "../rates/rate-queries";
 import type { AppSupabase } from "../supabase/client";
@@ -43,7 +43,7 @@ export function useTransactions(filter: TransactionFilter) {
 export function useDayTotals(days: readonly ListDay[] = noDays) {
   const { data: currencies } = useCurrencies();
   const { data: profile } = useProfile();
-  const currency = currencies?.find(({ code }) => code === profile?.display_currency);
+  const currency = useDisplayCurrency();
   const dated = useMemo(
     () => days.flatMap(({ day, flows }) => flows.map(({ currency }) => ({ currency, day }))),
     [days],

@@ -46,6 +46,9 @@
       "title": "Net worth over time",
       "on": "On {{date}}",
       "today": "Today",
+      "total": "Net worth",
+      "afterDebts": "After debts",
+      "afterDebtsAmount": "After debts: {{amount}}",
       "none": "Nothing recorded yet.",
       "chart": "Net worth line chart"
     }
@@ -331,7 +334,8 @@
     }
   },
   "accounts": {
-    "rate": "{{one}} = {{is}}",
+    "rate": "{{one}} = {{rate}}",
+    "staleRate": "{{one}} = {{rate}}, from {{date}}",
     "add": "Add account",
     "editOrder": "Edit order",
     "doneOrdering": "Done",

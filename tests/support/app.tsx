@@ -125,6 +125,26 @@ export async function recordTransaction({
   await screen.findByRole("heading", { name: "Transactions", level: 1 });
 }
 
+type NewDebt = {
+  direction: "I gave" | "I received";
+  amount: string;
+  account: string;
+  counterparty: string;
+};
+
+// Through the Debt tab, adding the counterparty as it goes.
+export async function recordDebt({ direction, amount, account, counterparty }: NewDebt) {
+  await openNewTransaction();
+  await user.click(screen.getByRole("tab", { name: "Debt" }));
+  await user.click(screen.getByRole("radio", { name: new RegExp(direction) }));
+  await user.type(screen.getByLabelText("Amount"), amount);
+  await choose("Account", account);
+  await user.type(screen.getByRole("combobox", { name: "Counterparty" }), counterparty);
+  await user.click(screen.getByRole("option", { name: `Add “${counterparty}”` }));
+  await user.click(screen.getByRole("button", { name: "Add transaction" }));
+  await screen.findByRole("heading", { name: "Transactions", level: 1 });
+}
+
 export async function openNewTransaction() {
   await user.click(defined(screen.getAllByRole("link", { name: "Add transaction" })[0]));
   await screen.findByRole("heading", { name: "New transaction" });

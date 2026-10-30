@@ -1,5 +1,4 @@
 import { useSupabase } from "../instance/instance-context";
-import type { Space } from "../spaces/space-queries";
 import type { Database } from "../supabase/database";
 import { useCopyMutation, useCopyQuery } from "../sync/copy-query";
 import {
@@ -52,10 +51,6 @@ export function useReorderAccounts() {
 // The accounts new money can still move through in a space.
 export function openAccountsIn(accounts: Account[], spaceId: string): Account[] {
   return accounts.filter(({ space_id, archived }) => space_id === spaceId && !archived);
-}
-
-export function accountsInSpaces(accounts: Account[], spaces: Pick<Space, "id">[]): Account[] {
-  return accounts.filter(({ space_id }) => spaces.some(({ id }) => id === space_id));
 }
 
 export type Account = Database["public"]["Views"]["accounts"]["Row"];

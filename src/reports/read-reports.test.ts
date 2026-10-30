@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RowOf } from "../sync/copy";
-import { readAccountMovements, readCategoryFlows } from "./read-reports";
+import { readCategoryFlows, readMovements } from "./read-reports";
 
 type Ledger = RowOf<"ledger_accounts">;
 type Posting = RowOf<"postings">;
@@ -101,9 +101,9 @@ describe("category flows", () => {
   });
 });
 
-describe("account movements", () => {
+describe("movements", () => {
   it("sums what each account gained on a day, opening balances and archived accounts included", () => {
-    const movements = readAccountMovements(
+    const movements = readMovements(
       rows({
         txs: [tx("open"), tx("a"), tx("b", "2026-01-02")],
         postings: [
@@ -117,14 +117,29 @@ describe("account movements", () => {
     );
 
     expect(movements).toEqual([
-      { accountId: "bank", currency: "USD", day: "2026-01-01", amount: 900 },
-      { accountId: "bank", currency: "USD", day: "2026-01-02", amount: -50 },
-      { accountId: "archived", currency: "USD", day: "2026-01-01", amount: 70 },
+      { ledgerId: "bank", holding: "account", currency: "USD", day: "2026-01-01", amount: 900 },
+      { ledgerId: "bank", holding: "account", currency: "USD", day: "2026-01-02", amount: -50 },
+      { ledgerId: "archived", holding: "account", currency: "USD", day: "2026-01-01", amount: 70 },
+    ]);
+  });
+
+  it("sums each counterparty's debt in each currency, above zero while it owes", () => {
+    const movements = readMovements(
+      rows({
+        txs: [tx("lent"), tx("back", "2026-01-02")],
+        postings: [...move("lent", bank, dad, 300), ...move("back", dad, bank, 40, "EUR")],
+      }),
+      ["space-1"],
+    );
+
+    expect(movements.filter(({ holding }) => holding === "debt")).toEqual([
+      { ledgerId: "dad", holding: "debt", currency: "USD", day: "2026-01-01", amount: 300 },
+      { ledgerId: "dad", holding: "debt", currency: "EUR", day: "2026-01-02", amount: -40 },
     ]);
   });
 
   it("counts only the accounts of the spaces given", () => {
-    const movements = readAccountMovements(
+    const movements = readMovements(
       rows({ txs: [tx("a")], postings: move("a", abroadAccount, abroad, 70) }),
       ["space-1"],
     );

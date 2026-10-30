@@ -13,6 +13,7 @@ export const series = {
   income: "var(--chart-income)",
   expense: "var(--chart-expense)",
   line: "var(--chart-line)",
+  afterDebts: "currentColor",
 };
 
 export const gridProps = { vertical: false, stroke: "currentColor", strokeOpacity: 0.2 };

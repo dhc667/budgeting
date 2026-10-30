@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { ColorDot } from "../colors/ColorDot";
 import { useMoney } from "../money/use-money";
+import { inSpaces } from "../spaces/space";
 import { useShownSpaces } from "../spaces/space-picker";
 import { Card, EmptyState } from "../ui/Card";
 import { useCounterparties } from "./counterparty-queries";
@@ -15,9 +16,7 @@ export function DebtsCard({ className }: { className?: string }) {
   const { data: counterparties } = useCounterparties();
   const shownSpaces = useShownSpaces();
   if (!counterparties || !shownSpaces) return null;
-  const shown = counterparties.filter(({ space_id }) =>
-    shownSpaces.some(({ id }) => id === space_id),
-  );
+  const shown = inSpaces(counterparties, shownSpaces);
   const owing = shown.filter(({ balances }) => openBalances(balances).length > 0);
   const settled = shown.filter(({ balances }) => openBalances(balances).length === 0);
 

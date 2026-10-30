@@ -27,13 +27,17 @@ export type FlowCategory = {
   spaceId: string;
 };
 
-// Every account's change on a day, archived accounts included.
-export type AccountMovement = {
-  accountId: string;
+// Every account's change on a day, archived accounts included, and every debt's in one currency.
+// A debt is above zero while the counterparty owes the space.
+export type Movement = {
+  ledgerId: string;
+  holding: Holding;
   currency: string;
   day: string;
   amount: number;
 };
+
+type Holding = "account" | "debt";
 
 // A built-in category has no stored name: it is called whatever `builtInName` says.
 export function readCategoryFlows(
@@ -66,22 +70,21 @@ export function readCategoryFlows(
   return [...flows.values()];
 }
 
-export function readAccountMovements(
-  rows: ReportRows,
-  spaceIds: readonly string[],
-): AccountMovement[] {
+export function readMovements(rows: ReportRows, spaceIds: readonly string[]): Movement[] {
   const postingsOn = postingsByLedgerAccount(rows.postings);
-  const movements = new Map<string, AccountMovement>();
+  const movements = new Map<string, Movement>();
 
   for (const ledger of ledgersIn(rows, spaceIds)) {
-    if (ledger.kind !== "account" || ledger.currency === null) continue;
+    const holding = holdingOf(ledger.kind);
+    if (holding === null) continue;
     for (const posting of postingsOn.get(ledger.id) ?? []) {
       const transaction = rows.transactions.get(keyOfId(posting.transaction_id));
       if (!transaction) continue;
-      const key = JSON.stringify([ledger.id, transaction.date]);
+      const key = JSON.stringify([ledger.id, posting.currency, transaction.date]);
       const movement = movements.get(key) ?? {
-        accountId: ledger.id,
-        currency: ledger.currency,
+        ledgerId: ledger.id,
+        holding,
+        currency: posting.currency,
         day: transaction.date,
         amount: 0,
       };
@@ -132,6 +135,19 @@ function flowKind(kind: RowOf<"ledger_accounts">["kind"]): CategoryFlow["kind"] 
     case "account":
     case "opening_balance":
     case "counterparty":
+      return null;
+  }
+}
+
+function holdingOf(kind: RowOf<"ledger_accounts">["kind"]): Holding | null {
+  switch (kind) {
+    case "account":
+      return "account";
+    case "counterparty":
+      return "debt";
+    case "expense":
+    case "income":
+    case "opening_balance":
       return null;
   }
 }

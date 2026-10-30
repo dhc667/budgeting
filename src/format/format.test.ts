@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatCompactMoney, formatDate, formatMoney, parseAmount } from "./format";
+import {
+  formatAmount,
+  formatCompactMoney,
+  formatDate,
+  formatMoney,
+  formatRate,
+  parseAmount,
+} from "./format";
 
 const brl = { code: "BRL", decimals: 2 };
 const usd = { code: "USD", decimals: 2 };
@@ -55,6 +62,23 @@ describe("number formats", () => {
 
   it("refuses an amount that isn't a whole number of minor units", () => {
     expect(() => formatMoney(12.5, usd, "comma_period", "en")).toThrow();
+  });
+});
+
+describe("exchange rates", () => {
+  it.each([
+    [719.774_285_714, "CUP\u00A0719.7743"],
+    [410.5, "CUP\u00A0410.50"],
+    [410, "CUP\u00A0410.00"],
+    [410.000_04, "CUP\u00A0410.00"],
+  ])("writes %s with up to four decimals, as many as it has", (rate, expected) => {
+    expect(formatRate(rate, { code: "CUP", decimals: 2 }, "comma_period", "en")).toBe(expected);
+  });
+
+  it("keeps a currency without decimals whole when the rate is", () => {
+    const jpy = { code: "JPY", decimals: 0 };
+    expect(formatRate(150, jpy, "comma_period", "en")).toBe("¥150");
+    expect(formatRate(150.4, jpy, "comma_period", "en")).toBe("¥150.4");
   });
 });
 

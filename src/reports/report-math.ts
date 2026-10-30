@@ -7,7 +7,7 @@ import {
   type MissingRate,
 } from "../rates/convert-dated";
 import { inPeriod, monthKey } from "./periods";
-import type { AccountMovement, CategoryFlow, FlowCategory } from "./read-reports";
+import type { CategoryFlow, FlowCategory, Movement } from "./read-reports";
 
 export function categoryTotals(
   flows: readonly CategoryFlow[],
@@ -112,35 +112,45 @@ export function incomeVsExpense(
 }
 
 // One point per day from the first movement to `today`, each the balances at the end of that day
-// converted at that day's rates. An account is left out of the days before its currency's first
-// rate. Movements dated after today count in today's point, as balances everywhere else include
-// them.
+// converted at that day's rates, without debts and with them. A balance is left out of the days
+// before its currency's first rate. Movements dated after today count in today's point, as
+// balances everywhere else include them.
 export function netWorthSeries(
-  movements: readonly AccountMovement[],
+  movements: readonly Movement[],
   today: string,
   conversion: DisplayConversion,
 ): NetWorthSeries {
   const missing: MissingRate[] = [];
   const byDay = groupBy(movements, ({ day }) => (day > today ? today : day));
   const first = [...byDay.keys()].sort()[0];
-  if (first === undefined) return { points: [], missing: [] };
+  if (first === undefined) return { points: [], missing: [], hasDebts: false };
 
-  const balances = new Map<string, { currency: string; balance: number }>();
+  const balances = new Map<string, Pick<Movement, "holding" | "currency"> & { balance: number }>();
   const points: NetWorthPoint[] = [];
   for (let day = first; day <= today; day = daysAfter(day, 1)) {
-    for (const { accountId, currency, amount } of byDay.get(day) ?? []) {
-      const account = balances.get(accountId) ?? { currency, balance: 0 };
-      account.balance += amount;
-      balances.set(accountId, account);
+    for (const { ledgerId, holding, currency, amount } of byDay.get(day) ?? []) {
+      const key = JSON.stringify([ledgerId, currency]);
+      const held = balances.get(key) ?? { holding, currency, balance: 0 };
+      held.balance += amount;
+      balances.set(key, held);
     }
-    let total = 0;
-    for (const { currency, balance } of balances.values()) {
+    const point = { day, total: 0, afterDebts: 0 };
+    for (const { holding, currency, balance } of balances.values()) {
       if (balance === 0) continue;
-      total += inDisplayCurrency(balance, currency, day, conversion, missing) ?? 0;
+      const converted = inDisplayCurrency(balance, currency, day, conversion, missing) ?? 0;
+      point.afterDebts += converted;
+      switch (holding) {
+        case "account":
+          point.total += converted;
+          break;
+        case "debt":
+          break;
+      }
     }
-    points.push({ day, total });
+    points.push(point);
   }
-  return { points, missing: earliestMissing(missing) };
+  const hasDebts = movements.some(({ holding }) => holding === "debt");
+  return { points, missing: earliestMissing(missing), hasDebts };
 }
 
 function inDisplayCurrency(
@@ -182,6 +192,6 @@ export type IncomeExpenseReport = { months: MonthFlow[]; missing: MissingRate[] 
 
 type MonthFlow = { month: string; income: number; expense: number; difference: number };
 
-export type NetWorthSeries = { points: NetWorthPoint[]; missing: MissingRate[] };
+export type NetWorthSeries = { points: NetWorthPoint[]; missing: MissingRate[]; hasDebts: boolean };
 
-export type NetWorthPoint = { day: string; total: number };
+export type NetWorthPoint = { day: string; total: number; afterDebts: number };

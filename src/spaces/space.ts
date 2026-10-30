@@ -12,6 +12,13 @@ export function spaceName(space: Pick<Space, "name">, t: TFunction): string {
   return space.name ?? t("spaces.private");
 }
 
+export function inSpaces<Item extends { space_id: string }>(
+  items: readonly Item[],
+  spaces: readonly Pick<Space, "id">[],
+): Item[] {
+  return items.filter(({ space_id }) => spaces.some(({ id }) => id === space_id));
+}
+
 // No shared space takes what a private space is called in any of the app's languages.
 export const privateSpaceNames = Object.values(resources).map(
   ({ translation }) => translation.spaces.private,

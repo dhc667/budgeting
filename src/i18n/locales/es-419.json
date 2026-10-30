@@ -46,6 +46,9 @@
       "title": "Patrimonio neto en el tiempo",
       "on": "El {{date}}",
       "today": "Hoy",
+      "total": "Patrimonio neto",
+      "afterDebts": "Después de deudas",
+      "afterDebtsAmount": "Después de deudas: {{amount}}",
       "none": "Aún no hay nada registrado.",
       "chart": "Gráfico de líneas del patrimonio neto"
     }
@@ -331,7 +334,8 @@
     }
   },
   "accounts": {
-    "rate": "{{one}} = {{is}}",
+    "rate": "{{one}} = {{rate}}",
+    "staleRate": "{{one}} = {{rate}}, del {{date}}",
     "add": "Agregar cuenta",
     "editOrder": "Editar orden",
     "doneOrdering": "Listo",

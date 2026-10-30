@@ -1,11 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
-import { accountsInSpaces, useAccounts } from "../accounts/account-queries";
+import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import type { Currency } from "../format/format";
 import { useFormat } from "../format/use-format";
-import { netWorth } from "../rates/net-worth";
-import { useLatestRates } from "../rates/rate-queries";
 import { StaleRateNotes } from "../rates/StaleRateNotes";
+import { useNetWorthToday } from "../rates/use-net-worth";
 import { Card, EmptyState } from "../ui/Card";
 import type { NetWorthPoint } from "./report-math";
 import type { ReportData } from "./report-queries";
@@ -24,15 +22,9 @@ import { Unconverted } from "./Unconverted";
 export function NetWorthChart({ data }: { data: ReportData }) {
   const { t } = useTranslation();
   const format = useFormat();
-  const { data: accounts } = useAccounts();
-  const { data: latestRates } = useLatestRates();
-  const { points, missing } = data.netWorth;
-  const { currencies, currency } = data.conversion;
-  const staleRates =
-    accounts && latestRates
-      ? netWorth(accountsInSpaces(accounts, data.spaces), currencies, currency, latestRates)
-          .staleRates
-      : [];
+  const today = useNetWorthToday(data.spaces);
+  const { points, missing, hasDebts } = data.netWorth;
+  const { currency } = data.conversion;
   const first = points[0];
   const last = points.at(-1);
   const money = (amount: number) => format.money(amount, currency);
@@ -51,20 +43,27 @@ export function NetWorthChart({ data }: { data: ReportData }) {
             <div className="text-right">
               <dt className="text-xs text-zinc-500">{t("reports.netWorth.today")}</dt>
               <dd className="text-2xl font-semibold tabular-nums">{money(last.total)}</dd>
+              {hasDebts && (
+                <dd className="text-zinc-500 tabular-nums">
+                  {t("reports.netWorth.afterDebtsAmount", { amount: money(last.afterDebts) })}
+                </dd>
+              )}
             </div>
           </dl>
-          <NetWorthLine points={points} currency={currency} />
+          <NetWorthLine points={points} currency={currency} hasDebts={hasDebts} />
         </>
       ) : (
         <EmptyState>{t("reports.netWorth.none")}</EmptyState>
       )}
-      <StaleRateNotes rates={staleRates} />
+      <StaleRateNotes rates={today?.staleRates ?? []} />
       <Unconverted missing={missing} />
     </Card>
   );
 }
 
-function NetWorthLine({ points, currency }: { points: NetWorthPoint[]; currency: Currency }) {
+type NetWorthLineProps = { points: NetWorthPoint[]; currency: Currency; hasDebts: boolean };
+
+function NetWorthLine({ points, currency, hasDebts }: NetWorthLineProps) {
   const { t } = useTranslation();
   const format = useFormat();
   const money = useChartMoney(currency);
@@ -80,7 +79,27 @@ function NetWorthLine({ points, currency }: { points: NetWorthPoint[]; currency:
           labelFormatter={(day) => (typeof day === "string" ? format.day(day) : day)}
           formatter={money.full}
         />
-        <Line dataKey="total" stroke={series.line} strokeWidth={2} dot={false} {...noAnimation} />
+        {/* Drawn first, so the net worth line covers it wherever debts make no difference. */}
+        {hasDebts && (
+          <Line
+            dataKey="afterDebts"
+            name={t("reports.netWorth.afterDebts")}
+            stroke={series.afterDebts}
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            dot={false}
+            {...noAnimation}
+          />
+        )}
+        <Line
+          dataKey="total"
+          name={t("reports.netWorth.total")}
+          stroke={series.line}
+          strokeWidth={2}
+          dot={false}
+          {...noAnimation}
+        />
+        {hasDebts && <Legend />}
       </LineChart>
     </ChartFrame>
   );
