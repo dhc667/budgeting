@@ -331,6 +331,7 @@
     }
   },
   "accounts": {
+    "rate": "{{one}} = {{is}}",
     "add": "Adicionar conta",
     "editOrder": "Editar ordem",
     "doneOrdering": "Concluir",
