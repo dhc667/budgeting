@@ -134,6 +134,7 @@
       "evening": "Buenas noches, {{name}}"
     },
     "netWorth": "Patrimonio neto",
+    "netWorthAfterDebts": "Después de deudas: {{amount}}",
     "netWorthNoRate": "No se cuentan, aún no hay tipo de cambio:",
     "netWorthStale": "El tipo de cambio de {{currency}} es del {{date}}.",
     "accounts": "Cuentas",

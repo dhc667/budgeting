@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { addAccount, goHome, openSignedIn, uniqueName } from "../support/app";
+import {
+  addAccount,
+  choose,
+  goHome,
+  openNewTransaction,
+  openSignedIn,
+  uniqueName,
+  user,
+} from "../support/app";
 import { sql } from "../support/local-instance";
 
 // The provider is unreachable: the dashboard works from the rates the instance already holds.
@@ -68,4 +76,42 @@ describe("net worth", () => {
     expect(await card.findByText("$5.00")).toBeTruthy();
     expect(card.getByText(new RegExp(`${stale} exchange rate is from`))).toBeTruthy();
   });
+
+  it("takes off what is owed, and adds what others owe", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+    await recordDebt({ direction: /I received/, amount: "250", counterparty: "Acme Corp" });
+    await recordDebt({ direction: /I gave/, amount: "30", counterparty: "Charlie" });
+
+    await goHome();
+
+    const card = within(await screen.findByRole("region", { name: "Net worth" }));
+    expect(await card.findByText("$320.00")).toBeTruthy();
+    expect(card.getByText("After debts: $100.00")).toBeTruthy();
+  });
+
+  it("says nothing about debts when nothing is owed", async () => {
+    await openSignedIn(uniqueName("Ana"));
+    await addAccount({ name: "Cash", openingBalance: "100" });
+
+    await goHome();
+
+    const card = within(await screen.findByRole("region", { name: "Net worth" }));
+    expect(await card.findByText("$100.00")).toBeTruthy();
+    expect(card.queryByText(/After debts/)).toBeNull();
+  });
 });
+
+type NewDebt = { direction: RegExp; amount: string; counterparty: string };
+
+async function recordDebt({ direction, amount, counterparty }: NewDebt) {
+  await openNewTransaction();
+  await user.click(screen.getByRole("tab", { name: "Debt" }));
+  await user.click(screen.getByRole("radio", { name: direction }));
+  await user.type(screen.getByLabelText("Amount"), amount);
+  await choose("Account", "Cash");
+  await user.type(screen.getByRole("combobox", { name: "Counterparty" }), counterparty);
+  await user.click(screen.getByRole("option", { name: `Add “${counterparty}”` }));
+  await user.click(screen.getByRole("button", { name: "Add transaction" }));
+  await screen.findByRole("heading", { name: "Transactions", level: 1 });
+}
