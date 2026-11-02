@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { type CheerioAPI, load } from "cheerio";
+import type { CheerioAPI } from "cheerio";
 import * as z from "zod";
 import { fail, messageOf } from "../fail.ts";
 import { type Commands, onlyPositional, parseCommand, required } from "./command.ts";
@@ -16,6 +16,8 @@ export const receiptCommands: Commands = {
 async function readReceipts(argv: string[]) {
   const { positionals } = parseCommand(argv, {});
   const file = onlyPositional(positionals, "receipts read <file>");
+  // Loaded here because importing it at the top slows the start of every CLI command.
+  const { load } = await import("cheerio");
   const receipts: Receipt[] = [];
   const unread: Report["unread"] = [];
   const seen = new Set<string>();
@@ -23,7 +25,7 @@ async function readReceipts(argv: string[]) {
     try {
       if (seen.has(line.source)) throw new Error("It's in the file twice; this one was skipped.");
       seen.add(line.source);
-      receipts.push(receiptFrom(await pageAt(line.source), line));
+      receipts.push(receiptFrom(load(await pageAt(line.source)), line));
     } catch (error) {
       unread.push({ line: line.source, reason: messageOf(error) });
     }
@@ -109,8 +111,7 @@ async function pageAt(source: string): Promise<string> {
   return response.text();
 }
 
-function receiptFrom(html: string, line: ReceiptLine): Receipt {
-  const page = load(html);
+function receiptFrom(page: CheerioAPI, line: ReceiptLine): Receipt {
   const items = itemsOn(page);
   const totals = totalLinesOn(page);
   const itemsTotal = sum(items.flatMap(({ rows }) => rows));
