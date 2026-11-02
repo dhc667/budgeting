@@ -15,7 +15,7 @@ import {
   type Commands,
   day,
   noPositionals,
-  onlyId,
+  onlyPositional,
   parseCommand,
   required,
 } from "./command.ts";
@@ -108,7 +108,7 @@ async function addAccount(argv: string[], output: Output) {
 // What isn't given keeps its value.
 async function changeAccount(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, detailOptions);
-  const named = onlyId(positionals, "accounts update <account> [options]");
+  const named = onlyPositional(positionals, "accounts update <account> [options]");
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const current = directory.account(named, "account");
   const currency = values.currency === undefined ? current.currency : currencyCode(values.currency);
@@ -132,7 +132,10 @@ async function changeAccount(argv: string[], output: Output) {
 
 async function setArchived(argv: string[], output: Output, archived: boolean) {
   const { values, positionals } = parseCommand(argv, {});
-  const named = onlyId(positionals, `accounts ${archived ? "archive" : "unarchive"} <account>`);
+  const named = onlyPositional(
+    positionals,
+    `accounts ${archived ? "archive" : "unarchive"} <account>`,
+  );
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const { id } = directory.account(named, "account");
   await archiveAccount(supabase, id, archived);
@@ -142,7 +145,7 @@ async function setArchived(argv: string[], output: Output, archived: boolean) {
 // A delete the rules refuse matches no rows rather than failing, so only a second look can tell.
 async function removeAccount(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
-  const named = onlyId(positionals, "accounts delete <account>");
+  const named = onlyPositional(positionals, "accounts delete <account>");
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const { id } = directory.account(named, "account");
   const shortId = directory.shortId(id);

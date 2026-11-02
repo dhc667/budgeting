@@ -11,7 +11,7 @@ import {
   type Commands,
   dataOf,
   noPositionals,
-  onlyId,
+  onlyPositional,
   parseCommand,
   required,
 } from "./command.ts";
@@ -109,7 +109,7 @@ async function changeCounterparty(argv: string[], output: Output) {
     name: { type: "string" },
     color: { type: "string" },
   });
-  const named = onlyId(
+  const named = onlyPositional(
     positionals,
     "counterparties update <counterparty> [--name <name>] [--color <color>]",
   );
@@ -127,7 +127,7 @@ async function changeCounterparty(argv: string[], output: Output) {
 
 async function removeCounterparty(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
-  const named = onlyId(positionals, "counterparties delete <counterparty>");
+  const named = onlyPositional(positionals, "counterparties delete <counterparty>");
   const { supabase, directory } = await signedInDirectory(values.env);
   const { id } = directory.counterparty(named, "counterparty");
   await deleteCounterparty(supabase, id);

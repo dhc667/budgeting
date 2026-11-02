@@ -74,6 +74,12 @@ An expense in reverse: money coming back from an expense category into an accoun
 **Income**:
 A transaction that moves money from a category into an account.
 
+**Receipt**:
+A store's record of a purchase, listing what was bought and how it was paid. Each thing bought becomes an expense of its own.
+
+**Receipt adjustment**:
+The one transaction that squares a batch of receipts with the money that really moved, netting their discounts and any change that differed from what was due. It is income when they came out in the buyer's favour, and an expense otherwise.
+
 **Transfer**:
 A transaction that moves money between two accounts, possibly in different currencies and different spaces. Only someone who belongs to both spaces can change, delete or restore a transfer between them; anyone else sees just their side, coming from or going to another space.
 

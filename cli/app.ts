@@ -3,6 +3,7 @@ import { accountCommands } from "./app/accounts.ts";
 import { categoryCommands } from "./app/categories.ts";
 import { counterpartyCommands } from "./app/counterparties.ts";
 import type { Commands } from "./app/command.ts";
+import { receiptCommands } from "./app/receipts.ts";
 import { sessionCommands } from "./app/session.ts";
 import { spaceCommands } from "./app/spaces.ts";
 import { transactionCommands } from "./app/transactions.ts";
@@ -53,6 +54,8 @@ Accounts (--space defaults to your private space):
 
 Categories (--space defaults to your private space):
   categories list [--space <space>] [--kind expense|income]
+  categories examples [--space <space>] [--kind expense|income] [--per-category <n>]
+      Each category's most recent distinct titles, to file something new like what's there
   categories add --name <name> [--kind expense|income] [--space <space>] [--icon <lucide name>]
       [--color <color>] [--parent <category>]
   categories update <category> [--name ...] [--kind ...] [--icon ...] [--color ...]
@@ -84,8 +87,24 @@ Transactions:
       is what they changed in it, in that currency
       forgave and forgiven settle a debt without money moving: the amount counts as spending
       from the account, or income to it, in a built-in category
+  transactions add-batch <file.json> [--dry-run] [--allow-duplicates]
+      Expenses, refunds and income from a JSON array of { type, date, account, amount, category,
+      title, note? }. Checks every row before saving any, and prints each, with the balances it
+      leaves on stderr. --dry-run stops before saving. A row like one already recorded (same day,
+      account, title and amount) stops the batch unless --allow-duplicates is given.
   transactions update <transaction> [same options as add]     What isn't given keeps its value
   transactions delete <transaction> | transactions restore <transaction>
+
+Receipts: Brazilian NFC-e, read from the state tax portal without touching the instance:
+  receipts read <file>
+      The file has a QR link or access key per line, optionally followed by "change: 40.30", the
+      change really received, and "tendered: 50", what was handed over, if the page doesn't show
+      it. Prints as JSON each receipt's store, date, items with a row per unit, and payments; the
+      adjustment that nets their discounts and change differences; and in "unread", each line that
+      couldn't be read and why, which also makes the exit code fail. Refuses a receipt whose items
+      don't add up to what it says.
+  receipts check --report <report.json> --batch <file.json>
+      Whether a batch for add-batch has exactly the rows of a report from receipts read.
 
 Options:
   --env <file>   Instance settings (default: .env.instance); the session is kept in <file>.session
@@ -98,6 +117,7 @@ const commands: Commands = {
   ...categoryCommands,
   ...counterpartyCommands,
   ...transactionCommands,
+  ...receiptCommands,
 };
 
 await main();

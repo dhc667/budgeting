@@ -8,8 +8,23 @@ import {
 } from "../../src/categories/category-writes.ts";
 import type { AppSupabase } from "../../src/supabase/client.ts";
 import { fail } from "../fail.ts";
-import { choice, type Commands, noPositionals, onlyId, parseCommand, required } from "./command.ts";
-import { type Category, type CategoryKind, loadDirectory, signedInDirectory } from "./directory.ts";
+import {
+  choice,
+  type Commands,
+  dataOf,
+  noPositionals,
+  onlyPositional,
+  parseCommand,
+  positiveWhole,
+  required,
+} from "./command.ts";
+import {
+  type Category,
+  type CategoryKind,
+  type Directory,
+  loadDirectory,
+  signedInDirectory,
+} from "./directory.ts";
 import {
   contextOf,
   idField,
@@ -39,8 +54,22 @@ const categoryView: View<Category> = {
   columns: ["id", "space", "kind", "path", "transaction_count"],
 };
 
+const examplesView: View<CategoryExamples> = {
+  fields: [
+    { name: "path", json: ({ category }, { directory }) => directory.categoryPath(category.id) },
+    { name: "transaction_count", json: ({ category }) => category.transaction_count },
+    {
+      name: "examples",
+      json: ({ examples }) => examples,
+      text: ({ examples }) => examples.join("; "),
+    },
+  ],
+  columns: ["path", "transaction_count", "examples"],
+};
+
 export const categoryCommands: Commands = {
   "categories list": withOutput(categoryView, listCategories),
+  "categories examples": withOutput(examplesView, listExamples),
   "categories add": withOutput(categoryView, addCategory, { quiet: true }),
   "categories update": withOutput(categoryView, changeCategory, { quiet: true }),
   "categories delete": withQuiet(removeCategory),
@@ -53,16 +82,51 @@ async function listCategories(argv: string[], output: Output) {
   });
   noPositionals(positionals, "categories list [--space <space>] [--kind expense|income]");
   const { directory } = await signedInDirectory(values.env);
+  printRows(output, categoryView, categoriesIn(directory, values), contextOf(directory));
+}
+
+// What's been filed where, for choosing a category for something new. Built-in categories are
+// left out: only forgiven debts can go in them.
+async function listExamples(argv: string[], output: Output) {
+  const { values, positionals } = parseCommand(argv, {
+    space: { type: "string" },
+    kind: { type: "string" },
+    "per-category": { type: "string", default: "15" },
+  });
+  noPositionals(
+    positionals,
+    "categories examples [--space <space>] [--kind expense|income] [--per-category <n>]",
+  );
+  const perCategory = positiveWhole(values["per-category"], "--per-category");
+  const { supabase, directory } = await signedInDirectory(values.env);
+  const categories = categoriesIn(directory, values).filter(({ built_in }) => !built_in);
+  const rows = await Promise.all(
+    categories.map(async (category) => {
+      const recent = await dataOf(
+        supabase
+          .from("transaction_details")
+          .select("title")
+          .eq("category_id", category.id)
+          .order("date", { ascending: false })
+          .limit(examplesScanned),
+      );
+      const titles = recent.flatMap(({ title }) => (title ? [title] : []));
+      return { category, examples: [...new Set(titles)].slice(0, perCategory) };
+    }),
+  );
+  printRows(output, examplesView, rows, contextOf(directory));
+}
+
+function categoriesIn(directory: Directory, values: { space?: string; kind?: string }) {
   const space = directory.spaceOrPrivate(values.space);
   const kind = values.kind === undefined ? undefined : choice(values.kind, kinds, "--kind");
   const path = (category: Category) => directory.categoryPath(category.id) ?? "";
-  const categories = directory.categories
+  return directory.categories
     .filter(
       (category) =>
         category.space_id === space.id && (kind === undefined || category.kind === kind),
     )
     .sort((a, b) => a.kind.localeCompare(b.kind) || path(a).localeCompare(path(b)));
-  printRows(output, categoryView, categories, contextOf(directory));
 }
 
 async function addCategory(argv: string[], output: Output) {
@@ -96,7 +160,7 @@ async function changeCategory(argv: string[], output: Output) {
     ...detailOptions,
     "no-parent": { type: "boolean", default: false },
   });
-  const named = onlyId(positionals, "categories update <category> [options]");
+  const named = onlyPositional(positionals, "categories update <category> [options]");
   if (values.parent !== undefined && values["no-parent"]) {
     fail("Pass --parent or --no-parent, not both.");
   }
@@ -124,7 +188,7 @@ async function changeCategory(argv: string[], output: Output) {
 
 async function removeCategory(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, { "move-to": { type: "string" } });
-  const named = onlyId(positionals, "categories delete <category> [--move-to <category>]");
+  const named = onlyPositional(positionals, "categories delete <category> [--move-to <category>]");
   const { supabase, directory } = await signedInDirectory(values.env);
   const category = directory.category(named, "category");
   const moveTo =
@@ -158,6 +222,11 @@ function kindUnder(
 }
 
 const kinds: CategoryKind[] = ["expense", "income"];
+
+// Enough to find distinct titles among receipts' many repeated rows.
+const examplesScanned = 300;
+
+type CategoryExamples = { category: Category; examples: string[] };
 
 const detailOptions = {
   name: { type: "string" },
