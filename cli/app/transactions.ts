@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { ParseArgsOptionsConfig } from "node:util";
+import * as z from "zod";
 import { Constants } from "../../src/supabase/database.types.ts";
 import { localToday } from "../../src/format/days.ts";
 import type { AppSupabase } from "../../src/supabase/client.ts";
@@ -12,14 +14,14 @@ import {
   type TransactionDraft,
   updateTransaction,
 } from "../../src/transactions/transaction-writes.ts";
-import { fail } from "../fail.ts";
+import { fail, messageOf } from "../fail.ts";
 import {
   choice,
   type Commands,
   dataOf,
   day,
   noPositionals,
-  onlyId,
+  onlyPositional,
   parseCommand,
   positiveWhole,
   required,
@@ -33,7 +35,7 @@ import {
   shortIdLength,
   signedInDirectory,
 } from "./directory.ts";
-import { parseAmount } from "./money.ts";
+import { formatAmount, parseAmount } from "./money.ts";
 import {
   amountField,
   contextOf,
@@ -99,10 +101,32 @@ const transactionView: View<Transaction> = {
   ],
 };
 
+const batchView: View<PlannedRow & { duplicate: boolean }> = {
+  fields: [
+    { name: "date", json: ({ date }) => date },
+    { name: "type", json: ({ type }) => type },
+    amountField("amount", ({ amount, currency }) => ({ minorUnits: amount, currency })),
+    { name: "account", json: ({ accountId }, { directory }) => directory.accountName(accountId) },
+    {
+      name: "category",
+      json: ({ categoryId }, { directory }) => directory.categoryPath(categoryId),
+    },
+    { name: "title", json: ({ title }) => title },
+    { name: "note", json: ({ note }) => note },
+    {
+      name: "duplicate",
+      json: ({ duplicate }) => duplicate,
+      text: ({ duplicate }) => (duplicate ? "yes" : ""),
+    },
+  ],
+  columns: ["date", "type", "amount", "account", "category", "title", "note", "duplicate"],
+};
+
 export const transactionCommands: Commands = {
   "transactions list": withOutput(transactionView, listTransactions),
   "transactions show": withOutput(transactionView, showTransaction),
   "transactions add": withOutput(transactionView, addOne, { quiet: true }),
+  "transactions add-batch": withOutput(batchView, addBatch),
   "transactions update": withOutput(transactionView, changeOne, { quiet: true }),
   "transactions delete": withQuiet(deleteOne),
   "transactions restore": withOutput(transactionView, restoreOne, { quiet: true }),
@@ -154,7 +178,7 @@ async function listTransactions(argv: string[], output: Output) {
 
 async function showTransaction(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
-  const named = onlyId(positionals, "transactions show <transaction>");
+  const named = onlyPositional(positionals, "transactions show <transaction>");
   const { supabase, directory } = await signedInDirectory(values.env);
   const row = await transactionNamed(supabase, directory, named);
   printRow(
@@ -178,9 +202,66 @@ async function addOne(argv: string[], output: Output) {
   );
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const account = directory.account(required(values.account, "--account"), "--account");
-  const draft = draftFrom(values, directory, {
+  const draft = draftFrom(values, directory, blankDraft(type, localToday(), account));
+  const id = randomUUID();
+  await addTransaction(supabase, id, draft);
+  await printTransaction(output, supabase, userId, id);
+}
+
+// Every row is checked before any is saved, so a wrong name or amount in one saves nothing. What it
+// prints is the same with --dry-run, which is what makes that a preview of the real thing. The
+// balances and outcome go to stderr, keeping stdout the rows, as --json promises.
+async function addBatch(argv: string[], output: Output) {
+  const { values, positionals } = parseCommand(argv, {
+    "dry-run": { type: "boolean", default: false },
+    "allow-duplicates": { type: "boolean", default: false },
+  });
+  const file = onlyPositional(
+    positionals,
+    "transactions add-batch <file.json> [--dry-run] [--allow-duplicates]",
+  );
+  const rows = batchRowsIn(file);
+  const { supabase, directory } = await signedInDirectory(values.env);
+  const planned = rows.map((row) => plannedFrom(row, directory));
+  const duplicates = await duplicatesOf(supabase, directory, planned);
+  const shown = planned.map((row) => ({ ...row, duplicate: duplicates.has(duplicateKey(row)) }));
+
+  if (duplicates.size > 0 && !values["dry-run"] && !values["allow-duplicates"]) {
+    fail(
+      `Already recorded, so nothing was saved; pass --allow-duplicates if these are new:\n${shown
+        .filter(({ duplicate }) => duplicate)
+        .map(
+          ({ date, title, amount, currency }) =>
+            `  ${date}  ${formatAmount(amount, currency, directory.decimals(currency))}  ${title}`,
+        )
+        .join("\n")}`,
+    );
+  }
+  if (!values["dry-run"]) await saveBatch(supabase, planned);
+
+  printRows(output, batchView, shown, contextOf(directory));
+  printBalances(planned, directory);
+  console.error(
+    values["dry-run"] ? "Dry run: nothing was saved." : `Saved ${planned.length} transactions.`,
+  );
+}
+
+function batchRowsIn(file: string): BatchRow[] {
+  const parsed = batchFile.safeParse(JSON.parse(readFileSync(file, "utf8")));
+  if (!parsed.success) fail(`${file}: ${z.prettifyError(parsed.error)}`);
+  return parsed.data;
+}
+
+function plannedFrom(row: BatchRow, directory: Directory): PlannedRow {
+  const account = directory.account(row.account, "account");
+  const draft = draftFrom({ ...row }, directory, blankDraft(row.type, row.date, account));
+  return { ...draft, type: row.type, currency: account.currency };
+}
+
+function blankDraft(type: TransactionDraft["type"], date: string, account: Account) {
+  return {
     type,
-    date: localToday(),
+    date,
     title: "",
     note: "",
     account,
@@ -191,16 +272,63 @@ async function addOne(argv: string[], output: Output) {
     counterpartyId: null,
     debtCurrency: null,
     debtAmount: null,
-  });
-  const id = randomUUID();
-  await addTransaction(supabase, id, draft);
-  await printTransaction(output, supabase, userId, id);
+  };
+}
+
+// The same day, account, title and amount as something already there: on rows entered one unit at
+// a time, that's a receipt entered twice far more often than a second purchase.
+async function duplicatesOf(supabase: AppSupabase, directory: Directory, planned: PlannedRow[]) {
+  const dates = [...new Set(planned.map(({ date }) => date))];
+  const existing = await dataOf(
+    supabase.from("transaction_details").select(columns).in("date", dates),
+  );
+  const recorded = new Set(existing.map((row) => duplicateKey(draftOf(row, directory.categories))));
+  return new Set(planned.map(duplicateKey).filter((key) => recorded.has(key)));
+}
+
+function duplicateKey({ date, accountId, title, amount }: DuplicateKeyFields): string {
+  return JSON.stringify([date, accountId, title, amount]);
+}
+
+async function saveBatch(supabase: AppSupabase, planned: PlannedRow[]) {
+  for (const [saved, row] of planned.entries()) {
+    try {
+      await addTransaction(supabase, randomUUID(), row);
+    } catch (error) {
+      fail(
+        `Saved ${saved} of ${planned.length}, then "${row.title}" failed: ${messageOf(error)}\nFix it and run the batch again with the saved rows taken out.`,
+      );
+    }
+  }
+}
+
+function printBalances(planned: PlannedRow[], directory: Directory) {
+  for (const account of directory.accounts) {
+    const rows = planned.filter(({ accountId }) => accountId === account.id);
+    if (rows.length === 0) continue;
+    const change = rows.reduce((total, row) => total + signedAmount(row), 0);
+    const decimals = directory.decimals(account.currency);
+    const before = account.balance;
+    console.error(
+      `${account.name}: ${formatAmount(before, account.currency, decimals)} -> ${formatAmount(before + change, account.currency, decimals)}`,
+    );
+  }
+}
+
+function signedAmount({ type, amount }: PlannedRow): number {
+  switch (type) {
+    case "expense":
+      return -amount;
+    case "refund":
+    case "income":
+      return amount;
+  }
 }
 
 // What isn't given keeps its value. Budget exclusions stay as they are.
 async function changeOne(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, draftOptions);
-  const named = onlyId(positionals, "transactions update <transaction> [options]");
+  const named = onlyPositional(positionals, "transactions update <transaction> [options]");
   const { supabase, userId, directory } = await signedInDirectory(values.env);
   const row = await transactionNamed(supabase, directory, named);
   const current = draftOf(row, directory.categories);
@@ -307,7 +435,7 @@ function categoryKindOf(type: TransactionDraft["type"]): CategoryKind {
 
 async function deleteOne(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
-  const named = onlyId(positionals, "transactions delete <transaction>");
+  const named = onlyPositional(positionals, "transactions delete <transaction>");
   const { supabase, directory } = await signedInDirectory(values.env);
   const row = await transactionNamed(supabase, directory, named);
   const { shortId } = await contextFor(supabase, directory, [row]);
@@ -317,7 +445,7 @@ async function deleteOne(argv: string[], output: Output) {
 
 async function restoreOne(argv: string[], output: Output) {
   const { values, positionals } = parseCommand(argv, {});
-  const named = onlyId(positionals, "transactions restore <transaction>");
+  const named = onlyPositional(positionals, "transactions restore <transaction>");
   const { supabase, userId } = await signedInDirectory(values.env);
   const id = await deletedTransactionNamed(supabase, named);
   await restoreTransaction(supabase, id);
@@ -454,6 +582,24 @@ const draftOptions = {
 } satisfies ParseArgsOptionsConfig;
 
 type DraftValues = { [Option in keyof typeof draftOptions]?: string };
+
+export const batchFile = z.array(
+  z.strictObject({
+    type: z.enum(["expense", "refund", "income"]),
+    date: z.iso.date(),
+    account: z.string(),
+    amount: z.string(),
+    category: z.string(),
+    title: z.string(),
+    note: z.string().optional(),
+  }),
+);
+
+type BatchRow = z.infer<typeof batchFile>[number];
+
+type PlannedRow = TransactionDraft & { type: BatchRow["type"]; currency: string };
+
+type DuplicateKeyFields = Pick<TransactionDraft, "date" | "accountId" | "title" | "amount">;
 
 type TransactionRow = Pick<
   Database["public"]["Views"]["transaction_details"]["Row"],

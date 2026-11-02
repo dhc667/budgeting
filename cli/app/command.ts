@@ -12,7 +12,7 @@ export function parseCommand<const T extends ParseArgsOptionsConfig>(argv: strin
   });
 }
 
-export function onlyId(positionals: string[], usage: string): string {
+export function onlyPositional(positionals: string[], usage: string): string {
   const [id, ...extra] = positionals;
   if (!id || extra.length > 0) fail(`Usage: pnpm app ${usage}`);
   return id;

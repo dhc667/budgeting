@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as z from "zod";
 import {
@@ -640,6 +640,115 @@ describe("the app CLI, signed in", () => {
     expect(titles(["--category", "Food"])).toEqual(["Lunch"]);
     expect(titles(["--counterparty", "Charlie"])).toEqual(["Loan"]);
     expect(titles(["--space", family])).toEqual(["Pot"]);
+  });
+
+  describe("adding a batch of transactions", () => {
+    const row = (title: string, amount: string, category = "Food") => ({
+      type: "expense",
+      date: "2026-10-05",
+      account: "Cash",
+      amount,
+      category,
+      title,
+      note: "Corner store",
+    });
+    const fileWith = (rows: unknown) => {
+      const file = join(dirname(envFile), "batch.json");
+      writeFileSync(file, JSON.stringify(rows));
+      return file;
+    };
+    const titles = () =>
+      z
+        .array(z.object({ title: z.string() }))
+        .parse(json(app(["transactions", "list", "--json", "title"])))
+        .map(({ title }) => title);
+
+    beforeEach(() => {
+      added(["accounts", "add", "--name", "Cash", "--currency", "USD", "--opening-amount", "100"]);
+      added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+    });
+
+    it("previews every row and the balance it leaves with --dry-run, saving nothing", () => {
+      const run = app([
+        "transactions",
+        "add-batch",
+        fileWith([row("Bread", "2.50"), row("Milk", "1.25")]),
+        "--dry-run",
+      ]);
+
+      expect(run.status).toBe(0);
+      expect(run.stdout).toContain("Bread");
+      expect(run.stderr).toContain("Cash: 100.00 USD -> 96.25 USD");
+      expect(titles()).toEqual([]);
+    });
+
+    it("saves what the preview showed, leaving that balance", () => {
+      const file = fileWith([row("Bread", "2.50"), row("Milk", "1.25")]);
+
+      expect(app(["transactions", "add-batch", file]).status).toBe(0);
+
+      expect(titles().sort()).toEqual(["Bread", "Milk"]);
+      expect(json(app(["accounts", "list", "--json", "balance"]))).toEqual([{ balance: 96.25 }]);
+    });
+
+    it("saves nothing when any row is wrong", () => {
+      const file = fileWith([row("Bread", "2.50"), row("Milk", "1.25", "Nonsense")]);
+
+      const run = app(["transactions", "add-batch", file]);
+
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("Nonsense");
+      expect(titles()).toEqual([]);
+    });
+
+    it("stops at a row already recorded, unless told it's new", () => {
+      const file = fileWith([row("Bread", "2.50")]);
+      app(["transactions", "add-batch", file]);
+
+      const preview = app(
+        ["transactions", "add-batch", file, "--dry-run"].concat(["--json", "title,duplicate"]),
+      );
+      expect(preview.status).toBe(0);
+      expect(json(preview)).toEqual([{ title: "Bread", duplicate: true }]);
+
+      const again = app(["transactions", "add-batch", file]);
+      expect(again.status).toBe(1);
+      expect(again.stderr).toContain("Already recorded");
+      expect(titles()).toEqual(["Bread"]);
+
+      expect(app(["transactions", "add-batch", file, "--allow-duplicates"]).status).toBe(0);
+      expect(titles()).toEqual(["Bread", "Bread"]);
+    });
+  });
+
+  it("gives each category's recent distinct titles as examples", () => {
+    added(["accounts", "add", "--name", "Cash", "--currency", "USD"]);
+    added(["categories", "add", "--name", "Food", "--kind", "expense"]);
+    added(["categories", "add", "--name", "Empty", "--kind", "expense"]);
+    const add = (title: string, date: string) =>
+      added(
+        ["transactions", "add", "--type", "expense", "--account", "Cash"].concat([
+          "--amount",
+          "1",
+          "--category",
+          "Food",
+          "--title",
+          title,
+          "--date",
+          date,
+        ]),
+      );
+    add("Bread", "2026-10-01");
+    add("Milk", "2026-10-02");
+    add("Milk", "2026-10-03");
+
+    const rows = z
+      .array(z.object({ path: z.string(), examples: z.array(z.string()) }))
+      .parse(json(app(["categories", "examples", "--kind", "expense", "--json", "path,examples"])));
+
+    expect(rows.find(({ path }) => path === "Food")?.examples).toEqual(["Milk", "Bread"]);
+    expect(rows.find(({ path }) => path === "Empty")?.examples).toEqual([]);
+    expect(rows.map(({ path }) => path)).not.toContain("Debts forgiven");
   });
 
   it("can't name a space the user isn't in", async () => {

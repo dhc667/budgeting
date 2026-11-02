@@ -54,6 +54,7 @@
     "@types/react-dom": "^19.3.0",
     "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "cheerio": "^1.2.0",
     "drizzle-kit": "^0.31.11",
     "drizzle-orm": "^0.45.4",
     "eslint": "^10.12.0",
